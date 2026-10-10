@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kastrack.github.io/kConditionsEditor/schema/condition-document.schema.json",
+  "title": "kConditions document",
+  "type": "object",
+  "required": ["version", "root"],
+  "properties": {
+    "version": { "type": "string", "const": "1.0" },
+    "generator": { "type": "string" },
+    "operators": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/customOperator" }
+    },
+    "root": { "$ref": "#/$defs/group" }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "node": {
+      "oneOf": [{ "$ref": "#/$defs/group" }, { "$ref": "#/$defs/condition" }]
+    },
+    "group": {
+      "type": "object",
+      "required": ["type", "operator", "children"],
+      "properties": {
+        "type": { "const": "group" },
+        "operator": { "enum": ["and", "or"] },
+        "negate": { "type": "boolean", "default": false },
+        "id": { "type": "string" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/node" } }
+      },
+      "additionalProperties": false
+    },
+    "condition": {
+      "type": "object",
+      "required": ["type", "field", "operator"],
+      "properties": {
+        "type": { "const": "condition" },
+        "field": { "type": "string", "minLength": 1 },
+        "operator": { "type": "string", "minLength": 1 },
+        "negate": { "type": "boolean", "default": false },
+        "id": { "type": "string" },
+        "values": { "type": "array", "items": { "$ref": "#/$defs/value" } },
+        "policy": { "$ref": "#/$defs/policyBlock" }
+      },
+      "additionalProperties": false
+    },
+    "value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["source", "value"],
+          "properties": {
+            "source": { "const": "literal" },
+            "value": {}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["source", "field"],
+          "properties": {
+            "source": { "const": "field" },
+            "field": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "customOperator": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["values", "callback"] },
+        "label": { "type": "string" },
+        "group": { "type": "string" },
+        "arity": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0, "maximum": 2 },
+            { "const": "n" }
+          ]
+        },
+        "valueKind": {
+          "enum": ["none", "text", "number", "date", "boolean", "list", "choice"]
+        },
+        "match": { "enum": ["in", "not_in"] },
+        "values": { "type": "array" },
+        "allowFieldValue": { "type": "boolean" },
+        "availableIn": { "type": "array", "items": { "type": "string" } },
+        "callbacks": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/callbackBinding" }
+        },
+        "policy": { "$ref": "#/$defs/policyBlock" }
+      },
+      "additionalProperties": false
+    },
+    "callbackBinding": {
+      "type": "object",
+      "properties": {
+        "function": { "type": "string" },
+        "class": { "type": "string" },
+        "method": { "type": "string" },
+        "static": { "type": "boolean" },
+        "module": { "type": "string" },
+        "service": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "policyBlock": {
+      "type": "object",
+      "properties": {
+        "unresolved": { "$ref": "#/$defs/policyValue" },
+        "error": { "$ref": "#/$defs/policyValue" }
+      },
+      "additionalProperties": false
+    },
+    "policyValue": {
+      "oneOf": [
+        { "$ref": "#/$defs/policyName" },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/policyName" }
+        }
+      ]
+    },
+    "policyName": { "enum": ["skip", "true", "false", "error"] }
+  }
+}

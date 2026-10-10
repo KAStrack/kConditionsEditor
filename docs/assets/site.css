@@ -1,0 +1,372 @@
+/* Documentation site styles — not required by the plugin itself. */
+
+:root {
+  --page-bg: #ffffff;
+  --page-fg: #1d2530;
+  --page-muted: #5d6775;
+  --page-border: #e3e6eb;
+  --page-sunken: #f6f7f9;
+  --page-accent: #2f6fd0;
+  --page-code-bg: #f4f6f9;
+  --page-max: 960px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #101318;
+    --page-fg: #e6e9ee;
+    --page-muted: #98a1af;
+    --page-border: #262c35;
+    --page-sunken: #171b21;
+    --page-accent: #5b9bff;
+    --page-code-bg: #161a20;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--page-fg);
+  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--page-accent); }
+
+.wrap {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--page-border);
+  background: var(--page-sunken);
+}
+
+.site-header .wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--page-fg);
+  letter-spacing: -0.01em;
+}
+
+.brand span { color: var(--page-accent); }
+
+.brand-version {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--page-muted);
+  border: 1px solid var(--page-border);
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+
+.site-nav {
+  margin-left: auto;
+  display: flex;
+  gap: 18px;
+  font-size: 0.9rem;
+}
+
+.site-nav a { text-decoration: none; color: var(--page-muted); }
+.site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--page-accent); }
+
+.hero { padding: 48px 0 28px; }
+
+.hero h1 {
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 12px;
+}
+
+.hero p.lede {
+  font-size: 1.1rem;
+  color: var(--page-muted);
+  max-width: 62ch;
+  margin: 0 0 20px;
+}
+
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+
+.pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--page-sunken);
+  border: 1px solid var(--page-border);
+  color: var(--page-muted);
+}
+
+section { padding: 28px 0; }
+
+h2 {
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+  padding-top: 8px;
+}
+
+h3 { font-size: 1.05rem; margin: 26px 0 8px; }
+h4 { font-size: 0.95rem; margin: 20px 0 6px; }
+
+p { margin: 0 0 14px; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  background: var(--page-code-bg);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+pre {
+  background: var(--page-code-bg);
+  border: 1px solid var(--page-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+pre code { background: none; padding: 0; font-size: inherit; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin: 0 0 18px;
+  display: block;
+  overflow-x: auto;
+}
+
+th, td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--page-border);
+  vertical-align: top;
+}
+
+th { font-weight: 600; white-space: nowrap; }
+td code { white-space: nowrap; }
+
+.card {
+  border: 1px solid var(--page-border);
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--page-sunken);
+}
+
+.note {
+  border-left: 3px solid var(--page-accent);
+  background: var(--page-sunken);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  margin: 0 0 18px;
+  font-size: 0.925rem;
+}
+
+.note strong { color: var(--page-fg); }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.output {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  background: var(--page-code-bg);
+  border: 1px solid var(--page-border);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 340px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.result-true { color: #1a7f4b; font-weight: 700; }
+.result-false { color: #b3261e; font-weight: 700; }
+
+@media (prefers-color-scheme: dark) {
+  .result-true { color: #58c98c; }
+  .result-false { color: #ef6b5c; }
+}
+
+.btn {
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--page-accent);
+  background: var(--page-accent);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn.secondary { background: transparent; color: var(--page-accent); }
+
+.site-footer {
+  border-top: 1px solid var(--page-border);
+  margin-top: 40px;
+  padding: 24px 0 40px;
+  color: var(--page-muted);
+  font-size: 0.875rem;
+}
+
+.toc {
+  font-size: 0.9rem;
+  border: 1px solid var(--page-border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  background: var(--page-sunken);
+}
+
+.toc ul { margin: 6px 0 0; padding-left: 18px; }
+.toc li { margin: 3px 0; }
+
+/* --- Docs page: the contents as a column that follows the reader ---------
+   Narrow, it stays the box above. Wide, it becomes a sticky column on the
+   left; docs-toc.js marks the heading at the top of the viewport and opens
+   that section's subsections under it. */
+
+.toc-sub { display: none; }
+
+.docs-page section,
+.docs-page h3 { scroll-margin-top: 16px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(body.docs-page) { scroll-behavior: smooth; }
+}
+
+@media (min-width: 960px) {
+  .docs-page .wrap { max-width: 1200px; }
+
+  .docs-layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    column-gap: 56px;
+    align-items: start;
+  }
+
+  .docs-layout > .toc {
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 28px 4px 28px 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 0.875rem;
+    scrollbar-width: thin;
+  }
+
+  .docs-layout > .toc .toc-title {
+    display: block;
+    margin: 0 0 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--page-muted);
+  }
+
+  .docs-layout > .toc ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 1px solid var(--page-border);
+  }
+
+  .docs-layout > .toc li { margin: 0; }
+
+  .docs-layout > .toc a {
+    display: block;
+    margin-left: -1px;
+    padding: 4px 0 4px 14px;
+    border-left: 2px solid transparent;
+    color: var(--page-muted);
+    line-height: 1.35;
+    text-decoration: none;
+  }
+
+  .docs-layout > .toc a:hover { color: var(--page-fg); }
+
+  /* The open section reads as a heading; the one marker on the rail sits on
+     the most specific entry — the section itself, or the subsection in it. */
+  .docs-layout > .toc li.is-open > a { color: var(--page-fg); font-weight: 600; }
+  .docs-layout > .toc li > a.is-active {
+    color: var(--page-accent);
+    border-left-color: var(--page-accent);
+  }
+
+  .docs-layout > .toc li.is-open > .toc-sub { display: block; }
+
+  .docs-layout > .toc .toc-sub {
+    border-left: 0;
+    margin: 1px 0 6px;
+  }
+
+  .docs-layout > .toc .toc-sub a {
+    padding: 3px 0 3px 26px;
+    font-size: 0.8125rem;
+  }
+
+  .docs-main > section:first-child { padding-top: 22px; }
+}
+
+label.field-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--page-muted);
+  margin: 0 0 6px;
+}
+
+textarea.data-input {
+  width: 100%;
+  min-height: 170px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--page-border);
+  background: var(--page-bg);
+  color: var(--page-fg);
+  resize: vertical;
+}
+
+/* Skin picker on the landing demo and the playground. */
+.skin-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 14px; }
+.skin-picker select {
+  font: inherit; font-size: 0.875rem; padding: 6px 9px; border-radius: 7px;
+  border: 1px solid var(--page-border); background: var(--page-bg); color: var(--page-fg);
+}
+.skin-hint { color: var(--page-muted); font-size: 0.85rem; }

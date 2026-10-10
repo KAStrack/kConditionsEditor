@@ -1,0 +1,222 @@
+/*
+ * Design lab — experimental variants of the "equation" direction.
+ *
+ * These are NOT part of the library yet. They piggyback on the equation skin's
+ * shared rules by using data-kce-skin="equation" plus a data-lab attribute, so
+ * every variant starts from exactly the same baseline.
+ */
+
+/* ------------------------------------------------------------------ *
+ * B — hanging connectors: AND/OR outdented into the margin so they
+ *     form a column and every condition starts flush.
+ * ------------------------------------------------------------------ */
+
+.kce[data-lab~="hang"] {
+  --kce-hangs: 30px;
+}
+
+.kce[data-lab~="hang"] .kce-group > .kce-group-children {
+  padding-left: calc(var(--kce-hangs) + 6px);
+  padding-right: 15px;
+}
+
+.kce[data-lab~="hang"] .kce-tree > .kce-group > .kce-group-children {
+  padding-left: var(--kce-hangs);
+  padding-right: 2px;
+}
+
+.kce[data-lab~="hang"] .kce-connector {
+  margin-left: calc(-1 * var(--kce-hangs));
+  margin-top: -1px;
+  margin-bottom: -1px;
+  height: 0;
+  overflow: visible;
+}
+
+.kce[data-lab~="hang"] .kce-connector-btn {
+  position: relative;
+  top: -0.62em;
+  font-size: 0.68em;
+  padding: 1px 3px;
+}
+
+.kce[data-lab~="hang"] .kce-group-children { gap: 8px; }
+
+.kce[data-lab~="hang"] .kce-group.is-negated > .kce-negate-marker {
+  padding-top: 4px;
+}
+
+/* ------------------------------------------------------------------ *
+ * C — bookish: serif field names, roman operators, squarer brackets,
+ *     more leading. Reads like a typeset proposition.
+ * ------------------------------------------------------------------ */
+
+.kce[data-lab~="bookish"] {
+  --kce-row-gap: 5px;
+  --kce-value: #7a4b12;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .kce[data-lab~="bookish"]:not([data-kce-theme="light"]) { --kce-value: #e0b276; }
+}
+
+.kce[data-lab~="bookish"] .kce-sel-field .kce-sel-label,
+.kce[data-lab~="bookish"] .kce-sel-fieldvalue .kce-sel-label {
+  font-family: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+  font-weight: 600;
+  font-size: 1.02em;
+}
+
+.kce[data-lab~="bookish"] .kce-sel-operator .kce-sel-label {
+  font-style: normal;
+  font-variant: small-caps;
+  letter-spacing: 0.03em;
+  font-size: 0.94em;
+}
+
+.kce[data-lab~="bookish"] .kce-connector-btn {
+  font-variant: small-caps;
+  text-transform: lowercase;
+  font-size: 0.86em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.kce[data-lab~="bookish"] .kce-negate-marker {
+  font-variant: small-caps;
+  text-transform: lowercase;
+  font-size: 0.86em !important;
+  letter-spacing: 0.06em;
+}
+
+.kce[data-lab~="bookish"] .kce-group > .kce-group-children::before,
+.kce[data-lab~="bookish"] .kce-group > .kce-group-children::after {
+  border-radius: 0;
+  width: 6px;
+  opacity: 0.55;
+}
+
+/* ------------------------------------------------------------------ *
+ * D — prose: the whole rule flows as one wrapped sentence with real
+ *     parentheses. The most compact reading, the least room to click.
+ * ------------------------------------------------------------------ */
+
+.kce[data-lab~="prose"] .kce-tree {
+  line-height: 2.1;
+  max-width: 62ch;
+}
+
+.kce[data-lab~="prose"] .kce-group {
+  display: inline;
+  width: auto;
+}
+
+.kce[data-lab~="prose"] .kce-group-children {
+  display: inline;
+  padding: 0;
+}
+
+.kce[data-lab~="prose"] .kce-group > .kce-group-children::before,
+.kce[data-lab~="prose"] .kce-group > .kce-group-children::after {
+  position: static;
+  display: inline;
+  content: '(';
+  border: 0;
+  width: auto;
+  color: var(--kce-rule);
+  font-size: 1.15em;
+  opacity: 1;
+  padding: 0 1px;
+}
+
+.kce[data-lab~="prose"] .kce-group > .kce-group-children::after { content: ')'; }
+
+.kce[data-lab~="prose"] .kce-tree > .kce-group > .kce-group-children::before,
+.kce[data-lab~="prose"] .kce-tree > .kce-group > .kce-group-children::after { display: none; }
+
+.kce[data-lab~="prose"] .kce-condition {
+  display: inline-flex;
+  vertical-align: baseline;
+  padding: 1px 3px;
+}
+
+.kce[data-lab~="prose"] .kce-connector {
+  display: inline;
+  padding: 0 2px;
+}
+
+.kce[data-lab~="prose"] .kce-negate-marker {
+  display: none;
+}
+
+.kce[data-lab~="prose"] .kce-group.is-negated > .kce-negate-marker {
+  display: inline !important;
+  padding: 0 3px 0 0;
+}
+
+/* Inline layout has nowhere to park a per-group toolbar, so every group's
+   tools share one slot at the top of the rule and only the hovered group's
+   are shown. */
+.kce[data-lab~="prose"] .kce-tree {
+  position: relative;
+  padding-top: 30px;
+}
+
+.kce[data-lab~="prose"] .kce-group-head {
+  position: absolute;
+  left: auto;
+  right: 0;
+  top: 0;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.kce[data-lab~="prose"] .kce-group:hover > .kce-group-head {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.kce[data-lab~="prose"] .kce-group:hover:has(.kce-group:hover) > .kce-group-head { opacity: 0; pointer-events: none; }
+
+.kce[data-lab~="prose"] .kce-group-tools .kce-btn { font-size: 0.75em; }
+
+/* ------------------------------------------------------------------ *
+ * E — small caps only: the typographic half of "bookish" without the
+ *     serif, so it still sits comfortably in a sans-serif app.
+ * ------------------------------------------------------------------ */
+
+.kce[data-lab~="smallcaps"] {
+  --kce-row-gap: 4px;
+  line-height: 1.55;
+}
+
+.kce[data-lab~="smallcaps"] .kce-sel-operator .kce-sel-label {
+  font-style: normal;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  font-size: 0.96em;
+}
+
+.kce[data-lab~="smallcaps"] .kce-connector-btn {
+  font-variant: small-caps;
+  text-transform: lowercase;
+  font-size: 0.84em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.kce[data-lab~="smallcaps"] .kce-negate-marker {
+  font-variant: small-caps;
+  text-transform: lowercase;
+  font-size: 0.84em !important;
+  letter-spacing: 0.05em;
+}
+
+.kce[data-lab~="smallcaps"] .kce-group > .kce-group-children::before,
+.kce[data-lab~="smallcaps"] .kce-group > .kce-group-children::after {
+  border-radius: 2px;
+  opacity: 0.6;
+}

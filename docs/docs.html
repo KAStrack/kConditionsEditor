@@ -1,0 +1,1362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Documentation — kConditionsEditor</title>
+<meta name="description" content="Full API reference for kConditionsEditor: editor options, field definitions, custom operators, failure policies, and the JavaScript and PHP evaluator SDKs.">
+<link rel="stylesheet" href="assets/site.css">
+<!-- Loaded only for the live .kcd sample under "Showing a rule". No editor on this page:
+     that is the point — the describe styles are not scoped to one. -->
+<link rel="stylesheet" href="dist/k-conditions-editor.min.css">
+</head>
+<body class="docs-page">
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.0.34</span></a>
+    <nav class="site-nav">
+      <a href="./">Home</a>
+      <a href="demo.html">Playground</a>
+      <a href="skins.html">Skins</a>
+      <a href="docs.html" aria-current="page">Docs</a>
+      <a href="https://github.com/KAStrack/kConditionsEditor">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero" style="padding-bottom:6px">
+    <h1>Documentation</h1>
+    <p class="lede">Everything the editor and the SDKs accept, and how the pieces relate.</p>
+  </div>
+
+</div>
+
+<div class="wrap docs-layout">
+
+  <nav class="toc" aria-label="On this page">
+    <strong class="toc-title">On this page</strong>
+    <ul>
+      <li><a href="#install">Installation</a></li>
+      <li><a href="#editor">Editor options</a></li>
+      <li><a href="#building">Building a rule</a></li>
+      <li><a href="#hiding">Hiding the field</a></li>
+      <li><a href="#history">Undo and reordering</a></li>
+      <li><a href="#skins">Skins and theming</a></li>
+      <li><a href="#fields">Field definitions</a></li>
+      <li><a href="#custom">Custom operators</a></li>
+      <li><a href="#sql">SQL output</a></li>
+      <li><a href="#debug">Debugging</a></li>
+      <li><a href="#api">Editor API and events</a></li>
+      <li><a href="#document">The document format</a></li>
+      <li><a href="#operators">Builtin operators</a></li>
+      <li><a href="#policies">Failure policies</a></li>
+      <li><a href="#js">JavaScript / Node SDK</a></li>
+      <li><a href="#php">PHP SDK</a></li>
+      <li><a href="#hook">The result hook</a></li>
+      <li><a href="#describe">Showing a rule</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#porting">Porting to another language</a></li>
+    </ul>
+  </nav>
+
+  <main class="docs-main">
+
+  <section id="install">
+    <h2>Installation</h2>
+
+    <h3>Browser — one file each</h3>
+    <pre><code>&lt;link rel="stylesheet" href="dist/k-conditions.min.css"&gt;
+&lt;script src="dist/k-conditions.min.js"&gt;&lt;/script&gt;</code></pre>
+    <p>
+      The bundle is the editor, the evaluator and the SQL builder together, with
+      every skin — about 21&nbsp;KB gzipped. It sets both <code>KConditions</code>
+      and <code>KConditionsEditor</code> on the global, so everything below
+      applies unchanged.
+    </p>
+
+    <h3>Browser — the sources, no build step</h3>
+    <pre><code>&lt;link rel="stylesheet" href="src/k-conditions-editor.css"&gt;
+&lt;link rel="stylesheet" href="src/k-conditions-skins.css"&gt;
+
+&lt;script src="src/k-conditions-evaluator.js"&gt;&lt;/script&gt;
+&lt;script src="src/k-conditions-sql.js"&gt;&lt;/script&gt;  &lt;!-- optional --&gt;
+&lt;script src="src/k-conditions-editor.js"&gt;&lt;/script&gt;</code></pre>
+    <p>
+      The evaluator must load first — the editor uses its operator metadata and its
+      <code>describe()</code> function. The skins stylesheet is required for every skin
+      except <code>boxed</code>, and the SQL builder only if you want
+      <a href="#sql">SQL output</a>. All three scripts are UMD, so they also work through a
+      bundler or under Node.
+    </p>
+
+    <h3>npm</h3>
+    <pre><code>npm install @kastrack/conditions-editor</code></pre>
+    <pre><code>const KConditions = require('@kastrack/conditions-editor');
+// or, in the browser bundle:
+import KConditionsEditor from '@kastrack/conditions-editor/editor';
+import '@kastrack/conditions-editor/editor.css';</code></pre>
+
+    <h3>What is in <code>dist/</code></h3>
+    <table>
+      <thead><tr><th>File</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td><code>k-conditions.min.css</code></td><td>Base plus every skin, minified — the one stylesheet.</td></tr>
+        <tr><td><code>k-conditions.min.js</code></td><td>Evaluator, SQL builder and editor, minified — the one script.</td></tr>
+        <tr><td><code>k-conditions.css</code> / <code>.js</code></td><td>The same two bundles unminified, for debugging.</td></tr>
+        <tr><td><code>k-conditions-*.min.css</code> / <code>.min.js</code></td><td>One minified file per source, if you would rather pick.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <code>dist/</code> is generated by <code>npm run build</code>. It is not in
+      the git repository, but the npm package carries it, so nothing you install
+      needs a build step. The sources remain the deliverable: edit
+      <code>src/</code>, then rebuild.
+    </p>
+
+    <h3>Composer</h3>
+    <pre><code>composer require kastrack/conditions-editor</code></pre>
+    <p>Or without Composer:</p>
+    <pre><code>require __DIR__ . '/kConditionsEditor/sdk/php/autoload.php';</code></pre>
+  </section>
+
+  <section id="editor">
+    <h2>Editor options</h2>
+    <pre><code>const editor = KConditionsEditor.attach('#conditions', { /* options */ });</code></pre>
+
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>fields</code></td><td><code>[]</code></td><td>Array of field definitions. See below.</td></tr>
+        <tr><td><code>operators</code></td><td><code>{}</code></td><td>Custom operator definitions, keyed by name.</td></tr>
+        <tr><td><code>skin</code></td><td><code>"prose"</code></td><td>Which visual treatment to use. See <a href="#skins">Skins</a>.</td></tr>
+        <tr><td><code>theme</code></td><td><code>null</code></td><td><code>"light"</code> or <code>"dark"</code> to pin a theme; omit to follow the viewer's system setting.</td></tr>
+        <tr><td><code>layout</code></td><td>from <code>skin</code></td><td><code>"tree"</code> or <code>"flow"</code>. Normally inferred — only set it to pair a flow layout with your own stylesheet.</td></tr>
+        <tr><td><code>emptyText</code></td><td><code>"Always"</code></td><td>Shown in the collapsed area when there are no conditions. Also settable later with <code>setEmptyText()</code>.</td></tr>
+        <tr><td><code>labels</code></td><td><code>{}</code></td><td>Overrides for every string in the UI — see the <code>DEFAULT_LABELS</code> object in the source.</td></tr>
+        <tr><td><code>startOpen</code></td><td><code>false</code></td><td>Open the builder immediately instead of showing the Edit button.</td></tr>
+        <tr><td><code>collapsible</code></td><td><code>true</code></td><td>Show the Done button that returns to the summary view.</td></tr>
+        <tr><td><code>readOnly</code></td><td><code>false</code></td><td>Render the summary only; no editing.</td></tr>
+        <tr><td><code>showJson</code></td><td><code>false</code></td><td>Add a collapsible JSON preview under the builder.</td></tr>
+        <tr><td><code>pretty</code></td><td><code>true</code></td><td>Pretty-print the JSON written to the textarea.</td></tr>
+        <tr><td><code>maxDepth</code></td><td><code>6</code></td><td>How deeply groups may nest. The <em>+ Group</em> button disappears at the limit.</td></tr>
+        <tr><td><code>allowGroupNegate</code></td><td><code>true</code></td><td>Show the <code>NOT</code> checkbox on each group.</td></tr>
+        <tr><td><code>allowConditionNegate</code></td><td><code>false</code></td><td>Show a <code>NOT</code> checkbox on each condition row too.</td></tr>
+        <tr><td><code>defaultGroupOperator</code></td><td><code>"and"</code></td><td>Logic used by newly added groups.</td></tr>
+        <tr><td><code>summaryHtml</code></td><td><code>false</code></td><td>Render the collapsed summary as HTML — bold fields, underlined values. See <a href="#describe">Showing a rule</a>.</td></tr>
+        <tr><td><code>hideTextarea</code></td><td><code>true</code></td><td><code>true</code> hides the field (keeping it in the form), <code>false</code> leaves it visible, <code>"toggle"</code> hides it but adds a <em>Show source</em> button. See <a href="#hiding">Hiding the field</a>.</td></tr>
+        <tr><td><code>hideTarget</code></td><td><code>null</code></td><td>What to hide instead of the textarea: a CSS selector, an element, or a list of them.</td></tr>
+        <tr><td><code>output</code></td><td><code>"json"</code></td><td><code>"json"</code> or <code>"sql"</code> — what gets written into the textarea. See <a href="#sql">SQL output</a>.</td></tr>
+        <tr><td><code>sql</code></td><td><code>null</code></td><td>Options handed to the SQL builder (<code>dialect</code>, <code>parameters</code>, …).</td></tr>
+        <tr><td><code>documentInput</code></td><td><code>null</code></td><td>Selector or element that always receives the JSON, so <code>output: "sql"</code> can be reloaded.</td></tr>
+        <tr><td><code>documentInComment</code></td><td><code>false</code></td><td>Carry the document in a leading SQL comment instead, so a single existing SQL field round-trips.</td></tr>
+        <tr><td><code>allowWrapGroup</code></td><td><code>true</code></td><td>Show the <code>AND(…)</code> / <code>OR(…)</code> button that brackets the current group. See <a href="#building">Building a rule</a>.</td></tr>
+        <tr><td><code>allowFieldValues</code></td><td><code>false</code></td><td>Offer the <em>Value / Field</em> selector so a value can point at another field. A field naming <code>comparableWith</code> opts itself in. See <a href="#fields">Field definitions</a>.</td></tr>
+        <tr><td><code>allowClear</code></td><td><code>true</code></td><td>Show the "Clear and start over" control in the footer.</td></tr>
+        <tr><td><code>history</code></td><td><code>true</code></td><td>Undo / redo: footer buttons, <code>Ctrl</code>+<code>Z</code>, and the API. See <a href="#history">Undo and reordering</a>.</td></tr>
+        <tr><td><code>historyLimit</code></td><td><code>50</code></td><td>How many steps back the history keeps.</td></tr>
+        <tr><td><code>historyIdle</code></td><td><code>500</code></td><td>Milliseconds of quiet that end a run of typing and commit it as one entry.</td></tr>
+        <tr><td><code>allowReorder</code></td><td><code>true</code></td><td>Move up / move down controls, and <code>Alt</code>+<code>↑</code>/<code>↓</code>.</td></tr>
+        <tr><td><code>allowDrag</code></td><td><code>true</code></td><td>The drag grip. The move buttons stay either way.</td></tr>
+        <tr><td><code>connectorPlacement</code></td><td><code>"below"</code></td><td>Where prose puts each AND / OR. <code>"below"</code>: on a line of its own, starting where the text above it starts (the field name, or the <code>)</code> after a group). <code>"inline"</code>: on the row's line, just after the value — more compact. See <a href="#placement">Where the AND / OR goes</a>.</td></tr>
+        <tr><td><code>alignConnectors</code></td><td><code>true</code></td><td>With <code>connectorPlacement: "inline"</code>, line the operators up into a column per indent level. <code>"group"</code> for one column per group; <code>false</code> for none.</td></tr>
+        <tr><td><code>groupGuides</code></td><td><code>true</code></td><td>In prose, a thin line down the left of each bracketed group's rows, in its AND / OR colour (dashed when negated). Pointing at a group's AND / OR or a bracket strengthens it. <code>false</code> for none.</td></tr>
+        <tr><td><code>controls</code></td><td><code>"hover"</code></td><td>When the row controls (grip, arrows, ×, add buttons, a group's tools) are shown: <code>"hover"</code> reveals them on the row pointed at or focused; <code>"always"</code> shows them at rest. A screen with no hover always gets <code>"always"</code>.</td></tr>
+        <tr><td><code>previewStyle</code></td><td><code>"bar"</code></td><td>How the hover/focus preview of an add button or × is drawn: <code>"bar"</code>, <code>"highlight"</code>, <code>"region"</code>, <code>"fade"</code>, <code>"color"</code>, <code>"marker"</code> or <code>"underline"</code>. Independent of <code>skin</code>.</td></tr>
+        <tr><td><code>debug</code></td><td><code>false</code></td><td>Show the <em>View source</em> panel. See <a href="#debug">Debugging</a>.</td></tr>
+        <tr><td><code>onChange</code></td><td><code>null</code></td><td><code>(document, payload) =&gt; void</code>. <code>payload</code> carries <code>json</code>, <code>valid</code>, <code>problems</code> and <code>empty</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <strong>The textarea stays authoritative.</strong> Every change rewrites its value and
+      dispatches <code>input</code> and <code>change</code> events, so existing form
+      handlers, dirty-tracking and validation keep working untouched.
+    </div>
+  </section>
+
+
+  <section id="building">
+    <h2>Building a rule</h2>
+    <p>
+      A rule grows from the logic word rather than from a generic "add row"
+      button. Every insertion point carries a <code>+AND</code> or
+      <code>+OR</code> beside the connector it extends:
+    </p>
+    <ul>
+      <li><strong>The operator the group already uses</strong> adds another condition at that point.</li>
+      <li><strong>The other operator</strong> wraps the condition on that line in a new sub-group carrying it.</li>
+    </ul>
+    <p>
+      So <code>State is CA</code> → <code>+AND</code> → <code>Name is Ben</code>
+      → <code>+OR</code> → <code>Name is Nanci</code> produces
+      <code>State is CA AND (Name is Ben OR Name is Nanci)</code>, without anyone
+      having to think about brackets.
+    </p>
+    <p>
+      Mid-list positions offer only the group's own operator — the one that reads
+      naturally next to the connector already printed there. The last row of each
+      group offers both, so there is exactly one place to reach for when changing
+      precedence. Two conveniences keep the tree from growing needless levels: a
+      group of one child is retuned rather than wrapped, and clicking
+      <code>+OR</code> beside a group that is already an <code>OR</code> extends
+      it instead of nesting another inside it.
+    </p>
+    <h3><code>AND(…)</code> and <code>OR(…)</code> — closing a strand</h3>
+    <p>
+      <code>+AND</code> and <code>+OR</code> bind <em>tighter</em>: they act on the
+      row you clicked. To go the other way, the last row of any group holding more
+      than one child carries a third button showing whichever operator the group
+      is <strong>not</strong> using. It brackets everything built so far, switches
+      the group to the other operator, and leaves a fresh condition waiting
+      underneath.
+    </p>
+    <p>
+      So <code>Name is B</code> → <code>+OR</code> → <code>Name is N</code> →
+      <code>AND(…)</code> → <code>State is CA</code> → <code>+OR</code> →
+      <code>State is LA</code> produces
+      <code>(Name is B OR Name is N) AND (State is CA OR State is LA)</code> — both
+      halves typed forwards, in reading order, with no going back to insert a
+      group. Only one of the pair is ever shown, since the group's own operator is
+      already offered as <code>+AND</code> / <code>+OR</code> beside it.
+    </p>
+    <p>
+      The fresh condition arrives as a plain sibling rather than inside a group of
+      its own: a one-child group renders as an empty pair of brackets, and the next
+      <code>+OR</code> turns it into the group it was going to be anyway. If the
+      newly bracketed group's operator matches its parent's and neither is negated,
+      it dissolves into the parent instead of nesting a redundant level. Turn the
+      button off with <code>allowWrapGroup: false</code>, or drive it from code
+      with <code>editor.wrapAndContinue(group, 'and')</code>.
+    </p>
+    <p>
+      The buttons stay hidden until the pointer is on the line they belong to, or
+      until they take keyboard focus. They are boxed and tinted a muted version of
+      the operator hue, so they never compete with the <code>AND</code> /
+      <code>OR</code> that actually describe the rule; pointing at one restores the
+      full colour.
+    </p>
+    <p>
+      Labels come from <code>labels.addAnd</code> and <code>labels.addOr</code>,
+      and the colours are derived from <code>--kce-and</code> /
+      <code>--kce-or</code> via <code>--kce-and-muted</code> and
+      <code>--kce-or-muted</code>.
+    </p>
+    <div class="note">
+      Values survive an operator change wherever the slot still means the same
+      thing — switching <em>is equal to</em> for <em>matches regex</em> keeps
+      what you typed. A value only drops when it genuinely cannot fit the new
+      slot, such as free text moving into a date operator that cannot parse it.
+    </div>
+  </section>
+
+  <section id="hiding">
+    <h2>Hiding the field</h2>
+    <p>
+      By default the editor conceals the textarea it took over — visually hidden
+      but still in the form, so it keeps posting exactly as before.
+      <code>hideTextarea: 'toggle'</code> keeps it hidden and adds a
+      <em>Show source</em> button to the footer that puts it back on screen.
+    </p>
+    <pre><code>KConditionsEditor.attach('#conditions', { hideTextarea: 'toggle' });
+
+editor.setSourceVisible(true);   // the same from code
+editor.isSourceVisible();        // → true
+editor.on('source', ({ visible }) =&gt; …);</code></pre>
+    <div class="note">
+      Not to be confused with <strong>View source</strong>, which
+      <a href="#debug"><code>debug: true</code></a> adds: that one shows the
+      document the editor is <em>generating</em>, this one shows the field it is
+      written into. Both label sets are overridable through
+      <code>labels</code> (<code>revealField</code> / <code>concealField</code>
+      here, <code>viewSource</code> / <code>hideSource</code> there).
+    </div>
+
+    <h3><code>hideTarget</code></h3>
+    <p>
+      Often the textarea is not the only thing that should disappear — the row
+      carrying its label would otherwise be left behind labelling nothing.
+      <code>hideTarget</code> takes a CSS selector, an element, or a list of
+      either:
+    </p>
+    <pre><code>&lt;div class="row"&gt;
+  &lt;label for="conditions"&gt;Conditions&lt;/label&gt;
+  &lt;textarea id="conditions" name="conditions"&gt;&lt;/textarea&gt;
+&lt;/div&gt;</code></pre>
+    <pre><code>KConditionsEditor.attach('#conditions', {
+  hideTarget: document.querySelector('#conditions').closest('.row'),
+  hideTextarea: 'toggle'
+});</code></pre>
+    <p>Three things it takes care of:</p>
+    <ul>
+      <li>
+        <strong>The editor is inserted after the outermost hidden element</strong>,
+        not after the textarea — otherwise it would be placed <em>inside</em> the
+        row about to be hidden, and you would never see it.
+      </li>
+      <li>
+        <strong>The textarea is always hidden too.</strong> If your target does
+        not contain it — naming only the label, say — the field is added to the
+        list, because a raw JSON textarea beside the builder is never the intent.
+      </li>
+      <li>
+        <strong>A selector matching nothing</strong> warns and falls back to
+        hiding the textarea, rather than leaving the field on show.
+      </li>
+    </ul>
+    <p><code>destroy()</code> restores everything it hid.</p>
+
+    <h3>Finding an editor again</h3>
+    <p>
+      A textarea carries at most one editor, and it points back at it.
+      <code>KConditionsEditor.get(textareaOrSelector)</code> returns the
+      instance, or <code>null</code>, for code that never had the value
+      <code>attach()</code> returned. <code>KConditionsEditor.detach(textareaOrSelector)</code>
+      calls <code>destroy()</code> on it and returns whether there was one. The
+      handle is also on the element as <code>textarea.kConditionsEditor</code>,
+      so <code>$0.kConditionsEditor</code> works in devtools.
+    </p>
+    <p>
+      Attaching to a textarea that already has an editor <strong>replaces</strong>
+      it: the old one is destroyed first, then the new one takes the field as it
+      stands. There is no "same options, keep the old one" shortcut, on purpose:
+      an options object carries callbacks, which cannot be compared, and the
+      field's value may have changed since the first attach. Anything registered
+      with <code>on()</code> on the old instance goes with it. To reuse an
+      existing editor rather than replace it, ask <code>get()</code> first.
+    </p>
+    <pre><code>const editor = KConditionsEditor.get('#conditions') ||
+               KConditionsEditor.attach('#conditions', options);</code></pre>
+  </section>
+
+  <section id="history">
+    <h2>Undo and reordering</h2>
+
+    <h3>Undo and redo</h3>
+    <p>
+      <strong>Undo</strong> and <strong>Redo</strong> sit in the footer. From the
+      keyboard: <code>Ctrl</code>/<code>Cmd</code>+<code>Z</code> to undo, and
+      <code>Ctrl</code>/<code>Cmd</code>+<code>Shift</code>+<code>Z</code>
+      <em>or</em> <code>Ctrl</code>/<code>Cmd</code>+<code>Y</code> to redo. A history
+      entry is just a serialised document, with a cursor into a list of them —
+      there are no inverse operations to get wrong, and undo is a reload of a
+      state the editor has already been in.
+    </p>
+    <p>
+      Typing is the one case that needs care. A run of keystrokes in a single
+      field coalesces into one entry, committed when the typing pauses
+      (<code>historyIdle</code>), when focus leaves the field, or when anything
+      else happens. Without that, undo would step one character at a time.
+      Adding a chip to a list is a discrete act and gets its own entry.
+    </p>
+    <div class="note">
+      <strong>Inside a text input the shortcut is the browser's.</strong> It has
+      its own undo stack there, and there is no reliable way to ask an input
+      whether it still has anything left in it — so the editor stays out of the
+      way, and the field's <code>input</code> event feeds the browser's undo
+      back into the document. Everywhere else, the shortcut is the editor's.
+    </div>
+    <p>
+      The shortcut listens on the document and asks whether this editor holds
+      the keyboard: focus decides when there is any — only one editor can
+      contain it — and otherwise it falls to whichever editor was last clicked
+      in. A structural change rebuilds the tree and can drop focus, and "I just
+      clicked that, undo it" is the most common thing anyone asks of
+      <code>Ctrl</code>+<code>Z</code>, so an element-scoped listener would go
+      quiet at exactly the wrong moment. Several editors on one page do not all
+      react to one keystroke, and clicking away from every editor hands the
+      shortcut back to the page.
+    </p>
+    <pre><code>editor.on('undo', doc =&gt; console.log('back to', doc));
+editor.canUndo();   // → true
+editor.redo();</code></pre>
+
+    <h3>Move up, move down, and drag</h3>
+    <p>
+      Every row and every group carries <em>move up</em> / <em>move down</em>
+      buttons beside its <code>×</code>, and <code>Alt</code>+<code>↑</code> /
+      <code>Alt</code>+<code>↓</code> anywhere inside a row does the same thing.
+      These come first and the drag is layered on the same primitive, because a
+      drag handle is unreachable by keyboard and unusable with a screen reader:
+      the buttons are the real interface and dragging is the shortcut.
+    </p>
+    <p>
+      Dragging uses a grip that appears with the row's other controls. It is
+      built on pointer events rather than the HTML5 drag-and-drop API, which
+      does not fire on touch at all, so it works on a phone. A drop indicator
+      marks the boundary the row will land on, indented to the level being
+      reordered, and <code>Escape</code> cancels mid-drag.
+    </p>
+    <p>
+      A node moves within its own group. Moving <em>between</em> groups is what
+      <code>+AND</code> / <code>+OR</code> and <code>AND(…)</code> /
+      <code>OR(…)</code> already do, and leaving it out of the drag is what
+      keeps a drop unambiguous in a nested tree.
+    </p>
+    <pre><code>editor.moveChild(group, 0, 2);   // the primitive both interfaces use</code></pre>
+    <h3>Seeing what a button will do</h3>
+    <p>
+      Pointing at <code>+AND</code>, <code>+OR</code>, <code>AND(…)</code>,
+      <code>OR(…)</code> or a <code>×</code> — or reaching one by tab — previews
+      what the click will do. For an add button: the rows that will end up
+      bracketed together, the operators between them, and where the new
+      condition lands. For a <code>×</code>: everything it would take, brackets
+      and <code>NOT</code> included.
+    </p>
+    <p>
+      The colour says which bracket. An add preview carries the hue of the
+      bracket being formed; the new condition is written in the hue of the
+      operator that joins it. That is what makes <code>AND(…)</code> readable:
+      everything in the group is marked blue, because it stays an AND group,
+      while the new condition reads <em>OR new condition</em>. A <code>×</code>
+      preview is red.
+    </p>
+    <p>
+      How it is drawn is the <code>previewStyle</code> option, independent of the
+      skin:
+    </p>
+    <table>
+      <thead><tr><th><code>previewStyle</code></th><th>Looks like</th></tr></thead>
+      <tbody>
+        <tr><td><code>bar</code> <em>(default)</em></td><td>One thin bar in the margin beside the range.</td></tr>
+        <tr><td><code>highlight</code></td><td>A tint and outline on each row and operator — the look before 0.0.27.</td></tr>
+        <tr><td><code>region</code></td><td>One soft wash over the range, as wide as its widest line.</td></tr>
+        <tr><td><code>fade</code></td><td>Everything outside the range fades back.</td></tr>
+        <tr><td><code>color</code></td><td>Text in the range takes the hue.</td></tr>
+        <tr><td><code>marker</code></td><td>Each row's drag grip becomes a coloured dot; <code>--kce-preview-marker</code> swaps the glyph.</td></tr>
+        <tr><td><code>underline</code></td><td>Field names, operators and AND / OR in the range are underlined.</td></tr>
+      </tbody>
+    </table>
+    <pre><code>KConditionsEditor.attach('#conditions', { skin: 'prose', previewStyle: 'fade' });
+editor.setPreviewStyle('underline');   // live; nothing re-renders</code></pre>
+    <div class="note">
+      <strong>Every style paints the same set, and the preview and the click read
+      the same decision.</strong> <code>previewTargets()</code> decides what is
+      marked; the styles only decide how. <code>planAdd()</code> and
+      <code>planWrap()</code> return what <em>would</em> happen;
+      <code>addBeside()</code> and <code>wrapAndContinue()</code> carry it out. So
+      no style can disagree with another, or drift from the behaviour. No style
+      moves anything on screen, so the button keeps the pointer. The
+      <a href="skins.html">skins page</a> has a picker for comparing them.
+    </div>
+    <p>
+      This earns its place mainly in <code>prose</code>, where a group is a range
+      of lines rather than a box you can see, so a <code>×</code> at the end of
+      one line gives no indication how much sits underneath it.
+    </p>
+
+    <h3 id="placement">Where the AND / OR goes</h3>
+    <p>
+      In prose, <code>connectorPlacement</code> decides where each
+      <code>AND</code> / <code>OR</code> goes. Either way it stays put when
+      the row's controls appear, so the word you are about to click doesn't move.
+    </p>
+<pre><code>// "below" (the default): a line of its own, under the field name — or
+// under the `)` after a group
+Name is equal to Ann
+AND
+State is equal to Florida
+AND (
+    …
+
+// "inline": just after the value — fewer lines, reads along the line
+Name is equal to Ann        AND
+State is equal to Florida   AND (
+    …</code></pre>
+    <p>
+      <code>"below"</code> reads like a formatted query: the field names and the
+      operators share one edge, and <code>AND (</code> stays together. It takes a
+      short extra line per operator. <code>"inline"</code> takes less vertical
+      space. Its row controls (arrows and <code>×</code>) appear after the
+      <code>AND</code> / <code>OR</code> with the add buttons, because they cannot
+      sit between the value and an operator that does not move.
+      <code>editor.setConnectorPlacement("inline")</code> switches live. The
+      option only affects prose; the other skins already give each operator a
+      row of its own.
+    </p>
+
+    <h3>Operator alignment</h3>
+    <p>
+      With <code>connectorPlacement: "inline"</code>, a connector sits immediately after the row it follows,
+      so without help its position depends on how wide that row happens to be —
+      a group whose values read "Alabama", "California", "Florida" prints its
+      <code>OR</code>s in three different places, which is the wrong look for a
+      layout whose whole argument is that a rule should read like an equation.
+    </p>
+    <p>
+      Connectors share a column per indent level: rows at the same indent
+      already read as a column, so their operators join it, while a deeper group
+      is a different thought and keeps its own. The column is measured after
+      layout and re-measured as an autosizing field grows or the viewport
+      changes, so it stays true while you type. <code>alignConnectors: "group"</code>
+      narrows it to one column per group; <code>false</code> turns it off, which
+      is worth doing if one very long row would drag its neighbours' operators
+      out to the right.
+    </p>
+
+    <div class="note">
+      <strong>Sibling order is presentational.</strong> The evaluator walks
+      every child of a group and accumulates, with no short-circuiting, so
+      neither the result nor which callbacks run depends on the order. This is
+      for readability — worth knowing before relying on it for anything else.
+    </div>
+  </section>
+
+  <section id="skins">
+    <h2>Skins and theming</h2>
+    <p>
+      The editor ships five visual treatments over the same data. Load the skins
+      stylesheet alongside the base one — it is required for everything except
+      <code>boxed</code> — and name the skin you want:
+    </p>
+    <pre><code>&lt;link rel="stylesheet" href="src/k-conditions-editor.css"&gt;
+&lt;link rel="stylesheet" href="src/k-conditions-skins.css"&gt;</code></pre>
+    <pre><code>KConditionsEditor.attach('#conditions', { skin: 'prose' });</code></pre>
+
+    <table>
+      <thead><tr><th>Skin</th><th>Layout</th><th>What it looks like</th></tr></thead>
+      <tbody>
+        <tr><td><code>prose</code> <em>(default)</em></td><td>flow</td><td>The rule pretty-printed: one line per condition, indentation by nesting depth, real parentheses, closing bracket on its own line.</td></tr>
+        <tr><td><code>equation</code></td><td>tree</td><td>Bracket gutters and indentation, AND/OR on their own lines between rows. No boxes.</td></tr>
+        <tr><td><code>blackboard</code></td><td>tree</td><td>The equation layout on a dark slate panel with a chalk palette.</td></tr>
+        <tr><td><code>ledger</code></td><td>tree</td><td>Least ink: hairline vertical guides instead of brackets, dashed when a group is negated.</td></tr>
+        <tr><td><code>boxed</code></td><td>tree</td><td>Every row a bordered card with an AND/OR toggle in each group header. The 0.0.1 look.</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      In <code>prose</code>, each bracketed group also gets a <strong>guide</strong>:
+      a thin line down the left of its rows in the group's AND / OR colour,
+      dashed for a <code>NOT</code> group, nesting with the groups, so any row
+      can be traced to the group it belongs to. Pointing at a group's AND / OR
+      word or one of its brackets brings its guide to full strength. The rule's
+      own top-level AND / OR have a line too, down the whole rule, shown only
+      while one of them is pointed at. <code>groupGuides: false</code> turns
+      them off.
+    </p>
+    <p>
+      In the written-out skins a field, an operator or a choice value reads as
+      a word in the sentence, so each carries a small down chevron to say it
+      opens a list. Boxed draws its own.
+    </p>
+
+    <h3>Two layouts, not just two stylesheets</h3>
+    <p>
+      <code>prose</code> uses a different DOM from the others, because CSS alone
+      cannot produce it: an inline formatting context cannot indent wrapped lines,
+      and a nested block structure cannot put <code>) AND NOT (</code> on one
+      line. The <strong>flow</strong> layout renders a flat sequence of
+      <code>.kce-line</code> elements indented by depth; the <strong>tree</strong>
+      layout renders nested <code>.kce-group</code> boxes. The <code>skin</code>
+      option picks the right one for you.
+    </p>
+
+    <h3>Theming</h3>
+    <p>
+      <strong>Set <code>--kce-accent</code> to your own brand colour.</strong>
+      The default blue is a placeholder, not the component's identity — it is
+      what hover, focus and the active states turn, so in a green host it is a
+      colour that appears nowhere else on the page:
+    </p>
+    <pre><code>.kce { --kce-accent: #2e7d4f; --kce-accent-soft: #e6f2ea; }</code></pre>
+    <p>
+      Every colour and metric is a custom property on <code>.kce</code>, so a skin
+      can be retinted without touching the stylesheet:
+    </p>
+    <pre><code>.kce {
+  --kce-accent: #7c3aed;   /* focus, links, active states */
+  --kce-accent-soft: …;    /* hover tints behind them      */
+  --kce-field:  #101820;   /* field names                 */
+  --kce-op:     #7a8290;   /* operator labels             */
+  --kce-value:  #1a5f8a;   /* literal values              */
+  --kce-and:    #2f6fd0;   /* AND connectors              */
+  --kce-or:     #a8560c;   /* OR connectors and NOT       */
+  --kce-rule:   #b6bdc8;   /* hairline guides             */
+  --kce-paren:  #59636f;   /* brackets in the prose skin  */
+  --kce-radius: 12px;
+  --kce-indent-step: 2.2em;
+}</code></pre>
+    <p>
+      Light and dark are both defined. The editor follows
+      <code>prefers-color-scheme</code> unless you pin it with the
+      <code>theme</code> option (or <code>data-kce-theme</code> on the root).
+      <code>blackboard</code> is deliberately dark in both.
+    </p>
+
+    <h3>Inside someone else's form</h3>
+    <p>
+      The editor is usually embedded in a form that styles its own inputs. The
+      stylesheet pins the box metrics the editor depends on — width, height,
+      margins, radius, shadow — above element and class-scoped host rules, so a
+      dialog's <code>.form input[type=text] { width: 24rem }</code> does not
+      reach the value slots. A host rule scoped by an <strong>ID</strong> still
+      outranks it; exclude the editor there with
+      <code>#properties input:not(.kce *)</code>.
+    </p>
+    <p>
+      <strong>A row is one line</strong>: its arrows, × and the AND / OR after it
+      never drop below it. When the line is short the row gives up width — its
+      value first, down to a floor, then the field and operator names, which
+      ellipsis but keep a readable few letters. <code>between</code> and date
+      ranges shrink to stay on their line; only an "is one of" tag list wraps,
+      inside its box, with everything else on its first line. A row that still
+      cannot fit makes the line scroll sideways rather than overlap.
+    </p>
+    <p>
+      The <code>controls</code> option decides when the row controls are shown.
+      With <code>"hover"</code> (the default) the add buttons take no room until
+      needed — in prose they appear after the AND / OR, or as a small strip
+      just below it when the line is full — and nothing moves when they do.
+      With <code>"always"</code> everything is shown at rest. A screen with no
+      hover gets <code>"always"</code> regardless.
+    </p>
+
+    <div class="note">
+      <strong>Upgrading from 0.0.1?</strong> The default changed from
+      <code>boxed</code> to <code>prose</code>. Pass <code>skin: 'boxed'</code> to
+      keep the old appearance exactly; nothing about the document format changed.
+    </div>
+  </section>
+
+  <section id="fields">
+    <h2>Field definitions</h2>
+    <pre><code>{
+  name: 'dob',                 // required — the key looked up in your data
+  label: 'Date of Birth',      // shown in the UI; defaults to name
+  type: 'date',                // text | number | date | boolean | enum
+  column: 'c.date_of_birth',   // SQL column name; defaults to name
+  choices: [...],              // for enum fields; strings or {value, label}
+  operators: [...],            // explicit operator list, overrides the type default
+  operatorGroups: [...],       // or pick whole groups: ['date', 'existence']
+  excludeOperators: [...],     // remove specific operators from whatever was chosen
+  values: ['literal','field'], // which value sources are offered
+  comparableWith: [...],       // which fields this one may be compared against
+  placeholder: '…',
+  input: { min: 0, max: 100, step: 1, type: 'datetime-local' }
+}</code></pre>
+
+    <h3>Operator selection</h3>
+    <p>
+      With no <code>operators</code> the field gets the groups its <code>type</code>
+      implies: text → equality, alphanumeric, existence; number → equality, arithmetic,
+      existence; date → date, existence; boolean → boolean, existence; enum → equality,
+      alphanumeric, existence. Entries in <code>operators</code> may be a bare operator
+      name or <code>"group:date"</code> to pull in a whole group.
+    </p>
+
+    <h3>Choices</h3>
+    <p>
+      A field's <code>choices</code> — and a custom <code>values</code> operator's
+      <code>values</code> — may be written three ways. All three mean the same thing: the
+      first item is stored in the document, the second is what the user sees.
+    </p>
+    <pre><code>choices: ['Florida', 'Texas']
+choices: [{ value: 'FL', label: 'Florida' }, { value: 'TX', label: 'Texas' }]
+choices: { FL: 'Florida', TX: 'Texas' }        // an associative map</code></pre>
+    <p>
+      Labels are used in the dropdowns, in the collapsed summary and in
+      <code>describe()</code>, so a rule reads <code>[State] is equal to "Florida"</code>
+      while the document stores <code>"FL"</code>.
+    </p>
+    <p>
+      <strong>Except where the operand is not a choice.</strong> <code>contains</code>,
+      <code>does not contain</code>, <code>starts with</code>, <code>ends with</code>,
+      <code>matches regex</code> and <code>does not match regex</code> take a
+      <em>fragment or a pattern</em>, not one of the values. On those the editor shows a
+      free text box instead of the dropdown, and <code>describe()</code> prints what was
+      typed rather than swapping it for a label:
+    </p>
+    <pre><code>[State] is equal to "Florida"     &larr; eq: a whole value, so the label
+[State] contains "FL"             &larr; contains: a substring, left alone</code></pre>
+    <p>
+      Operators carry this as <code>valueFromChoices</code> in their metadata (absent
+      means true). A custom operator whose operand is a fragment should set it
+      <code>false</code> to get the same treatment.
+    </p>
+
+    <h3>Comparing against another field</h3>
+    <p>
+      A value can be a literal or a pointer at another field, and where both are possible
+      the editor shows a small <em>Value / Field</em> selector beside the value. That
+      selector is <strong>off by default</strong> — it costs a control on every row that
+      has a value, to buy a feature most rules never use.
+    </p>
+    <pre><code>KConditionsEditor.attach('#conditions', { fields, allowFieldValues: true });</code></pre>
+    <p>
+      Or leave it off and opt in one field at a time: naming <code>comparableWith</code> on
+      a field is read as asking for it, so it works with the global setting untouched.
+      <code>comparableWith: false</code> still wins, so a field can opt out even with the
+      global on. And a document that already holds a field reference always keeps its
+      selector, whatever the settings say — otherwise there would be no way back to a
+      literal.
+    </p>
+    <div class="note">
+      <strong>Changed in 0.0.21.</strong> This used to be on by default, so any field
+      without its own <code>comparableWith</code> silently became comparable with every
+      other field of its type and carried the selector. If you were relying on that, set
+      <code>allowFieldValues: true</code>.
+    </div>
+
+    <h3>comparableWith</h3>
+    <p>
+      Controls which other fields may appear in the <em>Field</em> value dropdown.
+    </p>
+    <table>
+      <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>omitted</td><td>Other fields of the same <code>type</code>.</td></tr>
+        <tr><td><code>false</code> or <code>[]</code></td><td>No field comparison — literals only.</td></tr>
+        <tr><td><code>'*'</code></td><td>Every other field.</td></tr>
+        <tr><td><code>['billing_email']</code></td><td>Exactly the named fields.</td></tr>
+        <tr><td><code>['type:date']</code></td><td>Every field of that type.</td></tr>
+        <tr><td><code>['group:contact']</code></td><td>Every field carrying <code>group: 'contact'</code>.</td></tr>
+      </tbody>
+    </table>
+    <p>Entries combine, so <code>['billing_email', 'type:date']</code> is valid.</p>
+  </section>
+
+  <section id="custom">
+    <h2>Custom operators</h2>
+    <p>
+      Custom operators are passed to the editor and copied into the document whenever
+      they are actually used, so the JSON stays self-contained. Two kinds.
+    </p>
+
+    <h3>A fixed set of values</h3>
+    <pre><code>operators: {
+  is_gulf_state: {
+    kind: 'values',
+    label: 'is a Gulf state',
+    match: 'in',                 // or 'not_in'
+    arity: 0,                    // 0 = fixed list, no value input shown
+    values: ['Florida', 'Louisiana', 'Texas', 'Mississippi'],
+    appliesTo: ['state']         // editor-only: which fields offer it
+  }
+}</code></pre>
+    <p>
+      With <code>arity: 1</code> the list becomes the choices offered in the editor and
+      the selected value is stored on the condition instead.
+    </p>
+
+    <h3>A host function</h3>
+    <pre><code>operators: {
+  email_is_unique: {
+    kind: 'callback',
+    label: 'is not already registered',
+    arity: 0,
+    appliesTo: ['email'],
+    availableIn: ['server'],
+    callbacks: {
+      php:    { class: '\\App\\Rules\\Email', method: 'isUnique', static: true },
+      js:     { function: 'emailIsUnique' },
+      python: { module: 'app.rules', function: 'email_is_unique' }
+    },
+    policy: {
+      unresolved: { client: 'skip', server: 'error', '*': 'error' },
+      error:      { client: 'skip', '*': 'error' }
+    }
+  }
+}</code></pre>
+    <p>
+      The callback receives <code>(fieldValue, args, context)</code> and returns a
+      boolean — or the SKIP sentinel to opt out at runtime.
+      <code>appliesTo</code> is stripped when the operator is written into the document.
+    </p>
+  </section>
+
+
+  <section id="sql">
+    <h2>SQL output</h2>
+    <p>
+      The same rule can be rendered as a SQL boolean expression — the part that goes
+      after <code>WHERE</code>. Load the SQL builder and you have SQL:
+    </p>
+    <pre><code>&lt;script src="src/k-conditions-sql.js"&gt;&lt;/script&gt;</code></pre>
+    <pre><code>KConditions.toSql(document, { dialect: 'mysql' });
+// → `email` = 'a@b.c' AND `dob` &lt; '1980-01-01'</code></pre>
+    <div class="note">
+      <strong><code>column</code> is optional.</strong> A field's name is used as the
+      column name unless you say otherwise, so a schema whose columns already match your
+      field names needs no mapping at all — and a field the builder has never been told
+      about still resolves to its own name. Give a field a <code>column</code> only where
+      the two differ.
+    </div>
+    <pre><code>{ name: 'dob', label: 'Date of Birth', type: 'date', column: 'c.date_of_birth' }</code></pre>
+    <p>
+      The resolution order per field is <code>column</code> → <code>sql</code> →
+      <code>name</code>, and the builder's <code>columns</code> option (a plain
+      <code>{ field: column }</code> map) overrides all three — useful when one document
+      has to run against two schemas. Entries in <code>fields</code> may also be bare
+      strings when all you want is the type defaults.
+    </p>
+    <pre><code>const { sql, params } = editor.getSql({ dialect: 'mysql' });
+// or, standalone:
+KConditions.toSql(document, { dialect: 'mysql', fields });</code></pre>
+    <pre><code>use function Kastrack\ConditionsEditor\toSql;
+
+$where = toSql($document, ['dialect' =&gt; 'mysql', 'fields' =&gt; $fields]);
+$rows  = $db-&gt;query("SELECT * FROM contacts c WHERE $where");</code></pre>
+
+    <h3>Where to generate it</h3>
+    <p>
+      Both places are supported, and which is right depends on what your endpoint already
+      accepts.
+    </p>
+    <ul>
+      <li>
+        <strong>Server-side, from the document.</strong> The browser posts the JSON and the
+        server builds the SQL. Use this when your endpoint receives a <em>rule</em> and you
+        would rather not widen it into accepting SQL.
+      </li>
+      <li>
+        <strong>Client-side, into the textarea</strong> (<code>output: 'sql'</code>). Use
+        this when the field already accepts SQL. If a person could previously type
+        <code>status = 'x' OR 1=1</code> into that box, a builder writing a nicer expression
+        into it adds no attack surface: the trust boundary is where it always was, and
+        whatever sanitising and sandboxing you do on the way in still applies.
+      </li>
+    </ul>
+    <div class="note">
+      The one combination to avoid is the middle ground — an endpoint that today receives
+      JSON and starts executing client-supplied SQL because it is convenient. That is a new
+      trust boundary; keep posting the document and build the SQL on the server. Use
+      <code>parameters: true</code> wherever your driver supports placeholders, in either
+      mode.
+    </div>
+
+    <h3>Options</h3>
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>dialect</code></td><td><code>"standard"</code></td><td><code>mysql</code> (or <code>mariadb</code>), <code>postgres</code>, <code>sqlite</code>, <code>sqlserver</code>, <code>standard</code>.</td></tr>
+        <tr><td><code>fields</code></td><td><code>null</code></td><td>Supplies <code>column</code> and <code>type</code> per field. Optional — without it every field name is used as its own column.</td></tr>
+        <tr><td><code>columns</code></td><td><code>null</code></td><td>Or map field name to column directly.</td></tr>
+        <tr><td><code>parameters</code></td><td><code>false</code></td><td>Emit placeholders; the values come back in <code>params</code>.</td></tr>
+        <tr><td><code>placeholderStyle</code></td><td>per dialect</td><td><code>question</code> (<code>?</code>), <code>numbered</code> (<code>$1</code>), <code>named</code> (<code>@p1</code>).</td></tr>
+        <tr><td><code>quoteIdentifiers</code></td><td><code>true</code></td><td>Turn off if your column names are already exactly as you want them.</td></tr>
+        <tr><td><code>nullSafeNegation</code></td><td><code>true</code></td><td>Wrap negative operators as <code>(col IS NULL OR …)</code>.</td></tr>
+        <tr><td><code>now</code></td><td><code>null</code></td><td>Resolves the relative date operators.</td></tr>
+        <tr><td><code>pretty</code></td><td><code>false</code></td><td>Indent nested groups.</td></tr>
+        <tr><td><code>unsupportedPolicy</code></td><td><code>"error"</code></td><td>What to do when the dialect cannot express an operator.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>It is a translation, not the evaluator</h3>
+    <p>
+      SQL has three-valued logic and the evaluator does not, so a row-for-row match is not
+      guaranteed. The choices made here:
+    </p>
+    <ul>
+      <li>Negative operators are null-safe by default: <code>col &lt;&gt; 'x'</code> becomes <code>(col IS NULL OR col &lt;&gt; 'x')</code>.</li>
+      <li><code>is_empty</code> covers both <code>NULL</code> and <code>''</code>.</li>
+      <li><code>date_eq</code> becomes a half-open day range, which is portable and index-friendly.</li>
+      <li>The relative date operators resolve against <code>now</code> at generation time rather than emitting <code>CURRENT_DATE</code>, so a saved query keeps the dates it was built with.</li>
+      <li><code>LIKE</code> patterns escape <code>%</code>, <code>_</code> and the escape character itself, and carry an explicit <code>ESCAPE</code> clause.</li>
+    </ul>
+
+    <h3>Operators with no SQL</h3>
+    <p>
+      A <code>callback</code> operator cannot be translated. Give it an <code>sql</code>
+      template and it can be:
+    </p>
+    <pre><code>email_is_unique: {
+  kind: 'callback',
+  sql: 'NOT EXISTS (SELECT 1 FROM blocked b WHERE b.email = {field})'
+}</code></pre>
+    <p>
+      <code>{field}</code> is the quoted column, <code>{0}</code>/<code>{1}</code> the
+      rendered values, <code>{values}</code> the comma-separated list. Without a template
+      the operator falls to the <code>unresolved</code> policy, so
+      <code>{"unresolved": {"sql": "skip"}}</code> drops it from the WHERE clause and
+      leaves it to be evaluated in code. Regular expressions are unsupported in SQL Server
+      and need a UDF in SQLite; those fall to <code>unsupportedPolicy</code>.
+    </p>
+
+    <h3>Writing SQL into the textarea</h3>
+    <p>
+      <code>output: 'sql'</code> puts the expression in the textarea instead of the JSON.
+      It defaults to <code>'json'</code>, so you opt in. SQL does not parse back into a
+      rule, so the editor needs somewhere to keep the document if the rule is to survive a
+      reload — two ways, depending on whether you can add a field.
+    </p>
+
+    <h4>You can add a hidden field</h4>
+    <pre><code>&lt;textarea name="conditions"&gt;&lt;/textarea&gt;
+&lt;input type="hidden" name="conditions_doc"&gt;</code></pre>
+    <pre><code>KConditionsEditor.attach('[name=conditions]', {
+  output: 'sql',
+  documentInput: '[name=conditions_doc]',
+  sql: { dialect: 'mysql' },
+  fields
+});</code></pre>
+
+    <h4>You cannot — it is an existing SQL field and that is all there is</h4>
+    <pre><code>KConditionsEditor.attach('#existing-sql-field', {
+  output: 'sql',
+  documentInComment: true,   // the rule rides along in a trailing SQL comment
+  hideTextarea: false,       // let people see the SQL it writes
+  sql: { dialect: 'mysql' },
+  fields
+});</code></pre>
+    <pre><code>(`c`.`full_name` REGEXP '^ben' AND `a`.`state_code` IN ('FL', 'TX'))
+/* kconditions:1.0 {"version":"1.0","operators":{},"root":{…}} */</code></pre>
+    <p>
+      The comment trails the expression — in a field someone can see, the SQL is the point
+      and the document is baggage. It is a no-op to the database and the editor reads the
+      rule back out of it, so a single field round-trips. Two caveats: anything that strips comments before
+      storing the SQL loses the rule (the SQL still works, the builder just reopens empty),
+      and hand-edits to the generated SQL are overwritten the next time someone touches the
+      builder — so if people will switch between typing SQL and using the builder, keep the
+      raw SQL somewhere the editor does not own.
+    </p>
+
+    <h4>The field already holds something the editor cannot read</h4>
+    <p>
+      SQL written by hand, say, with no document beside it. The editor does not replace
+      it: the field keeps its content, byte for byte, until the first change to the rule,
+      so an untouched form submits exactly what it loaded. Meanwhile a notice above the
+      rule shows the original text, with a Dismiss button, so the rule can be rebuilt
+      while reading it (labels <code>preservedText</code> and
+      <code>preservedDismiss</code>). <code>editor.preserved</code> is
+      <code>{ text }</code> or <code>null</code>, <code>editor.pristine</code> says
+      whether the field is still untouched, and the <code>change</code> payload carries
+      <code>pristine</code> too. Opening the editor, changing skin or theme and
+      re-attaching do not count as changes; adding, editing, undoing and
+      <code>setDocument()</code> do. There is no parser: the editor never guesses what a
+      hand-written expression meant.
+    </p>
+  </section>
+
+  <section id="debug">
+    <h2>Debugging</h2>
+    <p>
+      <code>debug: true</code> adds a <strong>View source</strong> button to the footer.
+      It opens a tabbed panel showing the document, the generated SQL — with its bound
+      parameters, skipped operators and warnings — and the plain-English summary with any
+      validation problems, each with a copy button.
+    </p>
+    <pre><code>KConditionsEditor.attach('#conditions', {
+  fields,
+  debug: window.APP_DEBUG === true,
+  sql: { dialect: 'mysql' }
+});</code></pre>
+    <div class="note">
+      Off by default, and worth keeping that way in production: the panel exposes your SQL
+      column names and the whole rule to anyone looking at the page.
+    </div>
+  </section>
+
+  <section id="api">
+    <h2>Editor API and events</h2>
+    <table>
+      <thead><tr><th>Member</th><th>Returns</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>getDocument()</code></td><td>object</td><td>The current document, without internal ids.</td></tr>
+        <tr><td><code>getJson()</code></td><td>string</td><td>The same thing, serialised the way the textarea has it.</td></tr>
+        <tr><td><code>setDocument(doc)</code></td><td>this</td><td>Accepts an object, a JSON string, or a bare node.</td></tr>
+        <tr><td><code>validate()</code></td><td>array</td><td>Problems found in the current rule; empty means valid.</td></tr>
+        <tr><td><code>getSql(overrides)</code></td><td>object</td><td><code>{sql, params, dialect, skipped, warnings}</code>. Requires <code>k-conditions-sql.js</code>.</td></tr>
+        <tr><td><code>clear()</code></td><td>this</td><td>Empty the rule back to "Always" and fire a <code>clear</code> event. The footer control calls this after confirmation.</td></tr>
+        <tr><td><code>describe()</code></td><td>string</td><td>The plain-language rendering used in the collapsed summary.</td></tr>
+        <tr><td><code>describeHtml()</code></td><td>string</td><td>The same rendering as escaped HTML. See <a href="#describe">Showing a rule</a>.</td></tr>
+        <tr><td><code>setSkin(name)</code></td><td>this</td><td>Swap skins at runtime; re-renders when the layout differs.</td></tr>
+        <tr><td><code>setConnectorPlacement(mode)</code></td><td>this</td><td><code>"below"</code> or <code>"inline"</code>, live (a re-render; the document is untouched). An unknown mode falls back to <code>"below"</code>.</td></tr>
+        <tr><td><code>setControls(mode)</code></td><td>this</td><td><code>"hover"</code> or <code>"always"</code>, live. An unknown mode falls back to <code>"hover"</code>.</td></tr>
+        <tr><td><code>setPreviewStyle(name)</code></td><td>this</td><td>Change how previews are drawn, live. Nothing re-renders; an unknown name falls back to <code>"bar"</code>.</td></tr>
+        <tr><td><code>setTheme(name)</code></td><td>this</td><td><code>"light"</code>, <code>"dark"</code> or <code>null</code> to follow the system.</td></tr>
+        <tr><td><code>setEmptyText(text)</code></td><td>this</td><td>Change the "no conditions" wording at any time.</td></tr>
+        <tr><td><code>open()</code> / <code>close()</code></td><td>—</td><td>Use <code>setOpen(true|false)</code>.</td></tr>
+        <tr><td><code>setSourceVisible(bool)</code></td><td>this</td><td>Show or hide the field the editor took over. See <a href="#hiding">Hiding the field</a>.</td></tr>
+        <tr><td><code>isSourceVisible()</code></td><td>boolean</td><td>Whether it is currently on screen.</td></tr>
+        <tr><td><code>undo()</code> / <code>redo()</code></td><td>this</td><td>Step through the history. See <a href="#history">Undo and reordering</a>.</td></tr>
+        <tr><td><code>canUndo()</code> / <code>canRedo()</code></td><td>boolean</td><td>What the footer buttons use to enable themselves.</td></tr>
+        <tr><td><code>moveChild(group, from, to)</code></td><td>this</td><td>Reorder within a group. Both the move buttons and the drag call this.</td></tr>
+        <tr><td><code>addBeside(group, index, op)</code></td><td>this</td><td>What <code>+AND</code> / <code>+OR</code> call.</td></tr>
+        <tr><td><code>wrapAndContinue(group, op)</code></td><td>this</td><td>What <code>AND(…)</code> / <code>OR(…)</code> call.</td></tr>
+        <tr><td><code>removeNode(node, parent)</code></td><td>this</td><td>Remove a condition or group.</td></tr>
+        <tr><td><code>setGroupOperator(g, op)</code>, <code>setNegate(n, on)</code>,<br><code>setField(n, name)</code>, <code>setOperator(n, name)</code>,<br><code>setValue(value, v)</code></td><td>this</td><td>The rest of the mutation API. Every change to the document goes through one of these, which is what gives undo a single place to hook.</td></tr>
+        <tr><td><code>destroy()</code></td><td>—</td><td>Removes the UI and restores the textarea. Safe to call twice.</td></tr>
+        <tr><td><code>preserved</code> / <code>pristine</code></td><td>object | null, boolean</td><td>Content the editor could not read on attach, and whether the field is still untouched. See <a href="#sql">SQL output</a>.</td></tr>
+        <tr><td><code>KConditionsEditor.get(target)</code></td><td>editor | null</td><td>The editor on a textarea (element or selector), for code that did not keep what <code>attach()</code> returned.</td></tr>
+        <tr><td><code>KConditionsEditor.detach(target)</code></td><td>boolean</td><td><code>destroy()</code> the editor on a textarea, if there is one. <code>attach()</code> on a textarea that already has one replaces it. See <a href="#hiding">Finding an editor again</a>.</td></tr>
+        <tr><td><code>on(event, fn)</code></td><td>this</td><td>Events: <code>change</code>, <code>open</code>, <code>close</code>, <code>clear</code>, <code>undo</code>, <code>redo</code>, <code>source</code>.</td></tr>
+      </tbody>
+    </table>
+    <pre><code>editor.on('change', function (payload) {
+  console.log(payload.valid, payload.problems, payload.document);
+});</code></pre>
+  </section>
+
+  <section id="document">
+    <h2>The document format</h2>
+    <pre><code>{
+  "version": "1.0",
+  "generator": "kConditionsEditor/0.0.1",
+  "operators": { /* custom operators used by this rule */ },
+  "root": {
+    "type": "group",
+    "operator": "and",
+    "negate": false,
+    "children": [
+      {
+        "type": "condition",
+        "field": "name",
+        "operator": "regex",
+        "values": [{ "source": "literal", "value": "^ben" }]
+      }
+    ]
+  }
+}</code></pre>
+    <p>
+      A value node is either <code>{ "source": "literal", "value": … }</code> or
+      <code>{ "source": "field", "field": "other_field" }</code>. An empty
+      <code>children</code> array means "no conditions", which evaluates to the
+      evaluator's <code>emptyResult</code> (<code>true</code> by default).
+    </p>
+    <p>
+      The full specification is in <a href="https://github.com/KAStrack/kConditionsEditor/blob/main/SPEC.md">SPEC.md</a>,
+      with a machine-readable
+      <a href="https://github.com/KAStrack/kConditionsEditor/blob/main/schema/condition-document.schema.json">JSON Schema</a>.
+    </p>
+  </section>
+
+  <section id="operators">
+    <h2>Builtin operators</h2>
+    <table>
+      <thead><tr><th>Group</th><th>Operators</th><th>Arity</th></tr></thead>
+      <tbody>
+        <tr><td>equality</td><td><code>eq</code>, <code>neq</code></td><td>1</td></tr>
+        <tr><td>arithmetic</td><td><code>lt</code>, <code>lte</code>, <code>gt</code>, <code>gte</code></td><td>1</td></tr>
+        <tr><td>arithmetic</td><td><code>between</code>, <code>not_between</code></td><td>2</td></tr>
+        <tr><td>alphanumeric</td><td><code>contains</code>, <code>not_contains</code>, <code>starts_with</code>, <code>ends_with</code>, <code>regex</code>, <code>not_regex</code></td><td>1</td></tr>
+        <tr><td>alphanumeric</td><td><code>in_list</code>, <code>not_in_list</code></td><td>list</td></tr>
+        <tr><td>date</td><td><code>date_eq</code>, <code>date_before</code>, <code>date_after</code></td><td>1</td></tr>
+        <tr><td>date</td><td><code>date_between</code></td><td>2</td></tr>
+        <tr><td>date</td><td><code>date_is_today</code></td><td>0</td></tr>
+        <tr><td>date</td><td><code>date_within_last_days</code>, <code>date_within_next_days</code>, <code>date_more_than_days_ago</code>, <code>date_more_than_days_ahead</code></td><td>1 (a number)</td></tr>
+        <tr><td>boolean</td><td><code>is_true</code>, <code>is_false</code></td><td>0</td></tr>
+        <tr><td>existence</td><td><code>is_set</code>, <code>is_not_set</code>, <code>is_empty</code>, <code>is_not_empty</code></td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Comparison rules</h3>
+    <ul>
+      <li>Equality compares numerically when both sides look numeric, otherwise as strings. Arrays compare structurally.</li>
+      <li>Arithmetic comparisons are false when either side is not numeric — they never throw.</li>
+      <li>Dates accept <code>YYYY</code>, <code>YYYY-MM</code>, <code>YYYY-MM-DD</code>, full ISO timestamps, epoch milliseconds and native date objects. A partial date expands to its earliest UTC instant, so <em>is before 1980</em> means before <code>1980-01-01T00:00:00Z</code>.</li>
+      <li><code>date_eq</code> and <code>date_is_today</code> compare UTC calendar days; everything else compares instants.</li>
+      <li>String comparison is case-sensitive unless the evaluator is given <code>caseInsensitive: true</code>.</li>
+      <li>Regex values are bare patterns without delimiters. Stick to the common subset — anchors, classes, quantifiers, groups — for cross-language parity.</li>
+    </ul>
+  </section>
+
+  <section id="policies">
+    <h2>Failure policies</h2>
+    <p>
+      Two things can go wrong with a condition: the operator cannot be <strong>resolved</strong>
+      in this runtime, or evaluating it <strong>throws</strong>. Each is governed by a
+      policy resolving to <code>skip</code>, <code>true</code>, <code>false</code> or
+      <code>error</code>.
+    </p>
+
+    <h3>Where a policy comes from</h3>
+    <ol>
+      <li><code>condition.policy.unresolved</code> / <code>.error</code></li>
+      <li><code>operators[name].policy.unresolved</code> / <code>.error</code></li>
+      <li>the evaluator's <code>unresolvedPolicy</code> / <code>errorPolicy</code> option — both default to <code>error</code></li>
+    </ol>
+
+    <h3>Context labels</h3>
+    <p>
+      A policy may be a bare string, or a map keyed by context label. Labels are matched
+      in this order: each entry of <code>profiles</code>, then <code>environment</code>,
+      then <code>runtime</code>, then <code>"*"</code> / <code>"default"</code>.
+    </p>
+    <pre><code>{ "client": "skip", "server": "error", "js": "skip", "*": "error" }</code></pre>
+    <p>
+      That is why the same rule works in a browser and under Node on a server: the two
+      evaluators are constructed with different <code>environment</code> values and pick
+      different branches.
+    </p>
+
+    <h3>What skipping means</h3>
+    <div class="note">
+      A skipped condition behaves as though it were <strong>never in the document</strong>.
+      It is dropped from its parent's children and the siblings decide the group. If every
+      child of a group is skipped, the group is skipped too and drops out of its own
+      parent, and so on. If the whole document ends up skipped, the evaluator returns its
+      <code>emptyResult</code>. A skipped condition can never turn an <code>OR</code> true.
+    </div>
+    <p>
+      Skipped nodes are listed in the detailed result, so a server-side pass can see
+      exactly what the client deferred.
+    </p>
+  </section>
+
+  <section id="js">
+    <h2>JavaScript / Node SDK</h2>
+    <p>
+      The evaluator is one file with no dependencies,
+      <a href="https://github.com/KAStrack/kConditionsEditor/blob/main/src/k-conditions-evaluator.js"><code>src/k-conditions-evaluator.js</code></a>,
+      and the same file runs in the browser and under Node. The SQL builder,
+      <a href="https://github.com/KAStrack/kConditionsEditor/blob/main/src/k-conditions-sql.js"><code>src/k-conditions-sql.js</code></a>,
+      is optional and attaches <code>toSql()</code> to it.
+    </p>
+    <pre><code>const K = require('@kastrack/conditions-editor');
+
+// One-shot
+const ok = K.evaluate(document, data, { environment: 'server' });
+
+// Reusable, with your own operators registered
+const evaluator = new K.Evaluator({
+  environment: 'server',
+  unresolvedPolicy: 'error',
+  now: () =&gt; Date.now(),
+  caseInsensitive: false,
+  trace: true
+});
+
+evaluator.registerOperator('email_is_unique', async () =&gt; { /* … */ });
+
+const details = evaluator.evaluateDetailed(document, data);
+// { result, skipped, errors, trace, allSkipped }</code></pre>
+
+    <div class="note">
+      <strong>Operators are synchronous.</strong> An operator that returns a promise will be
+      treated as truthy. Resolve anything asynchronous <em>before</em> evaluating and pass
+      the answer in as a field, or register a synchronous operator that reads from a cache
+      you populated first.
+    </div>
+
+    <h4>Evaluator options</h4>
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>runtime</code></td><td><code>"js"</code></td><td>Context label for the language.</td></tr>
+        <tr><td><code>environment</code></td><td><code>null</code></td><td><code>client</code>, <code>server</code>, or anything you like.</td></tr>
+        <tr><td><code>profiles</code></td><td><code>[]</code></td><td>Extra labels, highest priority, in order.</td></tr>
+        <tr><td><code>unresolvedPolicy</code></td><td><code>"error"</code></td><td>Fallback when the document says nothing.</td></tr>
+        <tr><td><code>errorPolicy</code></td><td><code>"error"</code></td><td>Fallback for throwing operators.</td></tr>
+        <tr><td><code>emptyResult</code></td><td><code>true</code></td><td>Result for an empty or fully skipped document.</td></tr>
+        <tr><td><code>caseInsensitive</code></td><td><code>false</code></td><td>Applies to all string operators and regex.</td></tr>
+        <tr><td><code>now</code></td><td><code>null</code></td><td>Date, epoch ms, ISO string or function — makes date rules testable.</td></tr>
+        <tr><td><code>callbacks</code></td><td><code>null</code></td><td>Map of operator name to function, same as <code>registerOperator</code>.</td></tr>
+        <tr><td><code>allowManifestCallbacks</code></td><td><code>false</code></td><td>See <a href="#security">Security</a>.</td></tr>
+        <tr><td><code>callbackAllowList</code></td><td><code>null</code></td><td>Restrict manifest dispatch to these operator names.</td></tr>
+        <tr><td><code>trace</code></td><td><code>false</code></td><td>Record per-node results in the detailed output.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="php">
+    <h2>PHP SDK</h2>
+    <p>
+      The PHP SDK is in <a href="https://github.com/KAStrack/kConditionsEditor/tree/main/sdk/php"><code>sdk/php</code></a>:
+      PSR-4 under <code>Kastrack\ConditionsEditor</code>, PHP 8.1+, no dependencies.
+      Install it with Composer, or require its <code>autoload.php</code> directly
+      (see <a href="#install">Installation</a>).
+    </p>
+    <pre><code>use Kastrack\ConditionsEditor\Evaluator;
+use function Kastrack\ConditionsEditor\evaluate;
+
+// One-shot — the document may be the raw POSTed JSON string
+$ok = evaluate($_POST['conditions'], $submission, ['environment' =&gt; 'server']);
+
+// Reusable
+$evaluator = new Evaluator([
+    'environment' =&gt; 'server',
+    'now' =&gt; new DateTimeImmutable('2026-08-27T12:00:00Z'),
+]);
+
+$evaluator-&gt;registerOperator(
+    'email_is_unique',
+    fn (mixed $value, array $args, array $ctx): bool =&gt; !User::emailExists($value)
+);
+
+$details = $evaluator-&gt;evaluateDetailed($document, $submission);
+$details-&gt;result;    // bool
+$details-&gt;skipped;   // array
+$details-&gt;errors;    // array</code></pre>
+
+    <p>
+      Options match the JavaScript SDK key for key, with <code>runtime</code> defaulting
+      to <code>"php"</code> and an extra <code>container</code> option — any object with a
+      <code>get()</code> method — used to build instances for non-static manifest
+      callbacks. <code>$data</code> may be an array or an object, and dot paths reach into
+      nested arrays and public properties.
+    </p>
+    <p>An operator may return <code>Skip::instance()</code> to opt out at runtime.</p>
+
+    <h4>Running the tests</h4>
+    <pre><code>composer install &amp;&amp; vendor/bin/phpunit
+# or, with no dependencies at all:
+php tests/php/conformance.php</code></pre>
+  </section>
+
+  <section id="hook">
+    <h2>The result hook</h2>
+    <p>
+      Every SDK entry point takes an optional trailing callable. When supplied, the SDK
+      returns <em>that callable's</em> return value instead of the boolean. It receives the
+      original call's arguments, then the computed result, then the details.
+    </p>
+    <pre><code>const outcome = K.evaluate(document, data, options,
+  (document, data, options, result, details) =&gt; {
+    metrics.increment(result ? 'rule.pass' : 'rule.fail');
+    return { ok: result, deferred: details.skipped.map(s =&gt; s.operator) };
+  });</code></pre>
+    <pre><code>$outcome = evaluate($document, $data, $options,
+    function (array $document, array $data, array $options, bool $result, $details) {
+        Log::info('rule evaluated', ['result' =&gt; $result, 'skipped' =&gt; $details-&gt;skipped]);
+
+        return new RuleOutcome($result, $details-&gt;skipped);
+    });</code></pre>
+    <p>
+      <code>Evaluator::evaluate()</code> accepts the hook as its third argument, where the
+      options were supplied to the constructor instead.
+    </p>
+  </section>
+
+  <section id="describe">
+    <h2>Showing a rule to a reader</h2>
+    <p>
+      A stored document is JSON. To put it in front of someone — a confirmation page, an
+      audit log, an email — both SDKs render it as a sentence.
+    </p>
+    <pre><code>KConditions.describe(document, { fields });
+// [State] is equal to "Florida"
+
+KConditions.describeHtml(document, { fields });
+// &lt;span class="kcd"&gt;&lt;strong class="kcd-field"&gt;State&lt;/strong&gt; &lt;span class="kcd-op"&gt;is equal to&lt;/span&gt; &lt;span class="kcd-value"&gt;Florida&lt;/span&gt;&lt;/span&gt;</code></pre>
+    <pre><code>use function Kastrack\ConditionsEditor\{describe, describeHtml};
+
+describe($document, ['fields' =&gt; $fields]);
+describeHtml($document, ['fields' =&gt; $fields]);</code></pre>
+    <p>
+      The two say the same thing: the brackets and quotes that mark a field and a value in
+      plain text become a bold field and an underlined value in HTML. Both take the same
+      options — <code>fields</code> (for labels and choice labels), <code>operators</code>
+      (custom operator labels) and <code>emptyText</code> — and both walk the document with
+      the <em>same</em> function, so they cannot disagree about bracketing, <code>NOT</code>
+      placement or which label won. Only the leaf formatting differs.
+    </p>
+    <div class="note">
+      <strong><code>describeHtml()</code> always escapes, and there is no way to turn that
+      off.</strong> A document is client-supplied input — field labels, values and
+      <code>emptyText</code> all come from somewhere you do not control — so
+      <code>&lt;img src=x onerror=…&gt;</code> in a value comes back as text, every time.
+      That is also why it is a separate function rather than a flag on
+      <code>describe()</code>: the call site says out loud that it is producing markup.
+    </div>
+
+    <p>
+      A longer one, rendered live below — this page loads
+      <code>src/k-conditions-editor.css</code> and nothing else, and has no editor
+      anywhere on it:
+    </p>
+    <p style="font-size:1.05rem;line-height:1.9">
+      <span class="kcd"><span class="kcd-paren">(</span><strong class="kcd-field">Name</strong> <span class="kcd-op">is equal to</span> <span class="kcd-value">A</span> <span class="kcd-logic kcd-and">AND</span> <span class="kcd-not">NOT</span> <span class="kcd-paren">(</span><strong class="kcd-field">State</strong> <span class="kcd-op">is equal to</span> <span class="kcd-value">Florida</span> <span class="kcd-logic kcd-or">OR</span> <strong class="kcd-field">State</strong> <span class="kcd-op">is equal to</span> <span class="kcd-value">Texas</span><span class="kcd-paren">)</span><span class="kcd-paren">)</span></span>
+    </p>
+
+    <h3>The classes it emits</h3>
+    <table>
+      <thead><tr><th>Class</th><th>Wraps</th></tr></thead>
+      <tbody>
+        <tr><td><code>.kcd</code></td><td>The whole rendering.</td></tr>
+        <tr><td><code>.kcd-field</code></td><td>A field name — a <code>&lt;strong&gt;</code>.</td></tr>
+        <tr><td><code>.kcd-op</code></td><td>An operator phrase.</td></tr>
+        <tr><td><code>.kcd-value</code></td><td>A value.</td></tr>
+        <tr><td><code>.kcd-list</code> / <code>.kcd-sep</code></td><td>A list of values, and the commas between them.</td></tr>
+        <tr><td><code>.kcd-logic</code> (plus <code>.kcd-and</code> or <code>.kcd-or</code>)</td><td>A joining operator.</td></tr>
+        <tr><td><code>.kcd-not</code></td><td>A negation.</td></tr>
+        <tr><td><code>.kcd-paren</code></td><td>A bracket.</td></tr>
+        <tr><td><code>.kcd-join</code></td><td>The word between the two halves of a two-value operator — the <code>and</code> in <em>is between 5 and 10</em>.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The stylesheet ships a default look for these — bold field, dashed-underlined value
+      in the value colour, italic operator, coloured <code>AND</code> / <code>OR</code> —
+      and that block is deliberately <strong>not scoped to the editor</strong>, so a page
+      that renders a rule server-side with no editor on it can load the CSS and get the
+      same look. The colours defer to the editor's <code>--kce-*</code> tokens when they are
+      present and fall back to their own otherwise, so the rendering also stays in step
+      with a theme when the editor <em>is</em> on the page. The markup carries no inline
+      styles, so restyling it is a matter of overriding those classes.
+    </p>
+
+    <h3>In the editor</h3>
+    <p>
+      <code>summaryHtml: true</code> renders the collapsed summary with
+      <code>describeHtml()</code> instead of plain text, so the field names and values in
+      the header get the same treatment. The editor also exposes both directly, using its
+      own fields and operators so you need not pass them again.
+    </p>
+    <pre><code>const editor = KConditionsEditor.attach('#conditions', { fields, summaryHtml: true });
+
+editor.describe();      // string
+editor.describeHtml();  // string of HTML</code></pre>
+  </section>
+
+  <section id="security">
+    <h2>Security</h2>
+    <div class="note">
+      <strong>Condition documents are untrusted input.</strong> They arrive from a browser.
+      Treat them the way you treat any other posted field.
+    </div>
+    <ul>
+      <li>
+        <strong>Callback dispatch is off by default.</strong> Resolving a function name out
+        of a JSON document is arbitrary dispatch, so every SDK looks in its own registry
+        first and ignores the <code>callbacks</code> block entirely unless you set
+        <code>allowManifestCallbacks: true</code>. Narrow it further with
+        <code>callbackAllowList</code>. Registering your callables with
+        <code>registerOperator()</code> is the recommended route and needs no opt-in.
+      </li>
+      <li>
+        <strong>Validate against your own field list</strong> before evaluating, so a
+        tampered document cannot reference fields you never offered:
+        <code>validateDocument(doc, { fields })</code>.
+      </li>
+      <li>
+        <strong>Regular expressions come from the document.</strong> A pathological pattern
+        can be expensive to run. If documents can be authored by people you do not trust,
+        drop <code>regex</code> from the operator lists, or evaluate behind a timeout.
+      </li>
+      <li>
+        <strong>Never let a client-side result stand in for the server's.</strong> The point
+        of the skip policy is to pre-check what can be pre-checked; the server still has to
+        evaluate the whole rule.
+      </li>
+    </ul>
+  </section>
+
+  <section id="porting">
+    <h2>Porting to another language</h2>
+    <p>
+      The document format is deliberately small. A port needs: a recursive walk over
+      group and condition nodes, the operator table, the four coercion helpers
+      (<code>toNumber</code>, <code>toDate</code>, <code>toBool</code>, <code>toList</code>),
+      and the policy resolver.
+    </p>
+    <p>
+      Then point it at <a href="https://github.com/KAStrack/kConditionsEditor/blob/main/tests/fixtures/cases.json"><code>tests/fixtures/cases.json</code></a>. Those fixtures are the
+      contract — the JavaScript and PHP suites run the identical file, and a port that
+      passes them agrees with both.
+    </p>
+  </section>
+
+  </main>
+</div>
+
+<footer class="site-footer">
+  <div class="wrap">
+    kConditionsEditor 0.0.34 — MIT licensed.
+    <a href="https://github.com/KAStrack/kConditionsEditor">Source on GitHub</a>.
+  </div>
+</footer>
+
+<script src="assets/docs-toc.js"></script>
+</body>
+</html>

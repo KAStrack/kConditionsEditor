@@ -1,0 +1,5042 @@
+{
+  "$comment": "Shared conformance fixtures. Every SDK runs these and must agree. name/document/data/options/expected, plus optional expectSkipped, expectErrorHandled and expectThrows.",
+  "cases": [
+    {
+      "name": "empty document is Always",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": []
+        }
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "empty document honours emptyResult:false",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": []
+        }
+      },
+      "data": {},
+      "options": {
+        "emptyResult": false
+      },
+      "expected": false
+    },
+    {
+      "name": "simple equality",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "subject",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Support"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "subject": "Support"
+      },
+      "expected": true
+    },
+    {
+      "name": "equality coerces numeric strings",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "age",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 42
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "age": "42"
+      },
+      "expected": true
+    },
+    {
+      "name": "worked example \u2014 matches on the Gulf-state branch",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "^ben"
+                }
+              ]
+            },
+            {
+              "type": "group",
+              "operator": "or",
+              "children": [
+                {
+                  "type": "condition",
+                  "field": "dob",
+                  "operator": "date_before",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": "1980"
+                    }
+                  ]
+                },
+                {
+                  "type": "group",
+                  "operator": "and",
+                  "children": [
+                    {
+                      "type": "condition",
+                      "field": "dob",
+                      "operator": "date_before",
+                      "values": [
+                        {
+                          "source": "literal",
+                          "value": "1982"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "condition",
+                      "field": "state",
+                      "operator": "in_list",
+                      "values": [
+                        {
+                          "source": "literal",
+                          "value": [
+                            "Florida",
+                            "Louisiana",
+                            "Texas",
+                            "Mississippi"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "name": "benjamin",
+        "dob": "1981-04-02",
+        "state": "Texas"
+      },
+      "expected": true
+    },
+    {
+      "name": "worked example \u2014 wrong state, born after 1980",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "^ben"
+                }
+              ]
+            },
+            {
+              "type": "group",
+              "operator": "or",
+              "children": [
+                {
+                  "type": "condition",
+                  "field": "dob",
+                  "operator": "date_before",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": "1980"
+                    }
+                  ]
+                },
+                {
+                  "type": "group",
+                  "operator": "and",
+                  "children": [
+                    {
+                      "type": "condition",
+                      "field": "dob",
+                      "operator": "date_before",
+                      "values": [
+                        {
+                          "source": "literal",
+                          "value": "1982"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "condition",
+                      "field": "state",
+                      "operator": "in_list",
+                      "values": [
+                        {
+                          "source": "literal",
+                          "value": [
+                            "Florida",
+                            "Louisiana",
+                            "Texas",
+                            "Mississippi"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "name": "benjamin",
+        "dob": "1981-04-02",
+        "state": "California"
+      },
+      "expected": false
+    },
+    {
+      "name": "regex is case sensitive by default",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "^ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "name": "Benjamin"
+      },
+      "expected": false
+    },
+    {
+      "name": "caseInsensitive option applies to contains",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "question",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "REFUND"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "question": "Can I get a refund please"
+      },
+      "options": {
+        "caseInsensitive": true
+      },
+      "expected": true
+    },
+    {
+      "name": "field-to-field comparison",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "field",
+                  "field": "billing_email"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "a@b.com",
+        "billing_email": "a@b.com"
+      },
+      "expected": true
+    },
+    {
+      "name": "dot path access",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "user.profile.city",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Fresno"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "user": {
+          "profile": {
+            "city": "Fresno"
+          }
+        }
+      },
+      "expected": true
+    },
+    {
+      "name": "numeric between is inclusive and order-insensitive",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "between",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 90
+                },
+                {
+                  "source": "literal",
+                  "value": 10
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "score": 10
+      },
+      "expected": true
+    },
+    {
+      "name": "date_within_last_days against a fixed now",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "signed_up",
+              "operator": "date_within_last_days",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 30
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "signed_up": "2026-08-10T09:00:00Z"
+      },
+      "options": {
+        "now": "2026-08-27T12:00:00Z"
+      },
+      "expected": true
+    },
+    {
+      "name": "date_more_than_days_ago against a fixed now",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "signed_up",
+              "operator": "date_more_than_days_ago",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 30
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "signed_up": "2026-08-10T09:00:00Z"
+      },
+      "options": {
+        "now": "2026-08-27T12:00:00Z"
+      },
+      "expected": false
+    },
+    {
+      "name": "date_is_today compares UTC calendar days",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "when",
+              "operator": "date_is_today",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "when": "2026-08-27T23:15:00Z"
+      },
+      "options": {
+        "now": "2026-08-27T00:30:00Z"
+      },
+      "expected": true
+    },
+    {
+      "name": "negated group",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "group",
+              "operator": "and",
+              "negate": true,
+              "children": [
+                {
+                  "type": "condition",
+                  "field": "state",
+                  "operator": "eq",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": "Texas"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "state": "Texas"
+      },
+      "expected": false
+    },
+    {
+      "name": "missing field is not set",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "telephone",
+              "operator": "is_not_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "name": "Ben"
+      },
+      "expected": true
+    },
+    {
+      "name": "empty string is empty but is set",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "telephone",
+              "operator": "is_empty",
+              "values": []
+            },
+            {
+              "type": "condition",
+              "field": "telephone",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "telephone": ""
+      },
+      "expected": true
+    },
+    {
+      "name": "custom values operator, fixed list",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "is_gulf_state": {
+            "kind": "values",
+            "label": "is a Gulf state",
+            "match": "in",
+            "arity": 0,
+            "values": [
+              "Florida",
+              "Louisiana",
+              "Texas",
+              "Mississippi"
+            ]
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "is_gulf_state",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "state": "Mississippi"
+      },
+      "expected": true
+    },
+    {
+      "name": "custom values operator with not_in",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "not_blocked": {
+            "kind": "values",
+            "label": "is not blocked",
+            "match": "not_in",
+            "arity": 0,
+            "values": [
+              "spam@example.com"
+            ]
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "not_blocked",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "spam@example.com"
+      },
+      "expected": false
+    },
+    {
+      "name": "server-only callback is skipped on the client",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "email_is_unique": {
+            "kind": "callback",
+            "label": "is not already registered",
+            "arity": 0,
+            "availableIn": [
+              "server"
+            ],
+            "callbacks": {
+              "php": {
+                "class": "\\App\\Rules\\Email",
+                "method": "isUnique",
+                "static": true
+              }
+            },
+            "policy": {
+              "unresolved": {
+                "client": "skip",
+                "*": "error"
+              }
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "@"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "email_is_unique",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "ben@example.com"
+      },
+      "options": {
+        "environment": "client"
+      },
+      "expected": true,
+      "expectSkipped": [
+        "email_is_unique"
+      ]
+    },
+    {
+      "name": "server-only callback errors on the server when unregistered",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "email_is_unique": {
+            "kind": "callback",
+            "label": "is not already registered",
+            "arity": 0,
+            "availableIn": [
+              "server"
+            ],
+            "callbacks": {
+              "php": {
+                "class": "\\App\\Rules\\Email",
+                "method": "isUnique",
+                "static": true
+              }
+            },
+            "policy": {
+              "unresolved": {
+                "client": "skip",
+                "*": "error"
+              }
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "email_is_unique",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "ben@example.com"
+      },
+      "options": {
+        "environment": "server"
+      },
+      "expectThrows": true
+    },
+    {
+      "name": "skipped condition never rescues an OR",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "needs_db": {
+            "kind": "callback",
+            "arity": 0,
+            "label": "needs the database",
+            "policy": {
+              "unresolved": "skip"
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "or",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Texas"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "needs_db",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "state": "California",
+        "email": "ben@example.com"
+      },
+      "expected": false,
+      "expectSkipped": [
+        "needs_db"
+      ]
+    },
+    {
+      "name": "a fully skipped group drops out of its parent",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "needs_db": {
+            "kind": "callback",
+            "arity": 0,
+            "label": "needs the database",
+            "policy": {
+              "unresolved": "skip"
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "California"
+                }
+              ]
+            },
+            {
+              "type": "group",
+              "operator": "or",
+              "children": [
+                {
+                  "type": "condition",
+                  "field": "email",
+                  "operator": "needs_db",
+                  "values": []
+                },
+                {
+                  "type": "condition",
+                  "field": "name",
+                  "operator": "needs_db",
+                  "values": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "state": "California",
+        "email": "ben@example.com",
+        "name": "Ben"
+      },
+      "expected": true
+    },
+    {
+      "name": "a fully skipped document falls back to emptyResult",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "needs_db": {
+            "kind": "callback",
+            "arity": 0,
+            "label": "needs the database",
+            "policy": {
+              "unresolved": "skip"
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "needs_db",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "ben@example.com"
+      },
+      "options": {
+        "emptyResult": false
+      },
+      "expected": false
+    },
+    {
+      "name": "unresolved policy false records a handled error",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "needs_db": {
+            "kind": "callback",
+            "arity": 0,
+            "label": "needs the database",
+            "policy": {
+              "unresolved": "false"
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "or",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "needs_db",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "ben@example.com"
+      },
+      "expected": false,
+      "expectErrorHandled": [
+        "needs_db"
+      ]
+    },
+    {
+      "name": "evaluator-level unresolvedPolicy applies when the JSON is silent",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "needs_db": {
+            "kind": "callback",
+            "arity": 0,
+            "label": "needs the database"
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Texas"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "needs_db",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "state": "Texas",
+        "email": "ben@example.com"
+      },
+      "options": {
+        "unresolvedPolicy": "skip"
+      },
+      "expected": true,
+      "expectSkipped": [
+        "needs_db"
+      ]
+    },
+    {
+      "name": "condition-level policy beats the operator manifest",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "needs_db": {
+            "kind": "callback",
+            "arity": 0,
+            "policy": {
+              "unresolved": "error"
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "needs_db",
+              "values": [],
+              "policy": {
+                "unresolved": "skip"
+              }
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "ben@example.com"
+      },
+      "expected": true,
+      "expectSkipped": [
+        "needs_db"
+      ]
+    },
+    {
+      "name": "unknown operator with no manifest errors",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "no_such_operator",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "ben@example.com"
+      },
+      "expectThrows": true
+    },
+    {
+      "name": "profiles take priority over environment",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "needs_db": {
+            "kind": "callback",
+            "arity": 0,
+            "policy": {
+              "unresolved": {
+                "preview": "skip",
+                "server": "error",
+                "*": "error"
+              }
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "needs_db",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "ben@example.com"
+      },
+      "options": {
+        "environment": "server",
+        "profiles": [
+          "preview"
+        ]
+      },
+      "expected": true,
+      "expectSkipped": [
+        "needs_db"
+      ]
+    },
+    {
+      "name": "boolean truthiness",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "subscribed",
+              "operator": "is_true",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "subscribed": "yes"
+      },
+      "expected": true
+    },
+    {
+      "name": "not_in_list on a comma string",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "not_in_list",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "Texas",
+                    "Florida"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "state": "Nevada"
+      },
+      "expected": true
+    },
+    {
+      "name": "starts_with and ends_with",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "starts_with",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "ben"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "ends_with",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": ".org.uk"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "email": "ben@bens-house.org.uk"
+      },
+      "expected": true
+    },
+    {
+      "name": "date_between with partial dates",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "dob",
+              "operator": "date_between",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "1980"
+                },
+                {
+                  "source": "literal",
+                  "value": "1982-12-31"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "dob": "1981-06-15"
+      },
+      "expected": true
+    },
+    {
+      "name": "non-numeric operand makes an arithmetic comparison false",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "gt",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 10
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "score": "not a number"
+      },
+      "expected": false
+    }
+  ],
+  "$sqlComment": "Shared SQL fixtures. Both SQL builders run these and must agree character for character. name/document/options/expectedSql, plus optional expectedParams, expectSkipped and expectThrows.",
+  "sqlCases": [
+    {
+      "name": "empty document is 1 = 1",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": []
+        }
+      },
+      "options": {
+        "dialect": "mysql"
+      },
+      "expectedSql": "1 = 1"
+    },
+    {
+      "name": "empty document honours emptyResult false",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": []
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "emptyResult": false
+      },
+      "expectedSql": "1 = 0"
+    },
+    {
+      "name": "equality quotes the column and the value",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "`c`.`full_name` = 'Ben'"
+    },
+    {
+      "name": "identifier quoting escapes the delimiter",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "weird`col",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "x"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "`weird``col` = 'x'"
+    },
+    {
+      "name": "not-equal is null safe",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "neq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "(\"c\".\"full_name\" IS NULL OR \"c\".\"full_name\" <> 'Ben')"
+    },
+    {
+      "name": "null-safe negation can be switched off",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "neq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ],
+        "nullSafeNegation": false
+      },
+      "expectedSql": "\"c\".\"full_name\" <> 'Ben'"
+    },
+    {
+      "name": "contains escapes quotes and LIKE metacharacters",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "O'Brien 50%_x"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "\"c\".\"full_name\" LIKE '%O''Brien 50\\%\\_x%' ESCAPE '\\'"
+    },
+    {
+      "name": "mysql doubles backslashes in string literals",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "a%b"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "`c`.`full_name` LIKE '%a\\\\%b%' ESCAPE '\\\\'"
+    },
+    {
+      "name": "starts_with and ends_with",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "starts_with",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "ben"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "ends_with",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": ".uk"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "(\"c\".\"email\" LIKE 'ben%' ESCAPE '\\' AND \"c\".\"email\" LIKE '%.uk' ESCAPE '\\')"
+    },
+    {
+      "name": "in_list and its null-safe negation",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "in_list",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "FL",
+                    "TX"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "not_in_list",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "NV"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "(\"a\".\"state_code\" IN ('FL', 'TX') AND (\"a\".\"state_code\" IS NULL OR \"a\".\"state_code\" NOT IN ('NV')))"
+    },
+    {
+      "name": "an empty in_list is 1 = 0",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "in_list",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "1 = 0"
+    },
+    {
+      "name": "field-to-field comparison renders both columns",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "field",
+                  "field": "billing_email"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "\"c\".\"email\" = \"c\".\"billing_email\""
+    },
+    {
+      "name": "numeric between",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "between",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 10
+                },
+                {
+                  "source": "literal",
+                  "value": 90
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "\"c\".\"lead_score\" BETWEEN 10 AND 90"
+    },
+    {
+      "name": "partial dates expand to their earliest instant",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "dob",
+              "operator": "date_before",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "1980"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "\"c\".\"date_of_birth\" < '1980-01-01'"
+    },
+    {
+      "name": "date_eq becomes a half-open day range",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "dob",
+              "operator": "date_eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "1981-04-02"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "(\"c\".\"date_of_birth\" >= '1981-04-02' AND \"c\".\"date_of_birth\" < '1981-04-03')"
+    },
+    {
+      "name": "relative dates resolve against the supplied now",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "signup_date",
+              "operator": "date_within_last_days",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 30
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ],
+        "now": "2026-09-02T12:00:00Z"
+      },
+      "expectedSql": "(\"c\".\"created_at\" >= '2026-08-03 12:00:00' AND \"c\".\"created_at\" <= '2026-09-02 12:00:00')"
+    },
+    {
+      "name": "date_is_today spans the current UTC day",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "signup_date",
+              "operator": "date_is_today",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ],
+        "now": "2026-09-02T12:00:00Z"
+      },
+      "expectedSql": "(\"c\".\"created_at\" >= '2026-09-02' AND \"c\".\"created_at\" < '2026-09-03')"
+    },
+    {
+      "name": "booleans follow the dialect",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "subscribed",
+              "operator": "is_true",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "\"c\".\"subscribed\" = TRUE"
+    },
+    {
+      "name": "booleans are 1/0 in mysql",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "subscribed",
+              "operator": "is_true",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "`c`.`subscribed` = 1"
+    },
+    {
+      "name": "existence operators",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "is_not_set",
+              "values": []
+            },
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "(\"c\".\"email\" IS NULL AND (\"c\".\"full_name\" IS NOT NULL AND \"c\".\"full_name\" <> ''))"
+    },
+    {
+      "name": "regex maps onto the dialect operator",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "^ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "\"c\".\"full_name\" ~ '^ben'"
+    },
+    {
+      "name": "regex uses REGEXP in mysql",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "^ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "`c`.`full_name` REGEXP '^ben'"
+    },
+    {
+      "name": "regex is unsupported in sql server and errors by default",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "^ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "sqlserver",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectThrows": true
+    },
+    {
+      "name": "an unsupported operator can be skipped instead",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "^ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "sqlserver",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ],
+        "unsupportedPolicy": "skip"
+      },
+      "expectedSql": "[c].[full_name] = 'Ben'",
+      "expectSkipped": [
+        "regex"
+      ]
+    },
+    {
+      "name": "nested groups and NOT",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            },
+            {
+              "type": "group",
+              "operator": "or",
+              "negate": true,
+              "children": [
+                {
+                  "type": "condition",
+                  "field": "score",
+                  "operator": "gt",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": 50
+                    }
+                  ]
+                },
+                {
+                  "type": "condition",
+                  "field": "state",
+                  "operator": "eq",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": "TX"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "(\"c\".\"full_name\" = 'Ben' AND NOT (\"c\".\"lead_score\" > 50 OR \"a\".\"state_code\" = 'TX'))"
+    },
+    {
+      "name": "a custom values operator becomes IN",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "is_gulf_state": {
+            "kind": "values",
+            "match": "in",
+            "arity": 0,
+            "values": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "is_gulf_state",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "\"a\".\"state_code\" IN ('FL', 'TX')"
+    },
+    {
+      "name": "an operator sql template is interpolated",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "email_is_unique": {
+            "kind": "callback",
+            "arity": 0,
+            "sql": "NOT EXISTS (SELECT 1 FROM blocked b WHERE b.email = {field})"
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "email_is_unique",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "NOT EXISTS (SELECT 1 FROM blocked b WHERE b.email = \"c\".\"email\")"
+    },
+    {
+      "name": "a callback with no template errors by default",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "email_is_unique": {
+            "kind": "callback",
+            "arity": 0
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "email_is_unique",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectThrows": true
+    },
+    {
+      "name": "a callback with no template can be skipped by policy",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "email_is_unique": {
+            "kind": "callback",
+            "arity": 0,
+            "policy": {
+              "unresolved": {
+                "sql": "skip",
+                "*": "error"
+              }
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "email_is_unique",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "\"c\".\"full_name\" = 'Ben'",
+      "expectSkipped": [
+        "email_is_unique"
+      ]
+    },
+    {
+      "name": "a dialect-keyed policy wins over the sql label",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "email_is_unique": {
+            "kind": "callback",
+            "arity": 0,
+            "policy": {
+              "unresolved": {
+                "mysql": "true",
+                "*": "error"
+              }
+            }
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "email_is_unique",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "1 = 1"
+    },
+    {
+      "name": "parameterised output uses numbered placeholders in postgres",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "gte",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 50
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ],
+        "parameters": true
+      },
+      "expectedSql": "(\"c\".\"full_name\" = $1 AND \"c\".\"lead_score\" >= $2)",
+      "expectedParams": [
+        "Ben",
+        50
+      ]
+    },
+    {
+      "name": "parameterised output uses ? in mysql",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ],
+        "parameters": true
+      },
+      "expectedSql": "`c`.`full_name` = ?",
+      "expectedParams": [
+        "Ben"
+      ]
+    },
+    {
+      "name": "identifier quoting can be turned off",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ],
+        "quoteIdentifiers": false
+      },
+      "expectedSql": "c.full_name = 'Ben'"
+    },
+    {
+      "name": "a field with no column mapping falls back to its name",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "unmapped",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "name",
+            "column": "c.full_name",
+            "type": "text"
+          },
+          {
+            "name": "email",
+            "column": "c.email",
+            "type": "text"
+          },
+          {
+            "name": "billing_email",
+            "column": "c.billing_email",
+            "type": "text"
+          },
+          {
+            "name": "dob",
+            "column": "c.date_of_birth",
+            "type": "date"
+          },
+          {
+            "name": "signup_date",
+            "column": "c.created_at",
+            "type": "date"
+          },
+          {
+            "name": "state",
+            "column": "a.state_code",
+            "type": "enum"
+          },
+          {
+            "name": "score",
+            "column": "c.lead_score",
+            "type": "number"
+          },
+          {
+            "name": "subscribed",
+            "column": "c.subscribed",
+            "type": "boolean"
+          },
+          {
+            "name": "weird`col",
+            "column": "weird`col",
+            "type": "text"
+          }
+        ]
+      },
+      "expectedSql": "\"unmapped\" = 1"
+    }
+  ],
+  "$describeComment": "Shared describe() / describeHtml() cases. Both SDKs must produce these strings byte for byte \u2014 the HTML ones also pin the escaping, which is the whole safety story for describeHtml.",
+  "describeCases": [
+    {
+      "name": "empty document",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": []
+        }
+      },
+      "options": {},
+      "expectedText": "Always",
+      "expectedHtml": "<span class=\"kcd\">Always</span>"
+    },
+    {
+      "name": "a single condition",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[Name] is equal to \"Ben\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Name</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">Ben</span></span>"
+    },
+    {
+      "name": "field labels are used",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "^ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[Name] matches regex \"^ben\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Name</strong> <span class=\"kcd-op\">matches regex</span> <span class=\"kcd-value\">^ben</span></span>"
+    },
+    {
+      "name": "choice labels are used, not stored values",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "FL"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[State] is equal to \"Florida\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">Florida</span></span>"
+    },
+    {
+      "name": "a list of choice values",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "in_list",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "FL",
+                    "TX"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[State] is one of [\"Florida\", \"Texas\"]",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">is one of</span> <span class=\"kcd-list\"><span class=\"kcd-value\">Florida</span><span class=\"kcd-sep\">, </span><span class=\"kcd-value\">Texas</span></span></span>"
+    },
+    {
+      "name": "a numeric value is unquoted",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "gt",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 10
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[Score] is greater than 10",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Score</strong> <span class=\"kcd-op\">is greater than</span> <span class=\"kcd-value\">10</span></span>"
+    },
+    {
+      "name": "a two-value operator",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "between",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 5
+                },
+                {
+                  "source": "literal",
+                  "value": 10
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[Score] is between 5 and 10",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Score</strong> <span class=\"kcd-op\">is between</span> <span class=\"kcd-value\">5</span><span class=\"kcd-join\"> and </span><span class=\"kcd-value\">10</span></span>"
+    },
+    {
+      "name": "comparing against another field",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "email",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "field",
+                  "field": "billing_email"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[Email] is equal to [Billing Email]",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Email</strong> <span class=\"kcd-op\">is equal to</span> <strong class=\"kcd-field\">Billing Email</strong></span>"
+    },
+    {
+      "name": "two conditions joined by AND",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "A"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "B"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "([Name] is equal to \"A\" AND [Name] is equal to \"B\")",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Name</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">A</span> <span class=\"kcd-logic kcd-and\">AND</span> <strong class=\"kcd-field\">Name</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">B</span><span class=\"kcd-paren\">)</span></span>"
+    },
+    {
+      "name": "a nested OR group",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "A"
+                }
+              ]
+            },
+            {
+              "type": "group",
+              "operator": "or",
+              "children": [
+                {
+                  "type": "condition",
+                  "field": "state",
+                  "operator": "eq",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": "FL"
+                    }
+                  ]
+                },
+                {
+                  "type": "condition",
+                  "field": "state",
+                  "operator": "eq",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": "TX"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "([Name] is equal to \"A\" AND ([State] is equal to \"Florida\" OR [State] is equal to \"Texas\"))",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Name</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">A</span> <span class=\"kcd-logic kcd-and\">AND</span> <span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">Florida</span> <span class=\"kcd-logic kcd-or\">OR</span> <strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">Texas</span><span class=\"kcd-paren\">)</span><span class=\"kcd-paren\">)</span></span>"
+    },
+    {
+      "name": "a negated group",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "A"
+                }
+              ]
+            },
+            {
+              "type": "group",
+              "operator": "or",
+              "negate": true,
+              "children": [
+                {
+                  "type": "condition",
+                  "field": "state",
+                  "operator": "eq",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": "FL"
+                    }
+                  ]
+                },
+                {
+                  "type": "condition",
+                  "field": "state",
+                  "operator": "eq",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": "TX"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "([Name] is equal to \"A\" AND NOT ([State] is equal to \"Florida\" OR [State] is equal to \"Texas\"))",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Name</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">A</span> <span class=\"kcd-logic kcd-and\">AND</span> <span class=\"kcd-not\">NOT</span> <span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">Florida</span> <span class=\"kcd-logic kcd-or\">OR</span> <strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">Texas</span><span class=\"kcd-paren\">)</span><span class=\"kcd-paren\">)</span></span>"
+    },
+    {
+      "name": "a negated condition",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "A"
+                }
+              ],
+              "negate": true
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "NOT ([Name] is equal to \"A\")",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-not\">NOT</span> <span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Name</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">A</span><span class=\"kcd-paren\">)</span></span>"
+    },
+    {
+      "name": "an unknown field falls back to its name",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "mystery",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "x"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[mystery] is equal to \"x\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">mystery</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">x</span></span>"
+    },
+    {
+      "name": "HTML in a value is escaped",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "<img src=x onerror=alert(1)>"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[Name] is equal to \"<img src=x onerror=alert(1)>\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Name</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">&lt;img src=x onerror=alert(1)&gt;</span></span>"
+    },
+    {
+      "name": "HTML in a field label is escaped",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "evil",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "x"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "evil",
+            "label": "<script>bad</script>"
+          }
+        ]
+      },
+      "expectedText": "[<script>bad</script>] is equal to \"x\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">&lt;script&gt;bad&lt;/script&gt;</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">x</span></span>"
+    },
+    {
+      "name": "quotes and ampersands are escaped",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "name",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Tom & \"Jerry\""
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[Name] is equal to \"Tom & \"Jerry\"\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Name</strong> <span class=\"kcd-op\">is equal to</span> <span class=\"kcd-value\">Tom &amp; &quot;Jerry&quot;</span></span>"
+    },
+    {
+      "name": "custom emptyText",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": []
+        }
+      },
+      "options": {
+        "emptyText": "Everyone"
+      },
+      "expectedText": "Everyone",
+      "expectedHtml": "<span class=\"kcd\">Everyone</span>"
+    },
+    {
+      "name": "emptyText is escaped in HTML",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": []
+        }
+      },
+      "options": {
+        "emptyText": "<b>all</b>"
+      },
+      "expectedText": "<b>all</b>",
+      "expectedHtml": "<span class=\"kcd\">&lt;b&gt;all&lt;/b&gt;</span>"
+    },
+    {
+      "name": "contains does not swap a fragment for a choice label",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "FL"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[State] contains \"FL\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">contains</span> <span class=\"kcd-value\">FL</span></span>"
+    },
+    {
+      "name": "not_contains does not swap a fragment for a choice label",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "not_contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "FL"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[State] does not contain \"FL\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">does not contain</span> <span class=\"kcd-value\">FL</span></span>"
+    },
+    {
+      "name": "starts_with does not swap a fragment for a choice label",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "starts_with",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "FL"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[State] starts with \"FL\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">starts with</span> <span class=\"kcd-value\">FL</span></span>"
+    },
+    {
+      "name": "ends_with does not swap a fragment for a choice label",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "ends_with",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "FL"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[State] ends with \"FL\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">ends with</span> <span class=\"kcd-value\">FL</span></span>"
+    },
+    {
+      "name": "regex does not swap a fragment for a choice label",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "FL"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[State] matches regex \"FL\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">matches regex</span> <span class=\"kcd-value\">FL</span></span>"
+    },
+    {
+      "name": "not_regex does not swap a fragment for a choice label",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "not_regex",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "FL"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[State] does not match regex \"FL\"",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">does not match regex</span> <span class=\"kcd-value\">FL</span></span>"
+    },
+    {
+      "name": "is one of still uses choice labels \u2014 whole values, not fragments",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "in_list",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "FL",
+                    "TX"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "name",
+            "label": "Name"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "email",
+            "label": "Email"
+          },
+          {
+            "name": "billing_email",
+            "label": "Billing Email"
+          }
+        ]
+      },
+      "expectedText": "[State] is one of [\"Florida\", \"Texas\"]",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">is one of</span> <span class=\"kcd-list\"><span class=\"kcd-value\">Florida</span><span class=\"kcd-sep\">, </span><span class=\"kcd-value\">Texas</span></span></span>"
+    }
+  ]
+}

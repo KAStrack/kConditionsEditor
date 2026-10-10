@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kConditionsEditor — a conditions builder for a &lt;textarea&gt;</title>
+<meta name="description" content="A zero-dependency JavaScript conditions builder that takes over a textarea and writes portable JSON, with JS and PHP evaluator SDKs.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="dist/k-conditions-editor.min.css">
+<link rel="stylesheet" href="dist/k-conditions-skins.min.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.0.34</span></a>
+    <nav class="site-nav">
+      <a href="./" aria-current="page">Home</a>
+      <a href="demo.html">Playground</a>
+      <a href="skins.html">Skins</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/KAStrack/kConditionsEditor">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <h1>Complex rules, built by clicking.</h1>
+    <p class="lede">
+      kConditionsEditor takes over a <code>&lt;textarea&gt;</code> and puts a nested
+      condition builder in its place. Every change writes portable JSON straight back
+      into the textarea, so your form posts exactly as it always did — and the
+      evaluator SDKs turn that JSON into a boolean anywhere else in your stack.
+    </p>
+    <div class="pill-row">
+      <span class="pill">No dependencies</span>
+      <span class="pill">No build step</span>
+      <span class="pill">~30 KB of JS</span>
+      <span class="pill">JS + PHP SDKs</span>
+      <span class="pill">MIT</span>
+    </div>
+    <p>
+      <a class="btn" href="demo.html">Open the playground</a>
+      <a class="btn secondary" href="docs.html">Read the docs</a>
+    </p>
+  </div>
+
+  <section>
+    <h2>Try it</h2>
+    <p>
+      This is a contact-form rule. Press <strong>Edit Conditions</strong>, build something,
+      and watch the JSON and the live evaluation below react. <strong>View source</strong>
+      is switched on here, so you can also see the generated SQL.
+    </p>
+
+    <p class="skin-picker">
+      <label class="field-label" for="demo-skin" style="display:inline;margin-right:8px">Skin</label>
+      <select id="demo-skin">
+        <option value="prose">prose (default)</option>
+        <option value="equation">equation</option>
+        <option value="blackboard">blackboard</option>
+        <option value="ledger">ledger</option>
+        <option value="boxed">boxed</option>
+      </select>
+      <span class="skin-hint">Swap the look without losing the rule — or see all five on the <a href="skins.html">Skins</a> page.</span>
+    </p>
+
+    <form id="demo-form" onsubmit="return false;">
+      <label class="field-label" for="conditions">Conditions</label>
+      <textarea id="conditions" name="conditions" rows="6"></textarea>
+    </form>
+
+    <div class="grid-2" style="margin-top:22px">
+      <div>
+        <label class="field-label" for="sample-data">Sample submission (JSON)</label>
+        <textarea id="sample-data" class="data-input" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <label class="field-label">Evaluation</label>
+        <pre class="output" id="eval-output">—</pre>
+      </div>
+    </div>
+
+    <h3>JSON written to the textarea</h3>
+    <pre class="output" id="json-output">—</pre>
+  </section>
+
+  <section>
+    <h2>Or write SQL straight into the field</h2>
+    <p>
+      Same editor, <code>output: 'sql'</code>. This one is pointed at a textarea that
+      already accepts SQL — the case where you want to give people who do not write SQL a
+      friendlier way to fill in a field they could otherwise only type into. The field is
+      left visible on purpose, so they can see what is being written for them.
+    </p>
+
+    <form id="sql-form" onsubmit="return false;">
+      <label class="field-label" for="sql-conditions">WHERE clause</label>
+      <textarea id="sql-conditions" name="sql_conditions" rows="6" class="data-input"
+                spellcheck="false" aria-describedby="sql-note"></textarea>
+    </form>
+
+    <p id="sql-note" style="margin-top:10px">
+      <code>documentInComment: true</code> tucks the rule into a trailing comment, so this
+      one field round-trips: reload the page, and the builder reads its own state back out
+      of the SQL. Change the dialect to watch it regenerate.
+    </p>
+
+    <p>
+      <label class="field-label" for="sql-dialect" style="display:inline;margin-right:8px">Dialect</label>
+      <select id="sql-dialect" style="font:inherit;font-size:0.875rem;padding:6px 9px;border-radius:7px;border:1px solid var(--page-border);background:var(--page-bg);color:var(--page-fg)">
+        <option value="mysql">mysql</option>
+        <option value="postgres">postgres</option>
+        <option value="sqlite">sqlite</option>
+        <option value="sqlserver">sqlserver</option>
+        <option value="standard">standard</option>
+      </select>
+    </p>
+
+    <div class="note">
+      This is safe precisely because the field already took SQL — the trust boundary has not
+      moved. If your endpoint currently receives JSON, keep posting the document and build
+      the SQL on the server instead. Both are first-class; the
+      <a href="docs.html#sql">docs</a> spell out which is which.
+    </div>
+  </section>
+
+  <section>
+    <h2>How it fits together</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="margin-top:0">1. The browser writes it</h3>
+        <p style="margin:0">
+          The editor knows your fields, which operators each one accepts, and which
+          fields may be compared against which. It emits a document that describes the
+          rule and nothing else — no functions, no closures.
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">2. Anything reads it</h3>
+        <p style="margin:0">
+          Pass the document and a flat set of field values to an SDK and get
+          <code>true</code> or <code>false</code> back. The JS and PHP SDKs run the same
+          34 conformance fixtures, so they agree by construction.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Quick start</h2>
+    <pre><code>&lt;link rel="stylesheet" href="src/k-conditions-editor.css"&gt;
+&lt;textarea id="conditions" name="conditions"&gt;&lt;/textarea&gt;
+
+&lt;script src="src/k-conditions-evaluator.js"&gt;&lt;/script&gt;
+&lt;script src="src/k-conditions-editor.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  KConditionsEditor.attach('#conditions', {
+    emptyText: 'Always',
+    fields: [
+      { name: 'name',  label: 'Name',          type: 'text' },
+      { name: 'dob',   label: 'Date of Birth', type: 'date' },
+      { name: 'state', label: 'State',         type: 'enum',
+        choices: ['Florida', 'Texas', 'California'] }
+    ]
+  });
+&lt;/script&gt;</code></pre>
+
+    <p>Then, on the server:</p>
+    <pre><code>use function Kastrack\ConditionsEditor\evaluate;
+
+if (evaluate($_POST['conditions'], $submission)) {
+    // do the thing
+}</code></pre>
+  </section>
+
+  <section>
+    <h2>The bits that usually hurt</h2>
+
+    <h3>Server-only conditions, checked early where possible</h3>
+    <p>
+      "Is this email already registered?" can only be answered on the server. Mark the
+      operator <code>availableIn: ["server"]</code> with a <code>client: "skip"</code>
+      policy, and the same rule pre-checks everything else in the browser without ever
+      blocking the submit — then evaluates in full on the server.
+    </p>
+
+    <h3>Skipping means skipping</h3>
+    <p>
+      A skipped condition behaves as though it were never in the document. Its siblings
+      decide the group; a group left with no children drops out of its own parent. A
+      skipped condition can never turn an <code>OR</code> true on its own.
+    </p>
+
+    <h3>Field-to-field comparisons, but only the sensible ones</h3>
+    <p>
+      Any value slot can point at another field instead of a literal.
+      <code>comparableWith</code> narrows that list per field — by name, by
+      <code>type:</code>, by <code>group:</code>, or <code>false</code> to switch it off.
+    </p>
+
+    <h3>One hook instead of a boolean</h3>
+    <p>
+      Pass a function as the last argument to any SDK entry point and it receives the
+      original arguments plus the result and the details, and its return value becomes
+      the return value. Useful for logging what got deferred.
+    </p>
+  </section>
+
+</div>
+
+<footer class="site-footer">
+  <div class="wrap">
+    kConditionsEditor 0.0.34 — MIT licensed.
+    <a href="https://github.com/KAStrack/kConditionsEditor">Source on GitHub</a>.
+  </div>
+</footer>
+
+<script src="dist/k-conditions-evaluator.min.js"></script>
+<script src="dist/k-conditions-sql.min.js"></script>
+<script src="dist/k-conditions-editor.min.js"></script>
+<script src="assets/demo-config.js"></script>
+<script>
+(function () {
+  var textarea = document.getElementById('conditions');
+  textarea.value = JSON.stringify(window.DEMO_STARTER);
+
+  var dataBox = document.getElementById('sample-data');
+  dataBox.value = JSON.stringify(window.DEMO_DATA, null, 2);
+
+  var jsonOut = document.getElementById('json-output');
+  var evalOut = document.getElementById('eval-output');
+
+  var editor = KConditionsEditor.attach(textarea, {
+    fields: window.DEMO_FIELDS,
+    operators: window.DEMO_OPERATORS,
+    emptyText: 'Always (no conditions)',
+    startOpen: true,
+    debug: true,
+    sql: { dialect: 'mysql' }
+  });
+
+  var skinPicker = document.getElementById('demo-skin');
+  skinPicker.addEventListener('change', function () {
+    editor.setSkin(skinPicker.value);
+  });
+
+  function refresh() {
+    var doc = editor.getDocument();
+    jsonOut.textContent = JSON.stringify(doc, null, 2);
+
+    var data;
+    try {
+      data = JSON.parse(dataBox.value || '{}');
+    } catch (e) {
+      evalOut.textContent = 'Sample data is not valid JSON: ' + e.message;
+      return;
+    }
+
+    try {
+      var details = KConditions.evaluateDetailed(doc, data, {
+        environment: 'client',
+        runtime: 'js'
+      });
+      var lines = [];
+      lines.push('result: ' + details.result);
+      lines.push('summary: ' + editor.describe());
+      if (details.skipped.length) {
+        lines.push('');
+        lines.push('deferred to the server:');
+        details.skipped.forEach(function (s) {
+          lines.push('  · ' + s.operator + ' on [' + s.field + '] (' + s.reason + ')');
+        });
+      }
+      evalOut.innerHTML = '';
+      var badge = document.createElement('span');
+      badge.className = details.result ? 'result-true' : 'result-false';
+      badge.textContent = details.result ? 'TRUE' : 'FALSE';
+      evalOut.appendChild(badge);
+      evalOut.appendChild(document.createTextNode('\n\n' + lines.slice(1).join('\n')));
+    } catch (e) {
+      evalOut.textContent = 'Evaluation error: ' + e.message;
+    }
+  }
+
+  editor.on('change', refresh);
+  dataBox.addEventListener('input', refresh);
+  refresh();
+
+  /* ---- the SQL-into-the-field example ---------------------------------- */
+
+  var sqlField = document.getElementById('sql-conditions');
+  var sqlDialect = document.getElementById('sql-dialect');
+  var sqlEditor = null;
+
+  function buildSqlEditor() {
+    var carried = sqlEditor ? sqlEditor.getDocument() : null;
+    if (sqlEditor) sqlEditor.destroy();
+    if (!carried && !sqlField.value.trim()) {
+      sqlField.value = JSON.stringify(window.DEMO_STARTER);
+    }
+    sqlEditor = KConditionsEditor.attach(sqlField, {
+      fields: window.DEMO_FIELDS,
+      operators: window.DEMO_OPERATORS,
+      emptyText: 'Always (no conditions)',
+      startOpen: true,
+      output: 'sql',
+      documentInComment: true,
+      hideTextarea: false,
+      sql: { dialect: sqlDialect.value, pretty: true }
+    });
+    if (carried) sqlEditor.setDocument(carried);
+  }
+
+  sqlDialect.addEventListener('change', buildSqlEditor);
+  buildSqlEditor();
+}());
+</script>
+
+</body>
+</html>

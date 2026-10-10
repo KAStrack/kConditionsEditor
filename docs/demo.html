@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playground — kConditionsEditor</title>
+<meta name="description" content="Interactive playground for kConditionsEditor: edit the field configuration, build a rule, and evaluate it as either the client or the server.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="dist/k-conditions-editor.min.css">
+<link rel="stylesheet" href="dist/k-conditions-skins.min.css">
+<style>
+  .controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 18px; }
+  .controls label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--page-muted); display: block; margin-bottom: 5px; }
+  .controls select, .controls input[type="text"] {
+    font: inherit; font-size: 0.875rem; padding: 7px 9px; border-radius: 7px;
+    border: 1px solid var(--page-border); background: var(--page-bg); color: var(--page-fg);
+  }
+  .checkline { display: flex; align-items: center; gap: 7px; font-size: 0.875rem; padding-bottom: 8px; }
+  .config-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .config-cols textarea { min-height: 260px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.0.34</span></a>
+    <nav class="site-nav">
+      <a href="./">Home</a>
+      <a href="demo.html" aria-current="page">Playground</a>
+      <a href="skins.html">Skins</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/KAStrack/kConditionsEditor">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero" style="padding-bottom:10px">
+    <h1>Playground</h1>
+    <p class="lede">
+      Change the field definitions, build a rule, then evaluate it as the client or as
+      the server and watch the skip policies do their work.
+    </p>
+  </div>
+
+  <section style="padding-top:0">
+    <div class="controls">
+      <div>
+        <label for="env">Evaluate as</label>
+        <select id="env">
+          <option value="client">client (browser)</option>
+          <option value="server">server</option>
+        </select>
+      </div>
+      <div>
+        <label for="profiles">Extra profiles (comma separated)</label>
+        <input type="text" id="profiles" placeholder="e.g. preview" size="18">
+      </div>
+      <div class="checkline">
+        <input type="checkbox" id="register-cb">
+        <label for="register-cb" style="text-transform:none;letter-spacing:0;font-weight:400;margin:0">
+          Register <code>email_is_unique</code> in this runtime
+        </label>
+      </div>
+      <div>
+        <label for="skin">Skin</label>
+        <select id="skin">
+          <option value="prose">prose (default)</option>
+          <option value="equation">equation</option>
+          <option value="blackboard">blackboard</option>
+          <option value="ledger">ledger</option>
+          <option value="boxed">boxed</option>
+        </select>
+      </div>
+      <div>
+        <label for="placement">AND / OR (prose)</label>
+        <select id="placement">
+          <option value="below">below the row (default)</option>
+          <option value="inline">after the value</option>
+        </select>
+      </div>
+      <div>
+        <label for="controls">Controls</label>
+        <select id="controls">
+          <option value="hover">on hover (default)</option>
+          <option value="always">always shown</option>
+        </select>
+      </div>
+      <div>
+        <label for="preview-style">Hover style</label>
+        <select id="preview-style">
+          <option value="bar">bar — a line in the margin (default)</option>
+          <option value="highlight">highlight — tint each row</option>
+          <option value="region">region — one soft wash</option>
+          <option value="fade">fade — everything else recedes</option>
+          <option value="color">color — the range in the hue</option>
+          <option value="marker">marker — a dot on each row</option>
+          <option value="underline">underline — names and operators</option>
+        </select>
+      </div>
+      <div>
+        <label for="theme">Theme</label>
+        <select id="theme">
+          <option value="">follow system</option>
+          <option value="light">light</option>
+          <option value="dark">dark</option>
+        </select>
+      </div>
+      <div>
+        <label for="output">Textarea output</label>
+        <select id="output">
+          <option value="json">JSON document</option>
+          <option value="sql">SQL condition</option>
+        </select>
+      </div>
+      <div>
+        <label for="dialect">SQL dialect</label>
+        <select id="dialect">
+          <option value="mysql">mysql</option>
+          <option value="postgres">postgres</option>
+          <option value="sqlite">sqlite</option>
+          <option value="sqlserver">sqlserver</option>
+          <option value="standard">standard</option>
+        </select>
+      </div>
+      <div class="checkline">
+        <input type="checkbox" id="ci">
+        <label for="ci" style="text-transform:none;letter-spacing:0;font-weight:400;margin:0">
+          Case-insensitive comparisons
+        </label>
+      </div>
+    </div>
+
+    <label class="field-label" for="conditions">Conditions</label>
+    <textarea id="conditions" name="conditions" rows="6"></textarea>
+    <!-- With output: 'sql' the textarea holds SQL, so the JSON lives here and
+         the rule survives a reload. -->
+    <input type="hidden" id="conditions-doc" name="conditions_doc">
+
+    <div class="grid-2" style="margin-top:22px">
+      <div>
+        <label class="field-label" for="sample-data">Sample submission (JSON)</label>
+        <textarea id="sample-data" class="data-input" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <label class="field-label">Evaluation</label>
+        <pre class="output" id="eval-output">—</pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Configuration</h2>
+    <p>
+      Edit either box and press <strong>Rebuild editor</strong>. Invalid JSON is reported
+      rather than applied, and the current rule is preserved where it still makes sense.
+    </p>
+    <div class="config-cols">
+      <div>
+        <label class="field-label" for="fields-config">fields</label>
+        <textarea id="fields-config" class="data-input" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <label class="field-label" for="operators-config">operators (custom)</label>
+        <textarea id="operators-config" class="data-input" spellcheck="false"></textarea>
+      </div>
+    </div>
+    <p style="margin-top:14px">
+      <button class="btn" id="rebuild">Rebuild editor</button>
+      <button class="btn secondary" id="reset">Reset to defaults</button>
+      <span id="config-error" style="color:#b3261e;font-size:0.875rem;margin-left:10px"></span>
+    </p>
+  </section>
+
+  <section>
+    <h2>Document</h2>
+    <pre class="output" id="json-output">—</pre>
+  </section>
+
+  <section>
+    <h2>SQL</h2>
+    <p>
+      What the rule becomes after <code>WHERE</code>. Each field's <code>column</code>
+      supplies the SQL name, so it need not match the name in the document.
+    </p>
+    <pre class="output" id="sql-output">—</pre>
+    <div class="note" style="margin-top:14px">
+      <strong>Generate this on the server.</strong> A document that arrived from a
+      browser is untrusted input; build the SQL from the document with the PHP or
+      JavaScript builder, and never execute SQL a client sent you.
+    </div>
+  </section>
+
+</div>
+
+<footer class="site-footer">
+  <div class="wrap">
+    kConditionsEditor 0.0.34 — MIT licensed.
+    <a href="https://github.com/KAStrack/kConditionsEditor">Source on GitHub</a>.
+  </div>
+</footer>
+
+<script src="dist/k-conditions-evaluator.min.js"></script>
+<script src="dist/k-conditions-sql.min.js"></script>
+<script src="dist/k-conditions-editor.min.js"></script>
+<script src="assets/demo-config.js"></script>
+<script>
+(function () {
+  var textarea = document.getElementById('conditions');
+  var dataBox = document.getElementById('sample-data');
+  var fieldsBox = document.getElementById('fields-config');
+  var opsBox = document.getElementById('operators-config');
+  var jsonOut = document.getElementById('json-output');
+  var evalOut = document.getElementById('eval-output');
+  var configError = document.getElementById('config-error');
+  var envSel = document.getElementById('env');
+  var profilesInput = document.getElementById('profiles');
+  var registerCb = document.getElementById('register-cb');
+  var ciBox = document.getElementById('ci');
+  var outputSel = document.getElementById('output');
+  var dialectSel = document.getElementById('dialect');
+  var sqlOut = document.getElementById('sql-output');
+  var skinSel = document.getElementById('skin');
+  var themeSel = document.getElementById('theme');
+  var previewSel = document.getElementById('preview-style');
+  var controlsSel = document.getElementById('controls');
+  var placementSel = document.getElementById('placement');
+
+  var editor = null;
+
+  function fillDefaults() {
+    fieldsBox.value = JSON.stringify(window.DEMO_FIELDS, null, 2);
+    opsBox.value = JSON.stringify(window.DEMO_OPERATORS, null, 2);
+    dataBox.value = JSON.stringify(window.DEMO_DATA, null, 2);
+    textarea.value = JSON.stringify(window.DEMO_STARTER);
+    document.getElementById('conditions-doc').value = JSON.stringify(window.DEMO_STARTER);
+  }
+
+  function build(preserve) {
+    configError.textContent = '';
+    var fields, operators;
+    try {
+      fields = JSON.parse(fieldsBox.value);
+      operators = JSON.parse(opsBox.value);
+    } catch (e) {
+      configError.textContent = 'Configuration is not valid JSON: ' + e.message;
+      return;
+    }
+
+    var current = preserve && editor ? editor.getDocument() : null;
+    if (editor) editor.destroy();
+    if (current) {
+      textarea.value = JSON.stringify(current);
+      document.getElementById('conditions-doc').value = JSON.stringify(current);
+    }
+
+    editor = KConditionsEditor.attach(textarea, {
+      fields: fields,
+      operators: operators,
+      emptyText: 'Always (no conditions)',
+      startOpen: true,
+      debug: true,
+      skin: skinSel.value,
+      previewStyle: previewSel.value,
+      controls: controlsSel.value,
+      connectorPlacement: placementSel.value,
+      theme: themeSel.value || null,
+      output: outputSel.value,
+      documentInput: '#conditions-doc',
+      sql: { dialect: dialectSel.value }
+    });
+    editor.on('change', refresh);
+    refresh();
+  }
+
+  function currentOptions() {
+    var profiles = profilesInput.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    return {
+      runtime: 'js',
+      environment: envSel.value,
+      profiles: profiles,
+      caseInsensitive: ciBox.checked
+    };
+  }
+
+  function refresh() {
+    if (!editor) return;
+    var doc = editor.getDocument();
+    jsonOut.textContent = JSON.stringify(doc, null, 2);
+
+    try {
+      var built = editor.getSql({ dialect: dialectSel.value, pretty: true });
+      var lines = ['WHERE ' + built.sql];
+      (built.skipped || []).forEach(function (s) {
+        lines.push('-- skipped: ' + s.operator + ' on ' + s.field + ' (' + s.reason + ')');
+      });
+      (built.warnings || []).forEach(function (w) {
+        lines.push('-- ' + (w.message || w.reason));
+      });
+      sqlOut.textContent = lines.join('\n');
+    } catch (e) {
+      sqlOut.textContent = e.name + ': ' + e.message;
+    }
+
+    var data;
+    try {
+      data = JSON.parse(dataBox.value || '{}');
+    } catch (e) {
+      evalOut.textContent = 'Sample data is not valid JSON: ' + e.message;
+      return;
+    }
+
+    var options = currentOptions();
+    var ev = new KConditions.Evaluator(options);
+    if (registerCb.checked) {
+      ev.registerOperator('email_is_unique', function (value) {
+        return String(value || '').indexOf('taken') === -1;
+      });
+    }
+
+    evalOut.innerHTML = '';
+    var badge = document.createElement('span');
+
+    try {
+      var details = ev.evaluateDetailed(doc, data);
+      badge.className = details.result ? 'result-true' : 'result-false';
+      badge.textContent = details.result ? 'TRUE' : 'FALSE';
+      evalOut.appendChild(badge);
+
+      var lines = ['', 'summary: ' + editor.describe(), 'context: ' + [].concat(options.profiles, [options.environment, options.runtime]).join(' → ')];
+      if (details.skipped.length) {
+        lines.push('');
+        lines.push('skipped (treated as absent):');
+        details.skipped.forEach(function (s) {
+          lines.push('  · ' + s.operator + ' on [' + s.field + '] — ' + s.reason);
+        });
+      }
+      if (details.errors.length) {
+        lines.push('');
+        lines.push('handled errors:');
+        details.errors.forEach(function (e) {
+          lines.push('  · ' + e.operator + ' → ' + e.handled + (e.message ? ' (' + e.message + ')' : ''));
+        });
+      }
+      evalOut.appendChild(document.createTextNode(lines.join('\n')));
+    } catch (e) {
+      badge.className = 'result-false';
+      badge.textContent = 'ERROR';
+      evalOut.appendChild(badge);
+      evalOut.appendChild(document.createTextNode('\n\n' + e.name + ': ' + e.message));
+    }
+  }
+
+  document.getElementById('rebuild').addEventListener('click', function () { build(true); });
+  document.getElementById('reset').addEventListener('click', function () {
+    if (editor) { editor.destroy(); editor = null; }
+    fillDefaults();
+    build(false);
+  });
+
+  outputSel.addEventListener('change', function () { build(true); });
+  dialectSel.addEventListener('change', function () { build(true); });
+
+  // Skin and theme swap live — no rebuild, so whatever rule you have built
+  // stays put while you look at it in each treatment.
+  skinSel.addEventListener('change', function () {
+    if (editor) editor.setSkin(skinSel.value);
+    document.body.classList.toggle('stage-dark', skinSel.value === 'blackboard');
+  });
+  themeSel.addEventListener('change', function () {
+    if (editor) editor.setTheme(themeSel.value || null);
+  });
+  // The hover style is independent of the skin: point at +AND, OR(…) or a ×
+  // to see it.
+  previewSel.addEventListener('change', function () {
+    if (editor) editor.setPreviewStyle(previewSel.value);
+  });
+  controlsSel.addEventListener('change', function () {
+    if (editor) editor.setControls(controlsSel.value);
+  });
+  placementSel.addEventListener('change', function () {
+    if (editor) editor.setConnectorPlacement(placementSel.value);
+  });
+
+  [envSel, profilesInput, registerCb, ciBox, dataBox].forEach(function (node) {
+    node.addEventListener('input', refresh);
+    node.addEventListener('change', refresh);
+  });
+
+  fillDefaults();
+  build(false);
+}());
+</script>
+
+</body>
+</html>

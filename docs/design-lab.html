@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design lab — kConditionsEditor</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="dist/k-conditions-editor.min.css">
+<link rel="stylesheet" href="dist/k-conditions-skins.min.css">
+<link rel="stylesheet" href="assets/design-lab.css">
+<style>
+  .lab { margin: 0 0 36px; }
+  .lab-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 10px; }
+  .lab-head h2 { margin: 0; font-size: 1.05rem; }
+  .lab-head .tag { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--page-muted); border: 1px solid var(--page-border); border-radius: 4px; padding: 2px 6px; }
+  .lab-head p { margin: 0; color: var(--page-muted); font-size: 0.875rem; flex: 1 1 240px; }
+  .stage { border: 1px solid var(--page-border); border-radius: 12px; padding: 20px 22px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.0.34</span></a>
+    <nav class="site-nav">
+      <a href="./">Home</a>
+      <a href="skins.html">Skins</a>
+      <a href="design-lab.html" aria-current="page">Design lab</a>
+      <a href="docs.html">Docs</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero" style="padding-bottom:8px">
+    <h1>Design lab</h1>
+    <p class="lede">Four takes on the equation direction. Same rule, same markup, four stylesheets — all editable.</p>
+  </div>
+
+  <section style="padding-top:6px">
+
+    <div class="lab">
+      <div class="lab-head"><h2>A · equation</h2><span class="tag">baseline</span>
+        <p>What you saw before. Connector on its own line, rounded brackets, sans throughout.</p></div>
+      <div class="stage"><textarea id="ta-a" rows="3"></textarea></div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-head"><h2>B · hanging connectors</h2><span class="tag">variant</span>
+        <p>AND/OR pulled out into the margin so they form a column and every condition starts flush.</p></div>
+      <div class="stage"><textarea id="ta-b" rows="3"></textarea></div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-head"><h2>C · bookish</h2><span class="tag">variant</span>
+        <p>Serif field names, small-caps operators, square brackets, more leading.</p></div>
+      <div class="stage"><textarea id="ta-c" rows="3"></textarea></div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-head"><h2>D · prose</h2><span class="tag">variant</span>
+        <p>One wrapped sentence with real parentheses. Most compact; smallest click targets.</p></div>
+      <div class="stage"><textarea id="ta-d" rows="3"></textarea></div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-head"><h2>E · hanging + small caps</h2><span class="tag">hybrid</span>
+        <p>B's margin connectors with C's small-caps operators, but no serif — the two changes that pulled their weight.</p></div>
+      <div class="stage"><textarea id="ta-e" rows="3"></textarea></div>
+    </div>
+
+  </section>
+</div>
+
+<script src="dist/k-conditions-evaluator.min.js"></script>
+<script src="dist/k-conditions-editor.min.js"></script>
+<script src="assets/demo-config.js"></script>
+<script>
+(function () {
+  var rule = JSON.parse(JSON.stringify(window.DEMO_STARTER));
+  rule.root.children.push({
+    type: 'group', operator: 'and', negate: true, children: [
+      { type: 'condition', field: 'question', operator: 'in_list',
+        values: [{ source: 'literal', value: ['refund', 'cancel', 'chargeback'] }] },
+      { type: 'condition', field: 'email', operator: 'eq',
+        values: [{ source: 'field', field: 'billing_email' }] }
+    ]
+  });
+
+  [['a', null], ['b', 'hang'], ['c', 'bookish'], ['d', 'prose'], ['e', 'hang smallcaps']].forEach(function (pair) {
+    var ta = document.getElementById('ta-' + pair[0]);
+    ta.value = JSON.stringify(rule);
+    var ed = KConditionsEditor.attach(ta, {
+      fields: window.DEMO_FIELDS,
+      operators: window.DEMO_OPERATORS,
+      skin: 'equation',
+      startOpen: true,
+      collapsible: false
+    });
+    if (pair[1]) ed.root.setAttribute('data-lab', pair[1]);
+  });
+}());
+</script>
+
+</body>
+</html>

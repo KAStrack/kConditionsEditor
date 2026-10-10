@@ -1,0 +1,70 @@
+{
+  "name": "@kastrack/conditions-editor",
+  "version": "0.0.34",
+  "description": "A zero-dependency conditions builder that takes over a <textarea>, plus evaluator SDKs that turn the JSON it writes into a boolean.",
+  "keywords": [
+    "conditions",
+    "rules",
+    "rule-engine",
+    "query-builder",
+    "condition-builder",
+    "form-logic",
+    "no-dependencies"
+  ],
+  "license": "MIT",
+  "author": "Ben",
+  "homepage": "https://kastrack.github.io/kConditionsEditor/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KAStrack/kConditionsEditor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KAStrack/kConditionsEditor/issues"
+  },
+  "main": "src/k-conditions-evaluator.js",
+  "browser": "src/k-conditions-editor.js",
+  "exports": {
+    ".": "./src/k-conditions-evaluator.js",
+    "./evaluator": "./src/k-conditions-evaluator.js",
+    "./editor": "./src/k-conditions-editor.js",
+    "./sql": "./src/k-conditions-sql.js",
+    "./editor.css": "./src/k-conditions-editor.css",
+    "./skins.css": "./src/k-conditions-skins.css",
+    "./bundle": "./dist/k-conditions.min.js",
+    "./bundle.css": "./dist/k-conditions.min.css",
+    "./dist/*": "./dist/*",
+    "./schema": "./schema/condition-document.schema.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/",
+    "dist/",
+    "schema/",
+    "SPEC.md",
+    "README.md",
+    "CLAUDE.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node build.js",
+    "test": "node --test \"tests/js/*.test.js\"",
+    "test:php": "php tests/php/conformance.php",
+    "test:all": "npm test && npm run test:php && npm run test:browser",
+    "preserve": "npm run build",
+    "serve": "node -e \"const h=require('http'),f=require('fs'),p=require('path');h.createServer((q,s)=>{let u=decodeURIComponent(q.url.split('?')[0]);if(u.endsWith('/'))u+='index.html';const t=p.join(process.cwd(),'docs',u);f.readFile(t,(e,d)=>{if(e){s.writeHead(404);return s.end('not found');}const x={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json'}[p.extname(t)]||'text/plain';s.writeHead(200,{'content-type':x});s.end(d);});}).listen(8080,()=>console.log('http://localhost:8080/'))\"",
+    "prepublishOnly": "npm run build && npm test",
+    "pretest:browser": "npm run build",
+    "test:browser": "node tests/browser/run.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "devDependencies": {
+    "clean-css": "^5.3.3",
+    "playwright": "^1.56.0",
+    "terser": "^5.31.0"
+  }
+}

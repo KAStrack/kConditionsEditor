@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skins — kConditionsEditor</title>
+<meta name="description" content="The same rule rendered in each of the editor's skins, side by side.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="dist/k-conditions-editor.min.css">
+<link rel="stylesheet" href="dist/k-conditions-skins.min.css">
+<style>
+  .skin-block { margin: 0 0 34px; }
+  .preview-pick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0 0; font-size: 0.875rem; }
+  .preview-pick label { font-weight: 600; }
+  .preview-pick span { color: var(--page-muted); }
+  .skin-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 10px; }
+  .skin-head h2 { margin: 0; font-size: 1.1rem; }
+  .skin-head code { font-size: 0.75rem; }
+  .skin-head p { margin: 0; color: var(--page-muted); font-size: 0.875rem; flex: 1 1 260px; }
+  .skin-stage { border: 1px solid var(--page-border); border-radius: 12px; padding: 18px; background: var(--page-bg); }
+  .skin-stage.plain { background: var(--page-bg); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.0.34</span></a>
+    <nav class="site-nav">
+      <a href="./">Home</a>
+      <a href="demo.html">Playground</a>
+      <a href="skins.html" aria-current="page">Skins</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/KAStrack/kConditionsEditor">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero" style="padding-bottom:8px">
+    <h1>Skins</h1>
+    <p class="lede">
+      The same rule, the same markup, five stylesheets. Every skin is fully editable —
+      click a field name, an operator or a value in any of them.
+    </p>
+    <p class="preview-pick">
+      <label for="preview-style">Hover style</label>
+      <select id="preview-style">
+        <option value="bar">bar (default)</option>
+        <option value="highlight">highlight</option>
+        <option value="region">region</option>
+        <option value="fade">fade</option>
+        <option value="color">color</option>
+        <option value="marker">marker</option>
+        <option value="underline">underline</option>
+      </select>
+      <label for="controls">Controls</label>
+      <select id="controls">
+        <option value="hover">on hover (default)</option>
+        <option value="always">always shown</option>
+      </select>
+      <span>Both independent of the skin — point at <code>+AND</code>, <code>OR(…)</code> or a <code>×</code> in any of them.</span>
+    </p>
+  </div>
+
+  <section style="padding-top:6px">
+
+    <div class="skin-block">
+      <div class="skin-head">
+        <h2>boxed</h2><code>skin: 'boxed'</code>
+        <p>The original. Explicit, but the borders compete with the logic.</p>
+      </div>
+      <div class="skin-stage"><textarea id="ta-boxed" rows="4"></textarea></div>
+    </div>
+
+    <div class="skin-block">
+      <div class="skin-head">
+        <h2>equation</h2><code>skin: 'equation'</code>
+        <p>Brackets and indentation carry the grouping; AND/OR sit between the lines.</p>
+      </div>
+      <div class="skin-stage"><textarea id="ta-equation" rows="4"></textarea></div>
+    </div>
+
+    <div class="skin-block">
+      <div class="skin-head">
+        <h2>blackboard</h2><code>skin: 'blackboard'</code>
+        <p>The same layout on a dark board, chalk palette, values in chalk yellow.</p>
+      </div>
+      <div class="skin-stage plain" style="background:transparent;border:0;padding:0">
+        <textarea id="ta-blackboard" rows="4"></textarea>
+      </div>
+    </div>
+
+    <div class="skin-block">
+      <div class="skin-head">
+        <h2>ledger</h2><code>skin: 'ledger'</code>
+        <p>Least ink. Hairline guides instead of brackets; a negated group's guide goes dashed.</p>
+      </div>
+      <div class="skin-stage"><textarea id="ta-ledger" rows="4"></textarea></div>
+    </div>
+
+    <div class="skin-block">
+      <div class="skin-head">
+        <h2>prose</h2><code>skin: 'prose'</code>
+        <p>The rule pretty-printed: real parentheses, indentation by depth, closing bracket on its own line.</p>
+      </div>
+      <div class="skin-stage"><textarea id="ta-prose" rows="4"></textarea></div>
+    </div>
+
+  </section>
+
+</div>
+
+<footer class="site-footer">
+  <div class="wrap">
+    kConditionsEditor 0.0.34 — MIT licensed.
+    <a href="https://github.com/KAStrack/kConditionsEditor">Source on GitHub</a>.
+  </div>
+</footer>
+
+<script src="dist/k-conditions-evaluator.min.js"></script>
+<script src="dist/k-conditions-editor.min.js"></script>
+<script src="assets/demo-config.js"></script>
+<script>
+(function () {
+  // A slightly richer rule than the landing page, so every treatment has to
+  // cope with nesting, a list value, a NOT and a field-to-field comparison.
+  var rule = JSON.parse(JSON.stringify(window.DEMO_STARTER));
+  rule.root.children.push({
+    type: 'group', operator: 'and', negate: true, children: [
+      { type: 'condition', field: 'question', operator: 'in_list',
+        values: [{ source: 'literal', value: ['refund', 'cancel', 'chargeback'] }] },
+      { type: 'condition', field: 'email', operator: 'eq',
+        values: [{ source: 'field', field: 'billing_email' }] }
+    ]
+  });
+
+  var previewSel = document.getElementById('preview-style');
+  var controlsSel = document.getElementById('controls');
+  var editors = [];
+
+  ['boxed', 'equation', 'blackboard', 'ledger', 'prose'].forEach(function (skin) {
+    var ta = document.getElementById('ta-' + skin);
+    ta.value = JSON.stringify(rule);
+    editors.push(KConditionsEditor.attach(ta, {
+      fields: window.DEMO_FIELDS,
+      operators: window.DEMO_OPERATORS,
+      emptyText: 'Always',
+      skin: skin,
+      previewStyle: previewSel.value,
+      controls: controlsSel.value,
+      startOpen: true,
+      collapsible: false
+    }));
+  });
+
+  // One picker for every skin, so a skin and a hover style can be compared
+  // in combination.
+  previewSel.addEventListener('change', function () {
+    editors.forEach(function (ed) { ed.setPreviewStyle(previewSel.value); });
+  });
+  controlsSel.addEventListener('change', function () {
+    editors.forEach(function (ed) { ed.setControls(controlsSel.value); });
+  });
+}());
+</script>
+
+</body>
+</html>
