@@ -1,6 +1,6 @@
 # kConditions Document Specification
 
-Version `1.0` — emitted by kConditionsEditor 0.0.34
+Version `1.0` — emitted by kConditionsEditor 0.1.1
 
 A **condition document** is a JSON object describing a boolean expression over a
 set of named fields. It is produced by the editor and consumed by any SDK.
@@ -8,7 +8,7 @@ set of named fields. It is produced by the editor and consumed by any SDK.
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.0.34",
+  "generator": "kConditionsEditor/0.1.1",
   "operators": {},
   "root": {
     "type": "group",
@@ -129,9 +129,40 @@ String comparison is case-sensitive by default. Append `_i` handling via the
 evaluator option `caseInsensitive: true` to compare case-insensitively across all
 string operators.
 
+A number compared as text is written as its shortest round-trip digits in plain
+decimal notation — `0.0000001`, never `1e-7`; `1000000000000000000000`, never
+`1e+21` — so `contains "e"` never matches a number. Whitespace trimmed from a value
+before it is read as a number, a boolean, a date or a list is JavaScript's
+`String.prototype.trim()` set in every SDK: the ASCII spaces and line breaks plus
+every Unicode space separator, U+00A0 (no-break space) and U+FEFF included.
+
 A `regex` value is a plain pattern string without delimiters, e.g. `^ben`.
 Patterns are evaluated with the host language's engine; keep to the common subset
 (character classes, anchors, quantifiers, groups) for cross-language parity.
+
+### List — group `list`
+
+| Name           | Label           | Arity | Operand      |
+|----------------|-----------------|-------|--------------|
+| `includes_any` | includes any of | n     | whole values |
+| `includes_all` | includes all of | n     | whole values |
+
+For a field whose **value is itself a list** — a multi-select, a set of tags, a
+comma-separated string. `in_list` asks whether one value is among several
+operands; these ask about the overlap between two lists. `includes_any` is
+true when at least one of the field's values is among the operands,
+`includes_all` when every operand is among the field's values. A string value
+is split on commas, as an operand is. An empty operand list never matches, and
+neither does an empty or missing field value — a condition with nothing chosen
+is false, not "always". Case folding follows the evaluator's `caseInsensitive`
+option.
+
+A host exposes such a field as `type: 'list'`, which offers the `list` and
+`existence` groups by default. The SQL builders emit nothing for these two
+operators: a multi-valued column has no portable storage shape (a CSV string, a
+JSON array, a junction table), so they are translated only through a custom
+operator with an `sql` template that knows the host's schema; otherwise the
+unresolved-operator policy applies.
 
 ### Date — group `date`
 
@@ -147,11 +178,19 @@ Patterns are evaluated with the host language's engine; keep to the common subse
 | `date_more_than_days_ago` | is more than N days ago            | 1     | number       |
 | `date_more_than_days_ahead` | is more than N days from now     | 1     | number       |
 
-Accepted date literals: `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, full ISO 8601
+Accepted date literals: `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, a date and time with no
+zone (`YYYY-MM-DD HH:MM[:SS[.mmm]]`, a space or a `T` between them), full ISO 8601
 timestamps, epoch milliseconds, and native date objects. A partial date expands
 to its earliest instant in UTC, so `is before 1980` means before
-`1980-01-01T00:00:00Z`. `date_eq` and `date_is_today` compare calendar days in
-UTC; all other date operators compare instants.
+`1980-01-01T00:00:00Z`, and a date and time with no zone is read as that wall time
+in UTC — never in the reader's own zone, which would make two SDKs on two machines
+disagree. A year is taken as written: `0026-10-19` is the year 26, not 1926 or
+2026. `date_eq` and `date_is_today` compare calendar days in UTC; all other date
+operators compare instants.
+
+A host whose users think in their own zone passes `now` as that zone's wall time
+read as UTC (the instant plus the zone's offset) and hands dates over as naive
+wall times; every UTC-day comparison is then a comparison of the user's days.
 
 ### Boolean — group `boolean`
 

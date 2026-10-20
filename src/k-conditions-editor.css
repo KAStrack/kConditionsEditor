@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.0.34 — base stylesheet + the "boxed" skin
+ * kConditionsEditor 0.1.1 — base stylesheet + the "boxed" skin
  *
  * Every colour and metric is a CSS custom property, so the whole editor can be
  * restyled by overriding the --kce-* variables on .kce or any ancestor.
@@ -779,6 +779,8 @@ textarea.kce-hidden-textarea {
 
 .kce[data-kce-skin="boxed"] .kce-group[data-op="or"] { border-left-color: var(--kce-or); }
 .kce[data-kce-skin="boxed"] .kce-group.is-negated { border-style: dashed; }
+/* A group a change would merge away (see markTidy). */
+.kce[data-kce-skin="boxed"] .kce-group.kce-will-unbracket { border-color: var(--kce-danger); }
 
 .kce[data-kce-skin="boxed"] .kce-group-head {
   display: flex;
@@ -1225,13 +1227,13 @@ textarea.kce-hidden-textarea {
  * opacity or decoration. The ghost always goes after the button's own line.
  * ================================================================== */
 
-:is(.kce-will-group, .kce-preview-mark, .kce-ghost).is-and {
+:is(.kce-will-group, .kce-preview-mark, .kce-ghost, .kce-flash).is-and {
   --kce-mark: var(--kce-and);
   --kce-mark-soft: var(--kce-accent-soft);
   --kce-mark-edge: var(--kce-and-muted);
 }
 
-:is(.kce-will-group, .kce-preview-mark, .kce-ghost).is-or {
+:is(.kce-will-group, .kce-preview-mark, .kce-ghost, .kce-flash).is-or {
   --kce-mark: var(--kce-or);
   --kce-mark-soft: var(--kce-warn-bg);
   --kce-mark-edge: var(--kce-or-muted);
@@ -1298,7 +1300,7 @@ textarea.kce-hidden-textarea {
 }
 
 .kce[data-kce-preview="fade"] .kce-tree.kce-previewing
-  :is(.kce-condition, .kce-paren, .kce-negate-marker, .kce-connector-btn, .kce-empty-group):not(.kce-will-group, .kce-will-remove, .kce-will-group *, .kce-will-remove *) {
+  :is(.kce-condition, .kce-paren, .kce-negate-marker, .kce-connector-btn, .kce-empty-group):not(.kce-will-group, .kce-will-remove, .kce-will-unbracket, .kce-will-group *, .kce-will-remove *) {
   opacity: 0.3;
 }
 
@@ -1416,6 +1418,123 @@ textarea.kce-hidden-textarea {
 /* The ghost is a preview, not content: it must never be draggable, focusable
    or hit-testable, or pointing at it would count as leaving the button. */
 .kce-ghost-line { pointer-events: none; }
+
+/* --- brackets a change would leave with nothing to do ---------------- */
+
+/* Marked by markTidy() while a button whose click would merge a group is
+   pointed at or focused, in every preview style: the brackets in the removal
+   colour, struck through, and the group's guide with them. The tree skins
+   draw their brackets on the group's box; skins.css colours those. */
+.kce-paren.kce-will-unbracket {
+  color: var(--kce-danger) !important;
+  opacity: 1 !important;
+  text-decoration: line-through 2px var(--kce-danger);
+}
+
+.kce-guide.kce-will-unbracket {
+  --kce-guide: var(--kce-danger);
+  opacity: 1;
+}
+
+/* --- after the click: the rows that moved, and the note -------------- */
+
+/* A tint over the rows that came out of the brackets, in their new group's
+   AND / OR colour, fading out. Over the text like the region preview, and
+   as transparent to the pointer. */
+.kce-flash {
+  position: absolute;
+  pointer-events: none;
+  border-radius: var(--kce-radius-sm);
+  background: color-mix(in srgb, var(--kce-mark) 16%, transparent);
+  animation: kce-flash 1.6s ease-in forwards;
+}
+
+@keyframes kce-flash {
+  0%, 35% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* "Removed unneeded brackets · Undo". Placed by placeTidyNote(): floated
+   level with a moved row or its AND / OR, or in the footer by Undo. 20px
+   tall, so it fits in the gap between two rows beside an AND / OR; the Undo
+   reaches 24px with a transparent ::before, as the AND / OR do. */
+.kce-tidy-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  height: 20px;
+  max-width: 100%;
+  padding: 0 1px 0 9px;
+  border: 1px solid var(--kce-border);
+  border-radius: 999px;
+  background: var(--kce-bg);
+  color: var(--kce-text-muted);
+  font-size: 0.78em;
+  line-height: 1;
+  white-space: nowrap;
+  transition: opacity 0.25s ease;
+}
+
+.kce-tidy-note-text { line-height: 16px; }
+
+.kce-tidy-note.kce-tidy-note-float {
+  position: absolute;
+  z-index: 2;
+}
+
+.kce-tidy-note.is-leaving { opacity: 0; }
+
+.kce .kce-tidy-note-undo {
+  appearance: none;
+  position: relative;
+  box-sizing: border-box;
+  margin: 0;
+  width: auto;
+  height: 16px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--kce-accent);
+  font: inherit;
+  font-weight: 600;
+  line-height: 16px;
+  cursor: pointer;
+}
+
+.kce .kce-tidy-note-undo::before {
+  content: '';
+  position: absolute;
+  inset: -4px -2px;
+}
+
+.kce .kce-tidy-note-undo:hover,
+.kce .kce-tidy-note-undo:focus-visible {
+  background: var(--kce-accent-soft);
+  color: var(--kce-accent-strong);
+}
+
+/* The note's words, for a screen reader: present, but not on screen. */
+.kce-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kce-flash { animation: none; }
+  .kce-tidy-note { transition: none; }
+}
 
 /* The hideTextarea: 'toggle' control, sitting with the other footer buttons. */
 .kce-source-toggle-wrap { display: inline-flex; align-items: center; }

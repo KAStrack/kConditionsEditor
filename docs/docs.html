@@ -14,7 +14,7 @@
 
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.0.34</span></a>
+    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.1.1</span></a>
     <nav class="site-nav">
       <a href="./">Home</a>
       <a href="demo.html">Playground</a>
@@ -447,6 +447,45 @@ editor.setPreviewStyle('underline');   // live; nothing re-renders</code></pre>
       one line gives no indication how much sits underneath it.
     </p>
 
+    <h3 id="unneeded-brackets">Brackets that do nothing</h3>
+    <p>
+      The editor takes out brackets that change nothing: a group with one thing
+      in it, a group using its parent's <code>AND</code> / <code>OR</code>, and
+      an empty group. It does this on load, in <code>setDocument()</code> and
+      after every change, and the rule evaluates exactly as before. Brackets
+      that carry a <code>NOT</code> stay.
+    </p>
+    <p>
+      So some clicks take brackets away as well as doing what they say.
+      Switching a group to its parent's operator merges the group into its
+      parent. Switching back then switches the parent, because the group is
+      gone. A <code>×</code> can leave a group holding one thing, and those
+      brackets go too. Three things make that visible:
+    </p>
+    <ul>
+      <li><strong>Before the click.</strong> Pointing at (or tabbing to) an
+        <code>AND</code> / <code>OR</code>, a group's <code>NOT</code> or a
+        <code>×</code> marks the brackets that would go, struck through in the
+        removal colour, with the group's guide. This is the same in every
+        <code>previewStyle</code>. The mark comes from making the change to a
+        copy of the rule and tidying it with the same code the click runs, so it
+        cannot disagree with the click.</li>
+      <li><strong>After it.</strong> The rows that came out of the brackets are
+        tinted briefly in their new group's colour.</li>
+      <li><strong>A note, with the way back.</strong> <em>Removed unneeded
+        brackets · Undo</em>, beside the change where there is room, otherwise in
+        the footer next to Undo. It goes on the next change, or after a few
+        seconds, but not while it is pointed at or focused. A screen reader
+        hears it through a polite live region. The text is the
+        <code>bracketsRemoved</code> label. With <code>history: false</code>
+        the note has no Undo.</li>
+    </ul>
+    <p>
+      <code>AND(…)</code> / <code>OR(…)</code> merges too, when the group it
+      closes off ends up with its parent's operator, but that is what the button
+      is for and its preview already shows it, so it raises no note.
+    </p>
+
     <h3 id="placement">Where the AND / OR goes</h3>
     <p>
       In prose, <code>connectorPlacement</code> decides where each
@@ -625,7 +664,7 @@ State is equal to Florida   AND (
     <pre><code>{
   name: 'dob',                 // required — the key looked up in your data
   label: 'Date of Birth',      // shown in the UI; defaults to name
-  type: 'date',                // text | number | date | boolean | enum
+  type: 'date',                // text | number | date | boolean | enum | list
   column: 'c.date_of_birth',   // SQL column name; defaults to name
   choices: [...],              // for enum fields; strings or {value, label}
   operators: [...],            // explicit operator list, overrides the type default
@@ -955,7 +994,7 @@ $rows  = $db-&gt;query("SELECT * FROM contacts c WHERE $where");</code></pre>
       <tbody>
         <tr><td><code>getDocument()</code></td><td>object</td><td>The current document, without internal ids.</td></tr>
         <tr><td><code>getJson()</code></td><td>string</td><td>The same thing, serialised the way the textarea has it.</td></tr>
-        <tr><td><code>setDocument(doc)</code></td><td>this</td><td>Accepts an object, a JSON string, or a bare node.</td></tr>
+        <tr><td><code>setDocument(doc)</code></td><td>this</td><td>Accepts an object, a JSON string, or a bare node. Brackets that change nothing are taken out, as on load and after every change (see <a href="#unneeded-brackets">Brackets that do nothing</a>); the result is the same.</td></tr>
         <tr><td><code>validate()</code></td><td>array</td><td>Problems found in the current rule; empty means valid.</td></tr>
         <tr><td><code>getSql(overrides)</code></td><td>object</td><td><code>{sql, params, dialect, skipped, warnings}</code>. Requires <code>k-conditions-sql.js</code>.</td></tr>
         <tr><td><code>clear()</code></td><td>this</td><td>Empty the rule back to "Always" and fire a <code>clear</code> event. The footer control calls this after confirmation.</td></tr>
@@ -1032,6 +1071,7 @@ $rows  = $db-&gt;query("SELECT * FROM contacts c WHERE $where");</code></pre>
         <tr><td>arithmetic</td><td><code>between</code>, <code>not_between</code></td><td>2</td></tr>
         <tr><td>alphanumeric</td><td><code>contains</code>, <code>not_contains</code>, <code>starts_with</code>, <code>ends_with</code>, <code>regex</code>, <code>not_regex</code></td><td>1</td></tr>
         <tr><td>alphanumeric</td><td><code>in_list</code>, <code>not_in_list</code></td><td>list</td></tr>
+        <tr><td>list</td><td><code>includes_any</code>, <code>includes_all</code></td><td>list (the field's own value is a list; no SQL)</td></tr>
         <tr><td>date</td><td><code>date_eq</code>, <code>date_before</code>, <code>date_after</code></td><td>1</td></tr>
         <tr><td>date</td><td><code>date_between</code></td><td>2</td></tr>
         <tr><td>date</td><td><code>date_is_today</code></td><td>0</td></tr>
@@ -1352,7 +1392,7 @@ editor.describeHtml();  // string of HTML</code></pre>
 
 <footer class="site-footer">
   <div class="wrap">
-    kConditionsEditor 0.0.34 — MIT licensed.
+    kConditionsEditor 0.1.1 — MIT licensed.
     <a href="https://github.com/KAStrack/kConditionsEditor">Source on GitHub</a>.
   </div>
 </footer>

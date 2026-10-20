@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.0.34 — alternative skins
+ * kConditionsEditor 0.1.1 — alternative skins
  *
  * Load after k-conditions-editor.css and pick one with the `skin` option:
  *
@@ -321,6 +321,13 @@
 
 /* The outermost group needs no bracket around the whole rule. */
 .kce[data-kce-skin="equation"] .kce-tree > .kce-group > .kce-group-children { padding-left: 2px; padding-right: 2px; }
+
+/* Brackets a change would merge away (see markTidy), in the removal colour. */
+.kce[data-kce-skin="equation"] .kce-group.kce-will-unbracket > .kce-group-children::before,
+.kce[data-kce-skin="equation"] .kce-group.kce-will-unbracket > .kce-group-children::after {
+  border-color: var(--kce-danger);
+  opacity: 1;
+}
 .kce[data-kce-skin="equation"] .kce-tree > .kce-group > .kce-group-children::before,
 .kce[data-kce-skin="equation"] .kce-tree > .kce-group > .kce-group-children::after { display: none; }
 
@@ -408,6 +415,12 @@
 }
 
 .kce[data-kce-skin="blackboard"] .kce-tree > .kce-group > .kce-group-children { padding-left: 2px; padding-right: 2px; }
+
+.kce[data-kce-skin="blackboard"] .kce-group.kce-will-unbracket > .kce-group-children::before,
+.kce[data-kce-skin="blackboard"] .kce-group.kce-will-unbracket > .kce-group-children::after {
+  border-color: var(--kce-danger);
+  opacity: 1;
+}
 .kce[data-kce-skin="blackboard"] .kce-tree > .kce-group > .kce-group-children::before,
 .kce[data-kce-skin="blackboard"] .kce-tree > .kce-group > .kce-group-children::after { display: none; }
 
@@ -447,6 +460,17 @@
   }
 }
 
+/* The same for `theme: 'dark'` on a reader in light mode. Without it the
+   light values above outrank the base [data-kce-theme="dark"] tokens (equal
+   specificity, later stylesheet). */
+.kce[data-kce-skin="ledger"][data-kce-theme="dark"] {
+  --kce-field: #e8ecf1;
+  --kce-op: #9aa5b1;
+  --kce-value: #7fc9a3;
+  --kce-and: #9fb0cc;
+  --kce-or: #d9a071;
+}
+
 .kce[data-kce-skin="ledger"] .kce-group > .kce-group-children {
   padding: 1px 0 1px var(--kce-gutter);
   border-left: 1px solid color-mix(in srgb, var(--kce-rule) 42%, transparent);
@@ -467,6 +491,10 @@
 .kce[data-kce-skin="ledger"] .kce-group.is-negated > .kce-group-children {
   border-left-style: dashed;
   border-left-color: color-mix(in srgb, var(--kce-or) 55%, transparent);
+}
+
+.kce[data-kce-skin="ledger"] .kce-group.kce-will-unbracket > .kce-group-children {
+  border-left-color: var(--kce-danger);
 }
 
 /* ================================================================== *
@@ -515,6 +543,13 @@
     --kce-op: #98a1af;
     --kce-value: #7fc4e8;
   }
+}
+
+/* The same for `theme: 'dark'` on a reader in light mode (see ledger). */
+.kce[data-kce-skin="prose"][data-kce-theme="dark"] {
+  --kce-field: #e6e9ee;
+  --kce-op: #98a1af;
+  --kce-value: #7fc4e8;
 }
 
 .kce[data-kce-skin="prose"] .kce-body { border: 0; background: transparent; }

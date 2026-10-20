@@ -140,6 +140,37 @@ final class Operators
             'in_list' => static fn ($v, $a, $c) => Values::inList($v, Values::toList($a[0] ?? null), $ci($c)),
             'not_in_list' => static fn ($v, $a, $c) => !Values::inList($v, Values::toList($a[0] ?? null), $ci($c)),
 
+            /* list — the field's own value is a list; mirrors the JavaScript SDK.
+               An empty operand never matches, nor does an empty or missing value. */
+            'includes_any' => static function ($v, $a, $c) use ($ci): bool {
+                $have = Values::toList($v);
+                $want = Values::toList($a[0] ?? null);
+                if ($have === [] || $want === []) {
+                    return false;
+                }
+                foreach ($have as $x) {
+                    if (Values::inList($x, $want, $ci($c))) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+            'includes_all' => static function ($v, $a, $c) use ($ci): bool {
+                $have = Values::toList($v);
+                $want = Values::toList($a[0] ?? null);
+                if ($have === [] || $want === []) {
+                    return false;
+                }
+                foreach ($want as $y) {
+                    if (!Values::inList($y, $have, $ci($c))) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+
             /* date */
             'date_eq' => static fn ($v, $a) => $date(
                 $v,
@@ -235,6 +266,8 @@ final class Operators
             'not_regex' => ['group' => 'alphanumeric', 'label' => 'does not match regex', 'arity' => 1, 'valueKind' => 'text', 'valueFromChoices' => false],
             'in_list' => ['group' => 'alphanumeric', 'label' => 'is one of', 'arity' => 'n', 'valueKind' => 'list'],
             'not_in_list' => ['group' => 'alphanumeric', 'label' => 'is not one of', 'arity' => 'n', 'valueKind' => 'list'],
+            'includes_any' => ['group' => 'list', 'label' => 'includes any of', 'arity' => 'n', 'valueKind' => 'list'],
+            'includes_all' => ['group' => 'list', 'label' => 'includes all of', 'arity' => 'n', 'valueKind' => 'list'],
             'date_eq' => ['group' => 'date', 'label' => 'is on', 'arity' => 1, 'valueKind' => 'date'],
             'date_before' => ['group' => 'date', 'label' => 'is before', 'arity' => 1, 'valueKind' => 'date'],
             'date_after' => ['group' => 'date', 'label' => 'is after', 'arity' => 1, 'valueKind' => 'date'],

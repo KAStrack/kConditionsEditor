@@ -4,6 +4,128 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-10-19
+
+The first tagged release. 0.1.0 was prepared as the first tag, but these fixes
+came before anything was published, so the tag went to 0.1.1 instead and 0.1.0
+was never tagged.
+
+### Fixed
+
+Four places where the PHP and JavaScript SDKs gave different answers for the
+same document and data — a rule that passed in the browser and failed on the
+server. The shared fixtures now pin each one, and the JavaScript suite passes
+under any `TZ`.
+
+- **A date and time with no zone** (`2026-10-19 22:00`, `2026-10-19T22:00:00`)
+  was read in the browser's own zone by the JavaScript SDK (`Date.parse()`)
+  and in the host's default zone by PHP (`strtotime()`). Both now read it as
+  that wall time in UTC, as a bare date already was.
+- **A year below 100** (`0026-10-19`) became 1926 in JavaScript (`Date.UTC()`)
+  and 2026 in PHP (`gmmktime()`). Both now take it as written.
+- **A no-break space** (or U+FEFF, or any Unicode space) around a value was
+  trimmed by JavaScript and kept by PHP, so `"5\u00A0" is equal to 5` held in one
+  SDK only. PHP now trims exactly what `String.prototype.trim()` trims.
+- **A number compared as text** was written `1e-7` by JavaScript and
+  `0.0000001` by PHP, which also cut `0.30000000000000004` to `0.3`. Both now
+  write the shortest round-trip digits in plain decimal notation, so
+  `contains "e"` never matches a number.
+
+## [0.1.0] — 2026-10-15
+
+The minor bump that readied the package to be installed from Packagist and npm
+by version (the first tag is 0.1.1, above). The document format is unchanged (spec `1.0`), and both SDKs
+behave as in 0.0.37 apart from the addition below.
+
+### Added
+
+- **List operators `includes_any` and `includes_all`, and a `list` field
+  type.** A multi-select, a set of tags or a comma-separated field holds a
+  LIST of values, and nothing could ask about it: `in_list` asks whether one
+  value is among several operands, which is the other way round.
+  `[Tags] includes any of ["Red", "Blue"]` is true when at least one of the
+  field's values is listed, `includes all of` when every operand is. A string
+  value is split on commas like an operand. An empty operand list never
+  matches, and neither does an empty or missing value, so a condition with
+  nothing chosen reads as false rather than as "always". Declaring a field
+  `type: 'list'` offers the two operators plus the existence group, and the
+  editor's chip control takes the field's `choices`. `describe()` labels the
+  values from the choices as `in_list` does; the shared fixtures pin both
+  SDKs. The SQL builders refuse these two operators by default — a
+  multi-valued column has no portable storage shape — and a custom operator
+  with an `sql` template is the way to say how your schema stores it.
+
+## [0.0.37] — 2026-10-10
+
+### Fixed
+
+- **`theme: 'dark'` now darkens the prose and ledger skins on a machine in
+  light mode.** Before, prose drew its field names in near-black on the dark
+  background (1.1:1 contrast) and ledger did the same to field names, values
+  and AND / OR. Both skins set their own text colours and gave the dark ones
+  only for a reader whose system is in dark mode, so the `theme` option never
+  reached them. A dark-mode reader, and `theme: 'light'`, were unaffected.
+
+## [0.0.36] — 2026-10-10
+
+### Added
+
+- **Brackets going away is now visible: before the click, after it, and
+  with the way back.** Since 0.0.35, switching a group to its parent's
+  AND / OR merges it into the parent. Switching back then switches the
+  parent, because the group has gone. The only way back was Undo, a small
+  muted button in the footer, which is off the screen on a long rule. Nothing
+  pointed at it, and nothing said the brackets had gone rather than just the
+  operator changing. Now:
+  - **Pointing at a control whose click would remove brackets** (or tabbing
+    to it) marks those brackets as going: struck through in the removal
+    colour, with the group's guide in prose. This covers an AND / OR, a
+    group's NOT, and a × that would leave its group holding one thing. In
+    the tree skins it is the group's own bracket or border. It looks the
+    same in every `previewStyle`. The mark comes from making the change to a
+    copy of the rule and tidying the copy with the same code the click runs,
+    so the preview cannot disagree with the click.
+  - **After the click**, the rows that came out of the brackets are tinted
+    briefly in their new group's colour. The tint doesn't animate under
+    `prefers-reduced-motion`.
+  - **A note, "Removed unneeded brackets · Undo"**, appears beside the
+    change where there is room for it. In prose that is usually level with
+    the AND / OR under the first moved row. Where there is no room, it goes
+    in the footer next to Undo. It goes on the next change, or after eight
+    seconds, but not while it is pointed at or focused. A screen reader
+    hears it. The text is the new `bracketsRemoved` label, and with
+    `history: false` the note has no Undo.
+
+  `AND(…)` / `OR(…)` merges as part of what it is for, and its preview
+  already shows that, so it raises no note. Loading a rule and
+  `setDocument()` don't raise one either.
+
+## [0.0.35] — 2026-10-10
+
+### Fixed
+
+- **Brackets that do nothing are taken out as soon as they appear.** Removing
+  a group's only sibling left that group alone in its own brackets. So
+  `(a AND b) OR c`, less `c`, inside an AND drew `((a AND b))`, with the AND
+  after it hanging out to the left. Switching a nested group's OR to match
+  its parent's AND left `a AND (b AND c)`. Neither bracket changed the result,
+  and both made the rule look more nested than it was. Now, after every
+  change:
+  - a group with one thing in it is replaced by that thing;
+  - a group with the same AND / OR as its parent merges into the parent;
+  - an empty group is dropped (it was already ignored by evaluation and SQL).
+
+  A rule saved with such brackets loses them when it is loaded, and so does
+  one passed to `setDocument()`. The rule evaluates exactly as before.
+
+  Brackets that carry a NOT are kept. A NOT on a group of one moves to the
+  thing inside only if that thing has its own NOT control: a group, or a
+  condition with `allowConditionNegate`.
+
+  One consequence: switching a nested group's operator to match its parent
+  merges it. Switching it back no longer restores the group, but Undo does,
+  in one step.
+
 ## [0.0.34] — 2026-10-10
 
 ### Changed

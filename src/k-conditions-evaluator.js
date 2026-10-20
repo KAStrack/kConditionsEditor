@@ -1,5 +1,5 @@
 /*!
- * kConditions Evaluator 0.0.34
+ * kConditions Evaluator 0.1.1
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -14,7 +14,7 @@
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.0.34';
+  var LIB_VERSION = '0.1.1';
 
   /* ------------------------------------------------------------------ *
    * Errors
@@ -113,6 +113,15 @@
 
   var DAY_MS = 86400000;
 
+  // Epoch milliseconds of a UTC wall time, the year taken as written: Date.UTC() reads 0-99 as 1900-1999, and PHP's
+  // gmmktime() reads them differently again, so both SDKs build the instant field by field.
+  function utcMs(y, mo, d, h, mi, s, ms) {
+    var t = new Date(0);
+    t.setUTCFullYear(y, mo, d);
+    t.setUTCHours(h || 0, mi || 0, s || 0, ms || 0);
+    return t.getTime();
+  }
+
   function toDate(v) {
     if (v instanceof Date) { var t0 = v.getTime(); return isNaN(t0) ? null : t0; }
     if (typeof v === 'number') {
@@ -126,9 +135,14 @@
     var s = v.trim();
     if (s === '') return null;
     var m;
-    if ((m = /^(\d{4})$/.exec(s))) return Date.UTC(+m[1], 0, 1);
-    if ((m = /^(\d{4})-(\d{1,2})$/.exec(s))) return Date.UTC(+m[1], +m[2] - 1, 1);
-    if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s))) return Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    if ((m = /^(\d{4})$/.exec(s))) return utcMs(+m[1], 0, 1);
+    if ((m = /^(\d{4})-(\d{1,2})$/.exec(s))) return utcMs(+m[1], +m[2] - 1, 1);
+    if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s))) return utcMs(+m[1], +m[2] - 1, +m[3]);
+    // A date and time with no zone is a UTC wall time, as a bare date is — never the reader's local time, which made
+    // the browser and the server disagree (Date.parse() reads "2026-10-19T22:00" in the machine's zone).
+    if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})[T ](\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3})\d*)?)?$/.exec(s))) {
+      return utcMs(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0), m[7] ? +((m[7] + '00').slice(0, 3)) : 0);
+    }
     if (/^-?\d+$/.test(s)) return toDate(Number(s));
     var parsed = Date.parse(s);
     return isNaN(parsed) ? null : parsed;
@@ -139,10 +153,25 @@
     return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
   }
 
+  // A number as text, the same in both SDKs: its shortest round-trip digits written out in full — never an exponent
+  // ("1e-7", "1e+21"), which a "contains" would otherwise read.
+  function numberToString(n) {
+    if (!isFinite(n)) return String(n);
+    var s = String(n);
+    var m = /^(-?)(\d+)(?:\.(\d+))?e([+-]\d+)$/.exec(s);
+    if (!m) return s;
+    var digits = m[2] + (m[3] || ''), point = m[2].length + parseInt(m[4], 10), out;
+    if (point <= 0) out = '0.' + new Array(1 - point).join('0') + digits;
+    else if (point >= digits.length) out = digits + new Array(point - digits.length + 1).join('0');
+    else out = digits.slice(0, point) + '.' + digits.slice(point);
+    return m[1] + out;
+  }
+
   function asString(v) {
     if (isNullish(v)) return '';
     if (typeof v === 'string') return v;
-    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    if (typeof v === 'number') return numberToString(v);
+    if (typeof v === 'boolean') return String(v);
     if (v instanceof Date) return v.toISOString();
     return JSON.stringify(v);
   }
@@ -310,6 +339,24 @@
       return !inList(v, toList(a[0]), c);
     }),
 
+    /* list — the field's own value is a list (a multi-select, tags, a CSV
+       string). `in_list` asks whether ONE value is among the operands; these
+       ask about the overlap between two lists. An empty operand never matches,
+       and neither does an empty or missing field value, so a condition with
+       nothing chosen reads as false rather than as "always". */
+    includes_any: op('list', 'includes any of', 'n', 'list', function (v, a, c) {
+      var have = toList(v), want = toList(a[0]);
+      if (!have.length || !want.length) return false;
+      for (var i = 0; i < have.length; i++) if (inList(have[i], want, c)) return true;
+      return false;
+    }),
+    includes_all: op('list', 'includes all of', 'n', 'list', function (v, a, c) {
+      var have = toList(v), want = toList(a[0]);
+      if (!have.length || !want.length) return false;
+      for (var j = 0; j < want.length; j++) if (!inList(want[j], have, c)) return false;
+      return true;
+    }),
+
     /* date */
     date_eq: op('date', 'is on', 1, 'date', function (v, a) {
       return dateCompare(v, a[0], function (x, y) { return startOfUtcDay(x) === startOfUtcDay(y); });
@@ -370,6 +417,7 @@
       label: 'Alphanumeric',
       operators: ['contains', 'not_contains', 'starts_with', 'ends_with', 'regex', 'not_regex', 'in_list', 'not_in_list']
     },
+    list: { label: 'List', operators: ['includes_any', 'includes_all'] },
     date: {
       label: 'Date',
       operators: ['date_eq', 'date_before', 'date_after', 'date_between', 'date_is_today',
@@ -384,7 +432,8 @@
     number: ['equality', 'arithmetic', 'existence'],
     date: ['date', 'existence'],
     boolean: ['boolean', 'existence'],
-    enum: ['equality', 'alphanumeric', 'existence']
+    enum: ['equality', 'alphanumeric', 'existence'],
+    list: ['list', 'existence']
   };
 
   /* ------------------------------------------------------------------ *

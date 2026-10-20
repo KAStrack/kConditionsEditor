@@ -213,7 +213,21 @@ function install(FIELDS) {
     ok(`${name}: pointing at a top-level AND draws it down the whole rule`, lit && lit.opacity > 0.95 && lit.spansAll, lit);
     ok(`${name}: clear of the text and the brackets`, lit && lit.clear, lit);
     if (name !== 'a AND b AND c') {
-      ok(`${name}: …and does not light the OR group's line`, (await judge(['r.2', ['c', 'd'], ['b']])).opacity < 0.6);
+      // Switching the rule to OR would absorb the OR group, so its line is
+      // marked as going (0.0.36): full strength, but in the removal colour —
+      // never lit as if the rule's AND were its own.
+      const other = await p.evaluate(() => {
+        const g = document.querySelector('.kce-guide[data-group="r.2"]');
+        const s = document.createElement('span');
+        s.style.color = 'var(--kce-danger)';
+        document.querySelector('.kce').appendChild(s);
+        const danger = getComputedStyle(s).color;
+        s.remove();
+        return { lit: g.classList.contains('is-lit'), going: g.classList.contains('kce-will-unbracket'),
+          colour: getComputedStyle(g).backgroundColor, danger };
+      });
+      ok(`${name}: …and does not light the OR group's line; it marks it as going, in the removal colour`,
+        !other.lit && other.going && other.colour === other.danger, other);
       pt = await p.evaluate(() => window.__centre('.kce-connector[data-conn-group="r.2"] .kce-connector-btn'));
       await p.mouse.move(pt.x, pt.y);
       await p.waitForTimeout(250);

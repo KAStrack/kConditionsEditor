@@ -86,6 +86,23 @@ final class Values
         return false;
     }
 
+    /**
+     * Whitespace off both ends exactly as JavaScript's String.prototype.trim() takes it: the ASCII spaces and line breaks,
+     * and every Unicode space (a no-break space pasted with a value, U+FEFF) — PHP's trim() keeps those.
+     */
+    public static function jsTrim(string $s): string
+    {
+        return (string) preg_replace('/^[\x{0009}-\x{000D}\x{0020}\x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]+|[\x{0009}-\x{000D}\x{0020}\x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]+$/u', '', $s);
+    }
+
+    /** Epoch milliseconds of a UTC wall time, the year taken as written (gmmktime() reads 0–69 as 2000–2069). */
+    public static function utcMs(int $y, int $mo, int $d, int $h = 0, int $i = 0, int $s = 0, int $ms = 0): float
+    {
+        $t = (new \DateTimeImmutable('@0'))->setDate($y, $mo, $d)->setTime($h, $i, $s);
+
+        return (float) $t->getTimestamp() * 1000 + $ms;
+    }
+
     public static function toNumber(mixed $v): ?float
     {
         if (is_int($v) || is_float($v)) {
@@ -95,7 +112,7 @@ final class Values
             return $v ? 1.0 : 0.0;
         }
         if (is_string($v)) {
-            $t = trim($v);
+            $t = self::jsTrim($v);
             if ($t === '' || !is_numeric($t)) {
                 return null;
             }
@@ -126,7 +143,7 @@ final class Values
             return false;
         }
         if (is_string($v)) {
-            $t = strtolower(trim($v));
+            $t = strtolower(self::jsTrim($v));
             if (in_array($t, self::TRUE_WORDS, true)) {
                 return true;
             }
@@ -160,7 +177,7 @@ final class Values
                 return null;
             }
             if ((float) $v >= 1000 && (float) $v <= 9999 && floor((float) $v) === (float) $v) {
-                return (float) gmmktime(0, 0, 0, 1, 1, (int) $v) * 1000;
+                return self::utcMs((int) $v, 1, 1);
             }
 
             return (float) $v;
@@ -169,18 +186,22 @@ final class Values
             return null;
         }
 
-        $s = trim($v);
+        $s = self::jsTrim($v);
         if ($s === '') {
             return null;
         }
         if (preg_match('/^(\d{4})$/', $s, $m)) {
-            return (float) gmmktime(0, 0, 0, 1, 1, (int) $m[1]) * 1000;
+            return self::utcMs((int) $m[1], 1, 1);
         }
         if (preg_match('/^(\d{4})-(\d{1,2})$/', $s, $m)) {
-            return (float) gmmktime(0, 0, 0, (int) $m[2], 1, (int) $m[1]) * 1000;
+            return self::utcMs((int) $m[1], (int) $m[2], 1);
         }
         if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $s, $m)) {
-            return (float) gmmktime(0, 0, 0, (int) $m[2], (int) $m[3], (int) $m[1]) * 1000;
+            return self::utcMs((int) $m[1], (int) $m[2], (int) $m[3]);
+        }
+        // A date and time with no zone is a UTC wall time, as a bare date is — whatever the host's default zone.
+        if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})[T ](\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3})\d*)?)?$/', $s, $m)) {
+            return self::utcMs((int) $m[1], (int) $m[2], (int) $m[3], (int) $m[4], (int) $m[5], (int) ($m[6] ?? 0), isset($m[7]) && $m[7] !== '' ? (int) substr($m[7] . '00', 0, 3) : 0);
         }
         if (preg_match('/^-?\d+$/', $s)) {
             return self::toDate((int) $s);
@@ -258,14 +279,42 @@ final class Values
         return (string) json_encode($v);
     }
 
-    /** Format a float the way JavaScript's String(number) does. */
+    /**
+     * A float as text, the same as the JavaScript SDK writes it: its shortest round-trip digits (what JavaScript's
+     * String(number) prints) written out in full — never an exponent.
+     */
     public static function numberToString(float $v): string
     {
-        if (is_finite($v) && floor($v) === $v && abs($v) < 1.0e15) {
+        if (is_nan($v)) {
+            return 'NaN';
+        }
+        if (is_infinite($v)) {
+            return $v > 0 ? 'Infinity' : '-Infinity';
+        }
+        if (floor($v) === $v && abs($v) < 1.0e15) {
             return (string) (int) $v;
         }
+        $repr = var_export(abs($v), true);
+        if (!preg_match('/^(\d+)(?:\.(\d+))?(?:E([+-]?\d+))?$/i', $repr, $m)) {
+            return (string) $v;
+        }
+        $digits = $m[1] . ($m[2] ?? '');
+        $point = strlen($m[1]) + (isset($m[3]) ? (int) $m[3] : 0);
+        $lead = strlen($digits) - strlen(ltrim($digits, '0'));
+        $digits = rtrim(substr($digits, $lead), '0');
+        $point -= $lead;
+        if ($digits === '') {
+            return '0';
+        }
+        if ($point <= 0) {
+            $out = '0.' . str_repeat('0', -$point) . $digits;
+        } elseif ($point >= strlen($digits)) {
+            $out = $digits . str_repeat('0', $point - strlen($digits));
+        } else {
+            $out = substr($digits, 0, $point) . '.' . substr($digits, $point);
+        }
 
-        return rtrim(rtrim(sprintf('%.14F', $v), '0'), '.');
+        return ($v < 0 ? '-' : '') . $out;
     }
 
     public static function fold(string $s, bool $caseInsensitive): string
@@ -295,8 +344,8 @@ final class Values
         }
         $na = self::toNumber($a);
         $nb = self::toNumber($b);
-        $aBlank = is_string($a) && trim($a) === '';
-        $bBlank = is_string($b) && trim($b) === '';
+        $aBlank = is_string($a) && self::jsTrim($a) === '';
+        $bBlank = is_string($b) && self::jsTrim($b) === '';
         if ($na !== null && $nb !== null && !$aBlank && !$bBlank) {
             return $na === $nb;
         }
@@ -315,12 +364,12 @@ final class Values
             return [];
         }
         if (is_string($v)) {
-            $t = trim($v);
+            $t = self::jsTrim($v);
             if ($t === '') {
                 return [];
             }
 
-            return array_map('trim', explode(',', $t));
+            return array_map([self::class, 'jsTrim'], explode(',', $t));
         }
 
         return [$v];

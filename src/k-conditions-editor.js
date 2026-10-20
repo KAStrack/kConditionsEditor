@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.0.34
+ * kConditionsEditor 0.1.1
  * A zero-dependency conditions builder that takes over a <textarea>.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  *
@@ -18,7 +18,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (KConditions) {
   'use strict';
 
-  var VERSION = '0.0.34';
+  var VERSION = '0.1.1';
   var BUILTIN = KConditions.BUILTIN_OPERATORS;
   var GROUPS = KConditions.OPERATOR_GROUPS;
   var TYPE_GROUPS = KConditions.FIELD_TYPE_GROUPS;
@@ -160,6 +160,8 @@
     clearCancel: 'Cancel',
     undo: 'Undo',
     redo: 'Redo',
+    // The note after a change took out brackets that no longer did anything.
+    bracketsRemoved: 'Removed unneeded brackets',
     moveUp: 'Move up',
     moveDown: 'Move down',
     dragHandle: 'Drag to reorder',
@@ -337,6 +339,7 @@
 
     this.hideTargets = this.resolveHideTargets();
     this.doc = this.parseInitial();
+    this.dropRedundantGroups();
 
     // The whole editable state is one small JSON tree, so the history is just a
     // list of serialised documents with a cursor. Undo moves the cursor and
@@ -626,6 +629,11 @@
     this.footer = el('div', 'kce-footer');
     this.doneButton = el('button', 'kce-btn kce-done', { type: 'button', text: this.labels.done });
     this.footer.appendChild(this.messages);
+    // Read out when a change takes out brackets (see announceTidy). A live
+    // region has to exist before its text changes to be heard reliably, so it
+    // is here from the start rather than arriving with the note.
+    this.liveRegion = el('div', 'kce-live', { role: 'status', 'aria-live': 'polite' });
+    this.footer.appendChild(this.liveRegion);
     if (this.options.hideTextarea === 'toggle') this.footer.appendChild(this.buildSourceToggle());
     if (this.history && !this.options.readOnly) this.footer.appendChild(this.buildHistoryControls());
     if (this.options.allowClear && !this.options.readOnly) this.footer.appendChild(this.buildClear());
@@ -770,6 +778,7 @@
   Editor.prototype.buildHistoryControls = function () {
     var self = this;
     var wrap = el('div', 'kce-history');
+    this.historyWrap = wrap;
 
     this.undoButton = el('button', 'kce-btn kce-history-btn kce-undo', {
       type: 'button', text: this.labels.undo, title: this.labels.undo + ' (Ctrl+Z)'
@@ -1095,12 +1104,15 @@
    * `opts.render: false` syncs without rebuilding the DOM — for changes that
    * cannot alter the layout. `opts.focus` names the control to land on
    * afterwards, for moves, where the position-based focus key of the thing you
-   * were on has changed under you.
+   * were on has changed under you. `opts.announce: false` keeps quiet about
+   * brackets the change merged away — see announceTidy().
    */
   Editor.prototype.mutate = function (fn, opts) {
     opts = opts || {};
     this.flushEdit();
     if (fn.call(this) === false) return this;
+    var tidied = this.dropRedundantGroups();
+    this.dismissTidyNote();
     this.touch();
     if (typeof opts.focus === 'function') this.focusOverride = opts.focus.call(this);
     else if (opts.focus) this.focusOverride = opts.focus;
@@ -1112,6 +1124,10 @@
     // itself — an empty enum value takes the first choice as it draws — and a
     // snapshot taken beforehand would be of a state that never existed.
     this.pushHistory();
+    // Brackets went that the person did not take out themselves: say so where
+    // it happened, with the way back. `announce: false` is for a change whose
+    // own plan is to merge them (wrapAndContinue).
+    if (opts.announce !== false && tidied.dropped.length) this.announceTidy(tidied);
     return this;
   };
 
@@ -1137,6 +1153,7 @@
   Editor.prototype.applyHistory = function (direction) {
     var h = this.history;
     this.touch();
+    this.dismissTidyNote();
     h.applying = true;
     try {
       var parsed = KConditions.normaliseDocument(h.stack[h.at]);
@@ -1168,27 +1185,145 @@
    * to build on.
    * ------------------------------------------------------------------ */
 
+  /**
+   * Take out the brackets that do nothing.
+   *
+   * Removing the sibling of a group used to leave that group alone inside its
+   * own brackets — `(a OR b) AND c`, less `c`, drew `((a OR b))` — and flipping
+   * a group's AND / OR to match its parent's left `a AND (b AND c)`. Neither
+   * bracket changes the result, and both make a rule read as more nested than
+   * it is. Three shapes go, wherever they are in the tree:
+   *
+   * - a group of one stands aside for its only child;
+   * - a group using its parent's AND / OR gives its children to the parent;
+   * - an empty group goes (the evaluator and SQL skip it already).
+   *
+   * Brackets carrying a NOT are not redundant, so a negated group stays — but
+   * a group of one hands its NOT to its child where the child can carry one the
+   * person can still switch off (a group, or a condition with
+   * allowConditionNegate). The root stays the root: it adopts a lone group
+   * child's operator and children rather than being replaced by it.
+   *
+   * Run on every path that brings a document in or changes its shape — load,
+   * setDocument() and mutate() — so a redundant bracket is gone the moment it
+   * would appear, rather than each mutation having to avoid making one.
+   * Nothing here changes what the rule evaluates to.
+   *
+   * Reports what it did: `dropped`, the groups whose brackets went, and
+   * `lifted`, the nodes that came out of them — which the preview, the note
+   * and the tint after a change are all drawn from.
+   */
+  function tidyTree(root, opts) {
+    var dropped = [];
+    var lifted = [];
+    var opOf = function (g) { return g.operator === 'or' ? 'or' : 'and'; };
+    var canNegate = function (n) {
+      return n.type === 'group' ? !!opts.allowGroupNegate : !!opts.allowConditionNegate;
+    };
+
+    function tidy(group) {
+      var kids = Array.isArray(group.children) ? group.children : [];
+      var out = [];
+      for (var i = 0; i < kids.length; i++) {
+        var child = kids[i];
+        if (child && child.type === 'group') {
+          tidy(child);
+          var inner = Array.isArray(child.children) ? child.children : [];
+          if (!inner.length) { dropped.push(child); continue; }
+          if (inner.length === 1 && (!child.negate || inner[0].negate || canNegate(inner[0]))) {
+            if (child.negate) inner[0].negate = !inner[0].negate;
+            dropped.push(child);
+            lifted.push(inner[0]);
+            child = inner[0];
+          }
+          if (child.type === 'group' && !child.negate && opOf(child) === opOf(group)) {
+            dropped.push(child);
+            lifted.push.apply(lifted, child.children);
+            out.push.apply(out, child.children);
+            continue;
+          }
+        }
+        out.push(child);
+      }
+      // In place: callers may still hold this array.
+      if (Array.isArray(group.children)) Array.prototype.splice.apply(group.children, [0, kids.length].concat(out));
+    }
+
+    if (root && root.type === 'group' && Array.isArray(root.children)) {
+      tidy(root);
+      var only = root.children.length === 1 ? root.children[0] : null;
+      if (only && only.type === 'group' && !only.negate) {
+        dropped.push(only);
+        lifted.push.apply(lifted, only.children);
+        root.operator = opOf(only);
+        root.children = only.children;
+      }
+    }
+    return { dropped: dropped, lifted: lifted };
+  }
+
+  /** Tidy the document in hand, and say what went. See tidyTree(). */
+  Editor.prototype.dropRedundantGroups = function () {
+    return tidyTree(this.doc && this.doc.root, this.options);
+  };
+
+  /**
+   * The bracketed groups a change would leave with nothing to do: the ones
+   * dropRedundantGroups() would take out straight after it.
+   *
+   * Worked out by making the change to a copy and tidying that, with the same
+   * two functions the click runs, so what a preview marks cannot drift from
+   * what the click does. `change` receives `find`, which maps a node on
+   * screen to its copy. Returns the groups' node ids.
+   */
+  Editor.prototype.planTidy = function (change) {
+    var root = this.doc && this.doc.root;
+    if (!root) return [];
+    var copy = JSON.parse(JSON.stringify(root));
+    var byId = {};
+    (function index(n) {
+      if (!n || typeof n !== 'object') return;
+      if (n.id) byId[n.id] = n;
+      if (Array.isArray(n.children)) n.children.forEach(index);
+    })(copy);
+    var find = function (node) { return node ? byId[node.id] : null; };
+    if (change(find) === false) return [];
+    return tidyTree(copy, this.options).dropped.map(function (g) { return g.id; });
+  };
+
+  /*
+   * The changes that can leave brackets with nothing to do, as plain
+   * functions of the nodes they touch: the click runs them on the document,
+   * and planTidy() runs them on a copy for the preview. Each returns false
+   * when it would change nothing.
+   */
+  function removeChild(parent, node) {
+    var i = parent && node ? parent.children.indexOf(node) : -1;
+    if (i === -1) return false;
+    parent.children.splice(i, 1);
+  }
+
+  function switchOperator(group, op) {
+    var next = op === 'or' ? 'or' : 'and';
+    if (!group || (group.operator === 'or' ? 'or' : 'and') === next) return false;
+    group.operator = next;
+  }
+
+  function negateNode(node, on) {
+    if (!node || !!node.negate === !!on) return false;
+    node.negate = !!on;
+  }
+
   Editor.prototype.removeNode = function (node, parent) {
-    return this.mutate(function () {
-      var i = parent.children.indexOf(node);
-      if (i === -1) return false;
-      parent.children.splice(i, 1);
-    });
+    return this.mutate(function () { return removeChild(parent, node); });
   };
 
   Editor.prototype.setGroupOperator = function (group, op) {
-    return this.mutate(function () {
-      var next = op === 'or' ? 'or' : 'and';
-      if ((group.operator === 'or' ? 'or' : 'and') === next) return false;
-      group.operator = next;
-    });
+    return this.mutate(function () { return switchOperator(group, op); });
   };
 
   Editor.prototype.setNegate = function (node, on) {
-    return this.mutate(function () {
-      if (!!node.negate === !!on) return false;
-      node.negate = !!on;
-    });
+    return this.mutate(function () { return negateNode(node, on); });
   };
 
   Editor.prototype.setField = function (node, name) {
@@ -1358,38 +1493,9 @@
    * pointer-transparent, so nothing moves and the button keeps the pointer.
    */
   Editor.prototype.drawPreviewMark = function (elements, classes, style) {
-    var tree = this.tree;
-    var top = Infinity, left = Infinity, right = -Infinity, bottom = -Infinity;
-    function isMarked(elm) {
-      for (var n = elm; n && n !== tree; n = n.parentNode) {
-        if (/(^|\s)kce-will-(group|remove)(\s|$)/.test(n.className || '')) return true;
-      }
-      return false;
-    }
-    // In the flow layout a group's opening bracket (and its NOT) shares a line
-    // with the sibling before it — `State is FL AND (`. Measured, it would pull
-    // the shape up over a row the button does not touch. Such a bracket is
-    // still marked; it just does not set the extent.
-    function sharesLine(elm) {
-      if (!/(^|\s)(kce-paren-open|kce-negate-marker)(\s|$)/.test(elm.className || '')) return false;
-      var line = elm.parentNode;
-      if (!line || !/(^|\s)kce-line(\s|$)/.test(line.className || '')) return false;
-      return Array.prototype.some.call(line.querySelectorAll('.kce-condition'), function (c) { return !isMarked(c); });
-    }
-    elements.forEach(function (elm) {
-      if (sharesLine(elm)) return;
-      var r = elm.getBoundingClientRect();
-      if (!r.width && !r.height) return;
-      if (r.top < top) top = r.top;
-      if (r.left < left) left = r.left;
-      if (r.right > right) right = r.right;
-      if (r.bottom > bottom) bottom = r.bottom;
-    });
-    if (top === Infinity) return this;
-    var base = tree.getBoundingClientRect();
-    var x = left - base.left - tree.clientLeft + tree.scrollLeft;
-    var y = top - base.top - tree.clientTop + tree.scrollTop;
-    var w = right - left, h = bottom - top;
+    var box = this.rangeBox(elements);
+    if (!box) return this;
+    var x = box.x, y = box.y, w = box.w, h = box.h;
     var mark = el('div', 'kce-preview-mark ' + classes.join(' '), { 'aria-hidden': 'true' });
     if (style === 'bar') {
       // In the margin, clear of the text — but never left of the tree, which
@@ -1406,8 +1512,47 @@
     mark.style.top = y + 'px';
     mark.style.width = w + 'px';
     mark.style.height = h + 'px';
-    tree.appendChild(mark);
+    this.tree.appendChild(mark);
     return this;
+  };
+
+  /**
+   * The box around a range of elements, in the tree's own coordinates — what
+   * the bar, the region and the tint after a change are all drawn from.
+   */
+  Editor.prototype.rangeBox = function (elements) {
+    var tree = this.tree;
+    var top = Infinity, left = Infinity, right = -Infinity, bottom = -Infinity;
+    function inRange(elm) {
+      return elements.some(function (e) { return e === elm || e.contains(elm); });
+    }
+    // In the flow layout a group's opening bracket (and its NOT) shares a line
+    // with the sibling before it — `State is FL AND (`. Measured, it would pull
+    // the shape up over a row the range does not include. Such a bracket is
+    // still marked; it just does not set the extent.
+    function sharesLine(elm) {
+      if (!/(^|\s)(kce-paren-open|kce-negate-marker)(\s|$)/.test(elm.className || '')) return false;
+      var line = elm.parentNode;
+      if (!line || !/(^|\s)kce-line(\s|$)/.test(line.className || '')) return false;
+      return Array.prototype.some.call(line.querySelectorAll('.kce-condition'), function (c) { return !inRange(c); });
+    }
+    elements.forEach(function (elm) {
+      if (sharesLine(elm)) return;
+      var r = elm.getBoundingClientRect();
+      if (!r.width && !r.height) return;
+      if (r.top < top) top = r.top;
+      if (r.left < left) left = r.left;
+      if (r.right > right) right = r.right;
+      if (r.bottom > bottom) bottom = r.bottom;
+    });
+    if (top === Infinity) return null;
+    var base = tree.getBoundingClientRect();
+    return {
+      x: left - base.left - tree.clientLeft + tree.scrollLeft,
+      y: top - base.top - tree.clientTop + tree.scrollTop,
+      w: right - left,
+      h: bottom - top
+    };
   };
 
   Editor.prototype.showRemoval = function (node, on) {
@@ -1416,7 +1561,12 @@
     // its cause would be a standing lie about what the next click does.
     this.clearPreview();
     if (!on) return this;
-    return this.paintPreview(this.previewTargets([node], null), ['kce-will-remove']);
+    var parent = this.parentOf(node);
+    this.paintPreview(this.previewTargets([node], null), ['kce-will-remove']);
+    // Taking a child out can leave its group with one thing in it, whose
+    // brackets then go too. That is the half of the click a tint on the
+    // removed rows cannot show.
+    return this.markTidy(this.planTidy(function (find) { return removeChild(find(parent), find(node)); }));
   };
 
   /** Drop every preview — the removal tint, the grouping tint and the ghost. */
@@ -1438,7 +1588,14 @@
     });
     this.tree.classList.remove('kce-previewing');
     this.ghostOwner = null;
-    if (hadGhost) this.positionGuides();
+    this.tidyMarks = null;
+    Array.prototype.forEach.call(this.tree.querySelectorAll('.kce-will-unbracket'), function (elm) {
+      elm.classList.remove('kce-will-unbracket');
+    });
+    if (hadGhost) {
+      this.positionGuides();
+      this.placeTidyNote();
+    }
     return this;
   };
 
@@ -1498,6 +1655,7 @@
     // it) may take the ghost into their guide.
     this.ghostOwner = plan.group ? plan.group.id : null;
     this.positionGuides();
+    this.placeTidyNote();
 
     // The ghost joins the range only when it sits against the rows it joins.
     // Where it cannot — `extend` puts it one line low, after the group's `)`,
@@ -1535,6 +1693,263 @@
     btn.addEventListener('mouseleave', off);
     btn.addEventListener('focus', on);
     btn.addEventListener('blur', off);
+  };
+
+  /* ------------------------------------------------------------------ *
+   * Showing brackets a change would leave with nothing to do
+   *
+   * Switching a group to its parent's AND / OR merges it into the parent, and
+   * switching it back then switches the parent: the grouping is gone. A ×
+   * can leave its group holding one thing, whose brackets go too. Neither is
+   * visible from the button, so pointing at it marks the brackets that will
+   * not survive the click.
+   * ------------------------------------------------------------------ */
+
+  /**
+   * Mark the brackets of the groups `ids` as about to go: in the flow layout
+   * the `(` and `)` and the group's guide, in the tree layout the group's box,
+   * whose skin draws its brackets.
+   *
+   * The same in every preview style. A style paints which rows a button
+   * touches; this is a different fact, which brackets will not survive, and
+   * it shows alongside whatever the style paints.
+   */
+  Editor.prototype.markTidy = function (ids) {
+    var tree = this.tree;
+    this.tidyMarks = ids && ids.length ? ids.slice() : null;
+    if (!tree || !this.tidyMarks) return this;
+    this.tidyMarks.forEach(function (id) {
+      var sel = '[data-node="' + id + '"]';
+      Array.prototype.forEach.call(
+        tree.querySelectorAll('.kce-paren' + sel + ', .kce-group' + sel + ', .kce-guide[data-group="' + id + '"]'),
+        function (elm) { elm.classList.add('kce-will-unbracket'); }
+      );
+    });
+    return this;
+  };
+
+  /**
+   * Wire a control whose change can merge groups to preview that, by pointer
+   * and by focus. `change` is the change itself, given `find` (see planTidy).
+   * Focus is heard as focusin, so a label wrapping a checkbox can carry it.
+   */
+  Editor.prototype.bindTidyPreview = function (target, change) {
+    var self = this;
+    function on() {
+      self.clearPreview();
+      if (self.open) self.markTidy(self.planTidy(change));
+    }
+    function off() { self.clearPreview(); }
+    target.addEventListener('mouseenter', on);
+    target.addEventListener('mouseleave', off);
+    target.addEventListener('focusin', on);
+    target.addEventListener('focusout', off);
+  };
+
+  /* ------------------------------------------------------------------ *
+   * After brackets go: a tint where the rows moved, and a note with Undo
+   *
+   * The preview says it before the click; these say it after, for whoever
+   * clicked without looking — and put the way back beside the change rather
+   * than only in the footer, which on a long rule is off the screen.
+   * ------------------------------------------------------------------ */
+
+  /** How long the tint takes to fade, and how long the note stays unattended. */
+  var TIDY_FLASH_MS = 1600;
+  var TIDY_NOTE_MS = 8000;
+
+  function prefersReducedMotion() {
+    return typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /**
+   * Called by mutate() after the render, with what dropRedundantGroups()
+   * reported. The nodes that came out of the dropped groups are found again
+   * in the rule as it now stands, as runs of adjacent siblings, so the tint
+   * is one shape per run rather than a box per row.
+   */
+  Editor.prototype.announceTidy = function (result) {
+    if (!this.open || !this.tree) return this;
+    var lifted = result.lifted;
+    var runs = [];
+    (function walk(group) {
+      var kids = Array.isArray(group.children) ? group.children : [];
+      for (var i = 0; i < kids.length; i++) {
+        if (lifted.indexOf(kids[i]) !== -1) {
+          var run = runs[runs.length - 1];
+          if (run && run.group === group && run.end === i - 1) {
+            run.nodes.push(kids[i]);
+            run.end = i;
+          } else {
+            runs.push({ group: group, nodes: [kids[i]], end: i });
+          }
+          // Its subtree is in the run already.
+          continue;
+        }
+        if (kids[i] && kids[i].type === 'group') walk(kids[i]);
+      }
+    })(this.doc.root);
+    if (!runs.length) return this;
+    this.flashRuns(runs);
+    this.showTidyNote(runs[0]);
+    if (this.liveRegion) this.liveRegion.textContent = this.labels.bracketsRemoved;
+    return this;
+  };
+
+  /**
+   * Tint each run in its new group's AND / OR colour, fading out. Drawn over
+   * the rows like the region preview, and as transparent to the pointer.
+   */
+  Editor.prototype.flashRuns = function (runs) {
+    var self = this;
+    var tree = this.tree;
+    runs.forEach(function (run) {
+      var box = self.rangeBox(self.previewTargets(run.nodes, run.group));
+      if (!box) return;
+      var mark = el('div', 'kce-flash is-' + (run.group.operator === 'or' ? 'or' : 'and'), { 'aria-hidden': 'true' });
+      mark.style.left = Math.max(0, box.x - 4) + 'px';
+      mark.style.top = (box.y - 2) + 'px';
+      mark.style.width = (box.w + 8) + 'px';
+      mark.style.height = (box.h + 4) + 'px';
+      tree.appendChild(mark);
+    });
+    if (this.flashTimer) clearTimeout(this.flashTimer);
+    this.flashTimer = setTimeout(function () {
+      self.flashTimer = null;
+      Array.prototype.forEach.call(tree.querySelectorAll('.kce-flash'), function (m) {
+        if (m.parentNode) m.parentNode.removeChild(m);
+      });
+    }, TIDY_FLASH_MS);
+    return this;
+  };
+
+  /**
+   * "Removed unneeded brackets · Undo", beside the first run of rows that
+   * moved (`run` as announceTidy() finds it). It goes on the next change, or after TIDY_NOTE_MS — a wait
+   * that stops while the note is pointed at or focused, so it never leaves
+   * from under someone reaching for it.
+   */
+  Editor.prototype.showTidyNote = function (run) {
+    var self = this;
+    this.dismissTidyNote();
+    var note = el('div', 'kce-tidy-note');
+    note.appendChild(el('span', 'kce-tidy-note-text', { text: this.labels.bracketsRemoved }));
+    if (this.history) {
+      var undo = el('button', 'kce-tidy-note-undo', { type: 'button', text: this.labels.undo });
+      undo.addEventListener('click', function () { self.undo(); });
+      note.appendChild(undo);
+    }
+    var hold = function () { if (self.tidyNoteTimer) { clearTimeout(self.tidyNoteTimer); self.tidyNoteTimer = null; } };
+    var release = function (e) {
+      if (self.tidyNote !== note) return;
+      if (e && e.relatedTarget && note.contains(e.relatedTarget)) return;
+      if (note.contains(document.activeElement) || note.matches(':hover')) return;
+      self.armTidyNote();
+    };
+    note.addEventListener('mouseenter', hold);
+    note.addEventListener('focusin', hold);
+    note.addEventListener('mouseleave', release);
+    note.addEventListener('focusout', release);
+    this.tidyNote = note;
+    this.tidyRun = run || null;
+    this.placeTidyNote();
+    this.armTidyNote();
+    return this;
+  };
+
+  Editor.prototype.armTidyNote = function () {
+    var self = this;
+    if (this.tidyNoteTimer) clearTimeout(this.tidyNoteTimer);
+    this.tidyNoteTimer = setTimeout(function () {
+      self.tidyNoteTimer = null;
+      self.dismissTidyNote(true);
+    }, TIDY_NOTE_MS);
+  };
+
+  /** Take the note away — at once, or faded when it has simply timed out. */
+  Editor.prototype.dismissTidyNote = function (fade) {
+    if (this.tidyNoteTimer) clearTimeout(this.tidyNoteTimer);
+    this.tidyNoteTimer = null;
+    var note = this.tidyNote;
+    if (!note) return this;
+    this.tidyNote = null;
+    this.tidyRun = null;
+    if (this.liveRegion) this.liveRegion.textContent = '';
+    var drop = function () { if (note.parentNode) note.parentNode.removeChild(note); };
+    if (fade && !prefersReducedMotion()) {
+      note.classList.add('is-leaving');
+      setTimeout(drop, 250);
+    } else {
+      drop();
+    }
+    return this;
+  };
+
+  /**
+   * Beside the change where there is room for it, in the footer by Undo
+   * where there is not.
+   *
+   * Beside means level with one of the moved rows or their AND / OR — the
+   * first, in reading order, with room — and past everything already there.
+   * With the AND / OR below each row, its row is nearly empty, so that is
+   * usually where it lands. "Everything already there" is everything the
+   * note's own height would cross, including what only appears when a line
+   * is hovered: a strip held at zero width is measured at its full width
+   * (scrollWidth). The note is no taller than the gap between two rows, so it
+   * can sit level with an AND / OR between them; its Undo reaches 24px with a
+   * transparent ::before, as the AND / OR do. Nothing may land on a control,
+   * so a note that fits
+   * nowhere inside the tree goes to the footer. The tree layout's rows are
+   * boxes that run the full width, so there it is always the footer.
+   * Re-run on every layout pass and whenever a ghost line comes or goes.
+   */
+  Editor.prototype.placeTidyNote = function () {
+    var note = this.tidyNote;
+    var tree = this.tree;
+    var run = this.tidyRun;
+    if (!note || !tree) return this;
+    if (this.layout() === 'flow' && run) {
+      note.classList.add('kce-tidy-note-float');
+      if (note.parentNode !== tree) tree.appendChild(note);
+      var base = tree.getBoundingClientRect();
+      var w = note.offsetWidth, h = note.offsetHeight;
+      // What it must not land on: the controls and text in the lines, not the
+      // rows that hold them, with the 1px slack no-overlaps.js allows.
+      var inLines = Array.prototype.filter.call(tree.querySelectorAll('.kce-line *'), function (elm) {
+        return !elm.firstElementChild || /^(BUTTON|INPUT|SELECT|TEXTAREA)$/.test(elm.tagName);
+      }).map(function (elm) {
+        var r = elm.getBoundingClientRect();
+        return { top: r.top + 1, bottom: r.bottom - 1, right: r.left + Math.max(r.width, elm.scrollWidth || 0), empty: !r.width && !r.height && !elm.scrollWidth };
+      }).filter(function (r) { return !r.empty; });
+      var spots = this.previewTargets(run.nodes, run.group).reduce(function (all, t) {
+        if (t.matches('.kce-condition, .kce-connector-btn')) all.push(t);
+        return all.concat(Array.prototype.slice.call(t.querySelectorAll('.kce-condition, .kce-connector-btn')));
+      }, []).map(function (t) { return t.getBoundingClientRect(); })
+        .filter(function (r) { return r.height; })
+        .sort(function (a, b) { return a.top - b.top || a.left - b.left; });
+      for (var i = 0; i < spots.length; i++) {
+        var top = spots[i].top + (spots[i].height - h) / 2;
+        var bottom = top + h;
+        var reach = spots[i].right;
+        inLines.forEach(function (r) {
+          if (r.bottom > top && r.top < bottom && r.right > reach) reach = r.right;
+        });
+        var left = reach - base.left - tree.clientLeft + tree.scrollLeft + 16;
+        if (left + w <= tree.clientWidth) {
+          note.style.left = left + 'px';
+          note.style.top = (top - base.top - tree.clientTop + tree.scrollTop) + 'px';
+          return this;
+        }
+      }
+    }
+    note.classList.remove('kce-tidy-note-float');
+    note.style.left = '';
+    note.style.top = '';
+    if (this.footer && note.parentNode !== this.footer) {
+      this.footer.insertBefore(note, this.historyWrap || this.messages.nextSibling);
+    }
+    return this;
   };
 
   /* ------------------------------------------------------------------ *
@@ -2339,6 +2754,8 @@
     if (!this.open || this.options.groupGuides === false || this.layout() !== 'flow') return this;
     var lit = this.litGuide;
     var owner = this.ghostOwner;
+    // Guides are rebuilt here, so a bracket preview's mark is re-applied here.
+    var marks = this.tidyMarks;
     var lineOf = function (elm) {
       for (var n = elm; n && n !== tree; n = n.parentNode) {
         if (/(^|\s)kce-line(\s|$)/.test(n.className || '')) return n;
@@ -2373,6 +2790,7 @@
       var op = open.getAttribute('data-op') === 'or' ? 'or' : 'and';
       var guide = el('div', 'kce-guide is-' + op + (negated ? ' is-negated' : '') + (id === lit ? ' is-lit' : ''), { 'aria-hidden': 'true' });
       guide.setAttribute('data-group', id);
+      if (marks && marks.indexOf(id) !== -1) guide.classList.add('kce-will-unbracket');
       guide.style.left = Math.max(0, x) + 'px';
       guide.style.top = top + 'px';
       guide.style.height = Math.max(0, bottom - top) + 'px';
@@ -2436,6 +2854,7 @@
     }
     if (this.tree) this.positionAdds();
     this.positionGuides();
+    this.placeTidyNote();
     return this;
   };
 
@@ -2472,6 +2891,7 @@
         { type: 'button', text: this.labels.not, 'aria-pressed': String(!!node.negate),
           'data-fk': node.id + ':not' });
       not.addEventListener('click', function () { self.setNegate(node, !node.negate); });
+      this.bindTidyPreview(not, function (find) { return negateNode(find(node), !node.negate); });
       tools.appendChild(not);
     }
 
@@ -2512,6 +2932,7 @@
           'aria-pressed': String((node.operator || 'and') === opName),
           'data-fk': node.id + ':logic-' + opName });
       b.addEventListener('click', function () { self.setGroupOperator(node, opName); });
+      self.bindTidyPreview(b, function (find) { return switchOperator(find(node), opName); });
       toggle.appendChild(b);
     });
     head.appendChild(toggle);
@@ -2521,6 +2942,7 @@
       var notBox = el('input', null, { type: 'checkbox', 'data-fk': node.id + ':not' });
       notBox.checked = !!node.negate;
       notBox.addEventListener('change', function () { self.setNegate(node, notBox.checked); });
+      this.bindTidyPreview(notWrap, function (find) { return negateNode(find(node), !node.negate); });
       notWrap.appendChild(notBox);
       notWrap.appendChild(el('span', null, { text: this.labels.not }));
       head.appendChild(notWrap);
@@ -2602,6 +3024,9 @@
     wrap.setAttribute('data-conn-index', String(index || 0));
     btn.addEventListener('click', function () {
       self.setGroupOperator(node, opName === 'and' ? 'or' : 'and');
+    });
+    this.bindTidyPreview(btn, function (find) {
+      return switchOperator(find(node), opName === 'and' ? 'or' : 'and');
     });
     wrap.appendChild(btn);
     return wrap;
@@ -2701,7 +3126,7 @@
     });
   };
 
-  /** Find a node's parent, for the flattening step below. */
+  /** Find a node's parent. */
   Editor.prototype.parentOf = function (target, node) {
     node = node || this.doc.root;
     if (!node.children) return null;
@@ -2755,19 +3180,12 @@
         self.newCondition()
       ];
       group.operator = op;
-
       // If the group now carries the same operator as its parent, its contents
       // belong directly in the parent — "X AND ((B OR N) AND C)" is just
-      // "X AND (B OR N) AND C", with one fewer bracket to read.
-      var parent = self.parentOf(group);
-      if (parent && !group.negate &&
-          (parent.operator === 'or' ? 'or' : 'and') === op) {
-        var at = parent.children.indexOf(group);
-        if (at !== -1) {
-          Array.prototype.splice.apply(parent.children, [at, 1].concat(group.children));
-        }
-      }
-    });
+      // "X AND (B OR N) AND C". mutate() sees to that: dropRedundantGroups().
+      // That merge is this button's plan, previewed as such, so it is not
+      // announced as brackets going.
+    }, { announce: false });
   };
 
   /**
@@ -3253,6 +3671,8 @@
       root: parsed.root
     };
     this.assignIds(this.doc.root);
+    this.dropRedundantGroups();
+    this.dismissTidyNote();
     this.flushEdit();
     this.touch();
     this.pushHistory();
@@ -3449,6 +3869,8 @@
     if (this.destroyed) return;
     this.destroyed = true;
     if (this.history && this.history.burstTimer) clearTimeout(this.history.burstTimer);
+    if (this.tidyNoteTimer) clearTimeout(this.tidyNoteTimer);
+    if (this.flashTimer) clearTimeout(this.flashTimer);
     if (this.onViewportResize) window.removeEventListener('resize', this.onViewportResize);
     if (this.resizeObserver) this.resizeObserver.disconnect();
     if (this.noHover) {

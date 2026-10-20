@@ -1210,6 +1210,560 @@
         "score": "not a number"
       },
       "expected": false
+    },
+    {
+      "name": "includes_any \u2014 one of the field's values is listed",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "blue",
+                    "green"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "tags": [
+          "red",
+          "blue"
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "includes_any \u2014 no overlap",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "green"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "tags": [
+          "red",
+          "blue"
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "includes_all \u2014 every operand is among the field's values",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "red",
+                    "blue"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "tags": [
+          "blue",
+          "red",
+          "green"
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "includes_all \u2014 one operand is missing",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "red",
+                    "amber"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "tags": [
+          "blue",
+          "red",
+          "green"
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "a comma-separated field value is a list",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "blue"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "tags": "red, blue"
+      },
+      "expected": true
+    },
+    {
+      "name": "an empty operand never matches (any and all alike)",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "or",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": []
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "tags": [
+          "red"
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "an empty or missing field value never matches",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "or",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "red"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "other",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "red"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "tags": []
+      },
+      "expected": false
+    },
+    {
+      "name": "list operators fold case when asked",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "RED"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "tags": [
+          "red"
+        ]
+      },
+      "options": {
+        "caseInsensitive": true
+      },
+      "expected": true
+    },
+    {
+      "name": "a date-time with no zone is a UTC wall time, not the reader's local time",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "when",
+              "operator": "date_is_today",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "when": "2026-10-19 23:30"
+      },
+      "options": {
+        "now": "2026-10-19T12:00:00Z"
+      },
+      "expected": true
+    },
+    {
+      "name": "a T-separated date-time with seconds and no zone is UTC",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "when",
+              "operator": "date_after",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "2026-10-19T21:59:59Z"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "when": "2026-10-19T22:00:00.250"
+      },
+      "expected": true
+    },
+    {
+      "name": "a year below 100 is taken as written",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "when",
+              "operator": "date_before",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "1926-01-01"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "when": "0026-10-19"
+      },
+      "expected": true
+    },
+    {
+      "name": "a year below 100 in a date-time is taken as written",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "when",
+              "operator": "date_before",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "0100-01-01"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "when": "0099-12-31 23:59"
+      },
+      "expected": true
+    },
+    {
+      "name": "a no-break space around a number is trimmed, as JavaScript trims it",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "qty",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 5
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "qty": "5\u00a0"
+      },
+      "expected": true
+    },
+    {
+      "name": "a no-break space alone is blank to is_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "note",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": ""
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "note": "\u00a0"
+      },
+      "expected": false
+    },
+    {
+      "name": "a small number is written out in full for contains (no exponent)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "n",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "e"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "n": 1e-07
+      },
+      "expected": false
+    },
+    {
+      "name": "a small number's digits are found by contains",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "n",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "0.0000001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "n": 1e-07
+      },
+      "expected": true
+    },
+    {
+      "name": "a number of 1e21 or more is written out in full for contains",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "n",
+              "operator": "ends_with",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "000"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "n": 1e+21
+      },
+      "expected": true
+    },
+    {
+      "name": "a number is written with its shortest round-trip digits",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "n",
+              "operator": "ends_with",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "0004"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "n": 0.30000000000000004
+      },
+      "expected": true
     }
   ],
   "$sqlComment": "Shared SQL fixtures. Both SQL builders run these and must agree character for character. name/document/options/expectedSql, plus optional expectedParams, expectSkipped and expectThrows.",
@@ -3763,6 +4317,43 @@
         ]
       },
       "expectedSql": "\"unmapped\" = 1"
+    },
+    {
+      "name": "includes_any has no SQL translation and errors by default",
+      "document": {
+        "version": "1.0",
+        "operators": {},
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "red"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "tags",
+            "column": "t.tags",
+            "type": "list"
+          }
+        ]
+      },
+      "expectThrows": true
     }
   ],
   "$describeComment": "Shared describe() / describeHtml() cases. Both SDKs must produce these strings byte for byte \u2014 the HTML ones also pin the escaping, which is the whole safety story for describeHtml.",
@@ -5037,6 +5628,90 @@
       },
       "expectedText": "[State] is one of [\"Florida\", \"Texas\"]",
       "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">is one of</span> <span class=\"kcd-list\"><span class=\"kcd-value\">Florida</span><span class=\"kcd-sep\">, </span><span class=\"kcd-value\">Texas</span></span></span>"
+    },
+    {
+      "name": "includes any of lists the chosen labels",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "red",
+                    "blue"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "tags",
+            "label": "Tags",
+            "type": "list",
+            "choices": {
+              "red": "Red",
+              "blue": "Blue",
+              "green": "Green"
+            }
+          }
+        ]
+      },
+      "expectedText": "[Tags] includes any of [\"Red\", \"Blue\"]",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Tags</strong> <span class=\"kcd-op\">includes any of</span> <span class=\"kcd-list\"><span class=\"kcd-value\">Red</span><span class=\"kcd-sep\">, </span><span class=\"kcd-value\">Blue</span></span></span>"
+    },
+    {
+      "name": "includes all of lists the chosen labels",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "tags",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "red",
+                    "green"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "tags",
+            "label": "Tags",
+            "type": "list",
+            "choices": {
+              "red": "Red",
+              "blue": "Blue",
+              "green": "Green"
+            }
+          }
+        ]
+      },
+      "expectedText": "[Tags] includes all of [\"Red\", \"Green\"]",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Tags</strong> <span class=\"kcd-op\">includes all of</span> <span class=\"kcd-list\"><span class=\"kcd-value\">Red</span><span class=\"kcd-sep\">, </span><span class=\"kcd-value\">Green</span></span></span>"
     }
   ]
 }

@@ -25,7 +25,7 @@ use Kastrack\ConditionsEditor\Support\Values;
  */
 final class SqlBuilder
 {
-    public const VERSION = '0.0.34';
+    public const VERSION = '0.1.1';
 
     private const DAY_MS = 86400000;
 
@@ -543,6 +543,14 @@ final class SqlBuilder
 
             case 'in_list': return $inList(false);
             case 'not_in_list': return $inList(true);
+
+            case 'includes_any':
+            case 'includes_all':
+                // No portable storage shape for a multi-valued column — see the JS twin.
+                throw new NoSqlTranslationException(sprintf(
+                    'operator "%s" has no SQL translation: a multi-valued column has no portable shape; use a custom operator with an "sql" template',
+                    $op
+                ));
 
             case 'date_eq':
                 $ms = Values::toDate($values[0]['value'] ?? null);

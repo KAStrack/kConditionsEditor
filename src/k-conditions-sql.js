@@ -1,5 +1,5 @@
 /*!
- * kConditions SQL 0.0.34
+ * kConditions SQL 0.1.1
  * Translates a kConditions document into a self-contained SQL boolean
  * expression — the part that goes after WHERE in a SELECT.
  *
@@ -26,7 +26,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (K) {
   'use strict';
 
-  var VERSION = '0.0.34';
+  var VERSION = '0.1.1';
   var DAY_MS = 86400000;
 
   /* ------------------------------------------------------------------ *
@@ -422,6 +422,14 @@
 
       case 'in_list': return inList(false);
       case 'not_in_list': return inList(true);
+
+      case 'includes_any':
+      case 'includes_all':
+        // A multi-valued column has no portable storage shape (a CSV string, a
+        // JSON array, a junction table), so there is nothing dialect-neutral to
+        // emit. A custom operator with an `sql` template says how YOUR schema
+        // stores it; otherwise the unresolved-operator policy applies.
+        throw unresolved('operator "' + op + '" has no SQL translation: a multi-valued column has no portable shape; use a custom operator with an "sql" template');
 
       case 'date_eq': {
         var ms = K.helpers.toDate((values[0] || {}).value);

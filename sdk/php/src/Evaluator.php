@@ -32,7 +32,7 @@ use Throwable;
 final class Evaluator
 {
     public const SPEC_VERSION = '1.0';
-    public const VERSION = '0.0.34';
+    public const VERSION = '0.1.1';
 
     /** @var array<string, mixed> */
     private array $options;

@@ -151,7 +151,7 @@ if (K.evaluate(document, submission, { environment: 'server' })) {
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.0.34",
+  "generator": "kConditionsEditor/0.1.1",
   "operators": {},
   "root": {
     "type": "group",
@@ -189,8 +189,8 @@ conditions", which evaluates to `true` — the "Always" case.
 
 ## Operators
 
-Thirty builtin operators across six groups — equality, arithmetic, alphanumeric, date,
-boolean and existence. Each field advertises which it accepts, either by naming them or by
+Thirty-two builtin operators across seven groups — equality, arithmetic, alphanumeric,
+list, date, boolean and existence. Each field advertises which it accepts, either by naming them or by
 pulling in whole groups:
 
 ```js
@@ -679,7 +679,7 @@ of. It hides itself when the rule is already empty. Turn it off with
 {
   name: 'dob',
   label: 'Date of Birth',
-  type: 'date',                  // text | number | date | boolean | enum
+  type: 'date',                  // text | number | date | boolean | enum | list
   column: 'c.date_of_birth',     // SQL name; defaults to `name`
   choices: [...],                // enum fields — see Field choices
   operators: ['group:date'],     // or omit for the type default
@@ -1154,7 +1154,7 @@ SPEC.md                       the document specification
 
 ## Status
 
-**0.0.34** — undo/redo and reordering on top of a `+AND` / `+OR` build model, SQL output (server-side or client-side), keyed field choices, and a debug source panel. The document
+**0.1.1** — undo/redo and reordering on top of a `+AND` / `+OR` build model, SQL output (server-side or client-side), keyed field choices, and a debug source panel. The document
 format is unchanged and still versioned `1.0`, and the conformance fixtures pin the
 semantics, but nothing is frozen yet; expect the API to move before 0.1.
 

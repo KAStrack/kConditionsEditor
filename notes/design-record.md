@@ -5,7 +5,7 @@ per-version notes beside this file carry the detail; `CHANGELOG.md` is the
 user-facing version of the same story. Kept in the repository from 0.0.22 so it
 travels with the code.*
 
-Last updated: 2026-10-10 (version 0.0.34)
+Last updated: 2026-10-19 (version 0.1.1)
 
 ## What this is
 
@@ -586,6 +586,119 @@ could land on the next line's AND / OR now that a `)` line puts its operator
 under the bracket. It steps past it.
 `no-overlaps.js` found it at 545px.
 
+## v0.0.35 — redundant brackets are taken out
+
+Reported by Ben from use: `AND[ OR[ AND[a, b, OR[e, f]] ], d ]`, drawn as two
+extra bracket pairs with the last AND hanging out to their left. The likely
+route was a × on the OR group's other child: `removeNode` spliced it out and
+left the OR group holding one thing. Flipping a nested group's OR to match
+its parent's AND left `a AND (b AND c)` the same way. `wrapAndContinue` and
+`planAdd`'s `retune` already avoided making these, each in its own way. Other
+mutations didn't.
+
+**One pass, not more care in each mutation.** `dropRedundantGroups()` runs in
+`mutate()` after every change, and on load and in `setDocument()`. A group of
+one stands aside for its child. A group with its parent's AND / OR gives its
+children to the parent. An empty group goes: it is `SKIP` in the evaluator and
+in SQL already. The root adopts a lone group child rather than being replaced.
+`wrapAndContinue`'s own flatten was a second copy of the second rule and is
+gone. None of this changes what a rule evaluates to; the check runs all 64
+inputs against before and after.
+
+**A NOT is never stranded.** Brackets that carry a NOT aren't redundant: a
+negated group sharing its parent's operator stays. A negated group of one
+hands its NOT to its child only where that child has a NOT the person can
+switch off: a group, or a condition with `allowConditionNegate`. Otherwise
+`NOT (b)` stays as it is. The root has no NOT control in prose, so it never
+adopts a negated child.
+
+**What it costs.** Flipping a nested group's operator to match its parent is
+now not reversible by flipping it back, because the group has gone. Undo
+restores it in one step. Keeping such a group would contradict the report.
+
+**On load as well.** A rule saved before this release can carry the
+brackets. Load already rewrites a readable field with the editor's own
+output, so the tidy pass costs nothing new there. Unreadable content is
+untouched as before (`pristine`).
+
+`tests/browser/redundant-brackets.js` drives the × and the AND / OR with real
+clicks in both connector placements. It counts brackets by hit-testing and
+checks a single undo. It fails 14 of its 34 checks on 0.0.34.
+
+## v0.0.36 — saying so when brackets go
+
+Ben kept the merge-on-switch behaviour from 0.0.35, then asked how obvious
+Undo was when it happened. Not very: a small muted footer button, unchanged by
+the merge and off the screen on a long rule. Of three offered remedies (a
+preview, a note with Undo, a tint) he asked for all three.
+
+**One source for all three.** `tidyTree()` now reports what it did: `dropped`,
+the groups whose brackets went, and `lifted`, the nodes that came out of them.
+The note and the tint are drawn from that after the render. The preview is
+`planTidy(change)`. It copies the document with its ids, applies the change,
+tidies the copy with the same `tidyTree()`, and returns the dropped ids. The
+three changes that can merge (`removeChild`, `switchOperator`, `negateNode`)
+became plain functions, which the click runs on the document and the preview
+on the copy. That is the "previews read a plan" rule again, so nothing in the
+preview can disagree with the click. `tests/browser/bracket-merge-feedback.js`
+clicks each control and checks that exactly the marked brackets went.
+
+**The preview is not a preview style.** The styles paint *which rows a button
+touches*. This is a different fact, *which brackets will not survive*, and it
+appears alongside whatever the style paints, the same in all of them. So the
+`fade` style must not fade it. In prose it strikes the `(` and `)` through in
+`--kce-danger` and colours the guide; `positionGuides()` re-applies that,
+because it rebuilds the guides. In the tree skins it colours the group's own
+bracket: equation's and blackboard's pseudo-elements, ledger's rule, boxed's
+border. Each skin is tested through the control it actually shows. Boxed hides
+the AND / OR words and switches from its header. The other three hide the
+header's switch and its NOT.
+
+**Where the note goes was the hard part.** Beside the change, but nothing may
+land on a control, including what only appears on hover. The first try,
+level with the first moved row, never had room. That row's band is where its
+add strip appears. With the AND / OR below each row, though, the AND / OR row
+under it is nearly empty. So `placeTidyNote()` tries each moved row and AND /
+OR in reading order. It measures the controls and text (not the rows that hold
+them) across the note's own height, with `no-overlaps.js`'s 1px slack, and
+counts a zero-width strip at its `scrollWidth`. The note is 20px tall to fit
+between two rows. Its Undo reaches 24px through a transparent `::before`, as
+the AND / OR words do. Where nothing fits (inline placement, narrow hosts,
+the tree skins, whose rows are full-width boxes) it goes in the footer, just
+before Undo. It is re-placed in every layout pass and whenever a ghost line
+comes or goes.
+
+**It goes, but not from under someone.** It goes on the next change, or after
+8s. The timer stops while the note is hovered or focused. A screen reader
+hears it through a polite live region that exists from the start, since a
+region that arrives with its text is often not read.
+
+**Kept quiet** for `wrapAndContinue` (`mutate(…, { announce: false })`). Its
+flatten is the button's plan, and on screen no bracket goes: the brackets
+around `(B OR N)` stay; they just belong to the new inner group. Loading a
+rule and `setDocument()` are quiet too, because the person took nothing out.
+
+`no-overlaps.js` gained merge configurations. They click a merging AND / OR
+and scan with the note up, re-arming its timer before each scan.
+
+## v0.0.37 — the dark theme reaches prose and ledger
+
+Found while checking 0.0.36 in the dark: with `theme: 'dark'` on a reader in
+light mode, prose drew field names in near-black on the dark ground (1.1:1),
+and ledger its field names, values and AND / OR too. Both skins redefine the
+text tokens and gave the dark values only under `prefers-color-scheme: dark`.
+The base `[data-kce-theme="dark"]` block sets them too, but at equal
+specificity in an earlier stylesheet, so the skins' light values won. It is
+the "a colour needs a value in every place the theme comes from" rule,
+missed in two skins. Each now has a `[data-kce-theme="dark"]` block beside its
+media query.
+
+`tests/browser/theme-contrast.js` checks the result rather than the places:
+every skin, `theme` unset / light / dark, with the reader in light and dark
+mode, the text contrast measured from computed colours against the ground the
+rule is drawn on. It failed exactly the five prose / ledger cases before the
+fix.
+
 ## Repository layout
 
 ```
@@ -727,6 +840,40 @@ for several versions without anyone noticing.
 - **A field the editor could not read is not rewritten until the user changes
   something.** A new path that changes the document must call `touch()` or go
   through `mutate()` / `commitValue()`; a path the user does not drive must not.
+
+## v0.1.0 — list operators, readied for the first tag
+
+Readied as the first tagged release, so that Packagist and npm can install by
+version and a consumer (the bspkfw framework's form builder) can pin it.
+Nothing about the document changes. The tag itself went to 0.1.1 (below).
+
+The one feature is a seventh operator group, `list`, for a field whose value
+is itself a list. The existing `in_list` is "one value, many operands"; a
+multi-select field is "many values", and asking "does the selection include
+any of these" had no operator. Decisions:
+
+- **Two operators, not four.** `includes_any` / `includes_all`; "includes none
+  of" is `NOT includes_any`, and the condition already has `negate`.
+- **An empty operand never matches.** Mathematically "includes all of
+  nothing" is true, but an operator with nothing selected that matches every
+  row is a trap; `in_list` already treats an empty list as `1 = 0`.
+- **A string value is a list.** `toList` splits on commas on both sides, so a
+  CSV-stored field works without the host decoding it first.
+- **No SQL.** A multi-valued column has no portable shape (CSV, JSON array,
+  junction table). Rather than guess, the builders refuse the two operators
+  under the unresolved-operator policy; a custom operator with an `sql`
+  template is the escape hatch, as for callbacks.
+- **A `list` field type** picks the group defaults; the editor's existing
+  chip control (`renderListInput`) already takes the field's choices, so no
+  new control was needed.
+
+## v0.1.1 — the SDKs agree, and the first tag
+
+Four inputs where the JavaScript and PHP SDKs gave different answers — a
+date-time with no zone, a year below 100, Unicode spaces around a value, a
+number compared as text — now agree, and the shared fixtures pin each one.
+`CHANGELOG.md` has the detail. They landed before 0.1.0 was published, so the
+first tag is 0.1.1 and 0.1.0 was never tagged.
 
 ## Open items / not yet done
 

@@ -18,6 +18,10 @@
  * button is hovered for real (which is when the previews, ghosts and strips
  * are drawn), nothing visible may overlap: no guide or preview bar may cross
  * a control or the ghost, and no two controls may overlap each other.
+ *
+ * The note shown after a change merges brackets away (0.0.36) is a float of
+ * the same kind, so the merge configurations click an AND / OR that merges a
+ * group, then scan with the note on screen.
  */
 'use strict';
 
@@ -33,7 +37,9 @@ const RULES = {
   // A negated group in the middle of another.
   middle: { version: '1.0', root: g('and', [c(), g('or', [c(), g('and', [c(), c()], true), c()]), c()]) },
   // Groups that open with a group: their rails start on the same line.
-  first: { version: '1.0', root: g('and', [g('or', [g('and', [c(), c()]), c()]), c()]) }
+  first: { version: '1.0', root: g('and', [g('or', [g('and', [c(), c()]), c()]), c()]) },
+  // Switching the OR group to AND merges it, which brings up the note.
+  merge: { version: '1.0', root: g('and', [c(), g('or', [c(), c()]), c()]) }
 };
 
 const PAGE = `<!doctype html>
@@ -55,7 +61,11 @@ function install(FIELDS) {
     box.querySelector('#t').value = JSON.stringify(doc);
     window.__ed = window.KConditionsEditor.attach('#t', Object.assign({ fields: FIELDS, collapsible: false }, opts));
     window.__ed.setOpen(true);
-    // The add and × buttons draw previews; the AND / OR words light guides.
+    return window.__buttons();
+  };
+
+  // The add and × buttons draw previews; the AND / OR words light guides.
+  window.__buttons = function () {
     return Array.from(document.querySelectorAll('.kce-add, .kce-remove, .kce-connector-btn'))
       .filter((b) => b.getBoundingClientRect().width > 0)
       .map((b) => b.getAttribute('data-fk')).filter(Boolean);
@@ -73,7 +83,7 @@ function install(FIELDS) {
   /** Everything visible that overlaps something it must not. */
   window.__overlaps = function () {
     const controls = Array.from(document.querySelectorAll(
-      '.kce-add, .kce-icon-btn:not(:disabled), .kce-connector-btn, .kce-grip, .kce-tree .kce-btn, .kce-paren, .kce-ghost'))
+      '.kce-add, .kce-icon-btn:not(:disabled), .kce-connector-btn, .kce-grip, .kce-tree .kce-btn, .kce-paren, .kce-ghost, .kce-tree .kce-tidy-note'))
       .filter((e) => { const r = box(e); return r.width > 0 && r.height > 0 && visible(e); });
     const text = Array.from(document.querySelectorAll('.kce-sel-label, .kce-tree .kce-input'))
       .filter((e) => { const r = box(e); return r.width > 0 && r.height > 0; });
@@ -125,7 +135,7 @@ function install(FIELDS) {
   await p.evaluate(install, FIELDS);
 
   const configs = [];
-  for (const rule of Object.keys(RULES)) {
+  for (const rule of Object.keys(RULES).filter((r) => r !== 'merge')) {
     for (const controls of ['hover', 'always']) {
       for (const width of [545, 760]) {
         for (const previewStyle of ['bar', 'highlight']) configs.push({ rule, skin: 'prose', width, controls, previewStyle });
@@ -135,12 +145,30 @@ function install(FIELDS) {
       for (const skin of ['equation', 'boxed']) configs.push({ rule, skin, width: 760, controls, previewStyle: 'bar' });
     }
   }
+  for (const controls of ['hover', 'always']) {
+    for (const width of [545, 760]) {
+      for (const placement of ['below', 'inline']) configs.push({ rule: 'merge', skin: 'prose', width, controls, previewStyle: 'bar', placement, merge: true });
+    }
+  }
 
   for (const cfg of configs) {
     const tag = `${cfg.rule} ${cfg.skin}${cfg.placement ? '-' + cfg.placement : ''}@${cfg.width} ${cfg.previewStyle}/${cfg.controls}`;
-    const buttons = await p.evaluate(([d, o, w]) => window.__mk(d, o, w),
+    let buttons = await p.evaluate(([d, o, w]) => window.__mk(d, o, w),
       [RULES[cfg.rule], Object.assign({ skin: cfg.skin, controls: cfg.controls, previewStyle: cfg.previewStyle },
         cfg.placement ? { connectorPlacement: cfg.placement } : {}), cfg.width]);
+    // The note stays while it is looked at; here it is kept up by re-arming its
+    // timer before each scan, so every scan sees it.
+    const keepNote = () => p.evaluate(() => { if (window.__ed.tidyNote) window.__ed.armTidyNote(); return !!window.__ed.tidyNote; });
+    if (cfg.merge) {
+      const r = await p.evaluate(() => window.__reveal('r.1:conn-0'));
+      await p.mouse.move(r.x, r.y);
+      await p.waitForTimeout(40);
+      const at = await p.evaluate(() => window.__at('r.1:conn-0'));
+      await p.mouse.click(at.x, at.y);
+      await p.waitForTimeout(60);
+      ok(tag + ': the merge brought up the note', await keepNote());
+      buttons = await p.evaluate(() => window.__buttons());
+    }
     await p.mouse.move(2, 2);
     await p.waitForTimeout(60);
     const found = (await p.evaluate(() => window.__overlaps())).map((f) => 'rest: ' + f);
@@ -153,6 +181,7 @@ function install(FIELDS) {
       const at = await p.evaluate((k) => window.__at(k), fk);
       await p.mouse.move(at.x, at.y);
       await p.waitForTimeout(60);
+      if (cfg.merge) await keepNote();
       (await p.evaluate(() => window.__overlaps())).forEach((f) => found.push(fk + ': ' + f));
     }
     ok(tag + ': nothing visible overlaps', found.length === 0, [...new Set(found)].slice(0, 8));
