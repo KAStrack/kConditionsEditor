@@ -75,15 +75,8 @@ window.collapsed = KConditionsEditor.attach('#u', Object.assign({ summaryHtml: t
   const errs = [];
   const { ok, finish } = checker();
 
-  // Findings in kSelect's own markup, not the editor's: its open list
-  // (role=listbox) holds a live region and, when grouped, a group toggle
-  // button, which a listbox may not contain. Reported upstream (kselect.js);
-  // exempted here only on the list itself, and printed, so it stays seen.
-  const KSELECT_UPSTREAM = [{ id: 'aria-required-children', target: /ks-dropdown/ }];
-  const noted = new Set();
-
   async function audit(p, label) {
-    let violations = await p.evaluate(async (tags) => {
+    const violations = await p.evaluate(async (tags) => {
       const r = await window.axe.run(document.querySelectorAll('.kce').length > 1
         ? { include: Array.prototype.map.call(document.querySelectorAll('.kce'), (n) => [n]) }
         : document.querySelector('.kce'), { runOnly: { type: 'tag', values: tags } });
@@ -93,16 +86,6 @@ window.collapsed = KConditionsEditor.attach('#u', Object.assign({ summaryHtml: t
           ((n.any[0] && n.any[0].message) || n.failureSummary || '').slice(0, 140))
       }));
     }, TAGS);
-    violations = violations.map((v) => {
-      const upstream = KSELECT_UPSTREAM.filter((u) => u.id === v.id)[0];
-      if (!upstream) return v;
-      const ours = v.nodes.filter((n) => !upstream.target.test(n.split(' — ')[0]));
-      if (ours.length !== v.nodes.length && !noted.has(v.id)) {
-        noted.add(v.id);
-        console.log('NOTE kSelect upstream: ' + v.id + ' on its open list — ' + v.nodes[0].split(' — ')[1]);
-      }
-      return ours.length ? { id: v.id, nodes: ours } : null;
-    }).filter(Boolean);
     ok(label + ': no axe violations', violations.length === 0, violations);
   }
 

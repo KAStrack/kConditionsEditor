@@ -81,7 +81,7 @@ stylesheet is required for every skin except `boxed`, and
 carries the built files for that version. To vendor a release, take `dist/` from the
 tag (it holds the `LICENSE`) and record the version, which is also in each file's
 banner — or load it from a CDN that serves tags, such as
-`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.3/dist/k-conditions.min.js`.
+`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.4/dist/k-conditions.min.js`.
 The npm package carries the same files. The sources stay the deliverable: edit `src/`,
 then rebuild; `npm test` fails if `dist/` is not what the build makes from `src/`.
 
@@ -155,7 +155,7 @@ if (K.evaluate(document, submission, { environment: 'server' })) {
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.1.3",
+  "generator": "kConditionsEditor/0.1.4",
   "operators": {},
   "root": {
     "type": "group",
@@ -1308,7 +1308,7 @@ select from the same author — the editor uses it **by itself, with no configur
 | `kselect` | What happens |
 |---|---|
 | `'auto'` (default) | Used when `window.Kselect` is there. If it arrives after the editor (an `import()` that resolves later), the selects already drawn are upgraded where they stand: the editor looks for it for 8 s after attaching, and on the window's load, and after that at its next change. |
-| `true` | Used; if the page has none, it is loaded from jsDelivr, pinned to kSelect 1.11.0 with subresource integrity (`kselectSrc` points elsewhere, for a self-hosted copy or a strict CSP). The selects are drawn natively until it arrives, then upgraded. If it cannot be loaded, one console warning and the native selects stay. |
+| `true` | Used; if the page has none, it is loaded from jsDelivr, pinned to kSelect 1.11.1 with subresource integrity (`kselectSrc` points elsewhere, for a self-hosted copy or a strict CSP). The selects are drawn natively until it arrives, then upgraded. If it cannot be loaded, one console warning and the native selects stay. |
 | `false` | Never, even if the page has it. |
 | the `Kselect` constructor | Used, for a bundle that imports kSelect as a module without setting the global. |
 
@@ -1423,8 +1423,9 @@ SPEC.md                       the document specification
 
 ## Status
 
-**0.1.3** — kSelect, built in: detected and used for the long lists with no
-configuration, loadable from the CDN, drawn as the sentence. 0.1.2 made every string
+**0.1.4** — kSelect, built in (0.1.3): detected and used for the long lists with no
+configuration, loadable from the CDN, drawn as the sentence; now on kSelect 1.11.1, whose
+open list is axe-clean. 0.1.2 made every string
 translatable, added a hook for a host's own select widget and field groups, made every skin
 axe-clean, and committed `dist/` so each tag carries its build. The document
 format is unchanged and still versioned `1.0`, and the conformance fixtures pin the

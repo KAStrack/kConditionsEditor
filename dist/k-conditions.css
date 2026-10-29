@@ -1,6 +1,6 @@
-/*! kConditionsEditor 0.1.3 — base stylesheet and every skin | MIT | https://github.com/KAStrack/kConditionsEditor */
+/*! kConditionsEditor 0.1.4 — base stylesheet and every skin | MIT | https://github.com/KAStrack/kConditionsEditor */
 /*!
- * kConditionsEditor 0.1.3 — base stylesheet + the "boxed" skin
+ * kConditionsEditor 0.1.4 — base stylesheet + the "boxed" skin
  *
  * Every colour and metric is a CSS custom property, so the whole editor can be
  * restyled by overriding the --kce-* variables on .kce or any ancestor.
@@ -1774,7 +1774,7 @@ textarea.kce-hidden-textarea {
 .kcd-sep, .kcd-join { color: var(--kcd-op); }
 
 /*!
- * kConditionsEditor 0.1.3 — alternative skins
+ * kConditionsEditor 0.1.4 — alternative skins
  *
  * Load after k-conditions-editor.css and pick one with the `skin` option:
  *

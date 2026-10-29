@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] — 2026-10-29
+
+### Changed
+
+- **`kselect: true` loads kSelect 1.11.1** (pinned on jsDelivr, with its own
+  integrity hashes), and the browser checks run against it. 1.11.1 fixes the
+  open list's accessibility, which 0.1.3 listed as known: its listbox is now
+  the options list alone — the live region and notices beside it, groups as
+  named `role="group"`s, nothing focusable inside — and it is what scrolls.
+  The accessibility check's exemption for kSelect is gone: with kSelect's
+  lists open, it now requires zero axe violations like everything else.
+
+A page that loads its own kSelect gets the fix by updating kSelect; nothing
+in the editor needs to change for it. With 1.11.0 the editor works as before.
+
 ## [0.1.3] — 2026-10-29
 
 ### Added

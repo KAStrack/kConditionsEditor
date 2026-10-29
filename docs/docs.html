@@ -14,7 +14,7 @@
 
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.1.3</span></a>
+    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.1.4</span></a>
     <nav class="site-nav">
       <a href="./">Home</a>
       <a href="demo.html">Playground</a>
@@ -118,7 +118,7 @@ import '@kastrack/conditions-editor/editor.css';</code></pre>
       is committed: every tag carries the built files for that version. To vendor a
       release, take <code>dist/</code> from the tag and record the version (it is also in
       each file's banner), or load it from a CDN that serves tags —
-      <code>https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.3/dist/k-conditions.min.js</code>.
+      <code>https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.4/dist/k-conditions.min.js</code>.
       The npm package carries the same files. The sources remain the deliverable: edit
       <code>src/</code>, then rebuild; <code>npm test</code> fails while <code>dist/</code>
       is not what the build makes from <code>src/</code>.
@@ -928,7 +928,7 @@ KConditions.describe(document, { fields, labels });</code></pre>
       <thead><tr><th><code>kselect</code></th><th>What happens</th></tr></thead>
       <tbody>
         <tr><td><code>"auto"</code> (default)</td><td>Used when <code>window.Kselect</code> is there. If it arrives after the editor, the selects already drawn are upgraded where they stand (the editor looks for 8 s after attaching, and on the window's load; after that, at its next change).</td></tr>
-        <tr><td><code>true</code></td><td>Used; if the page has none, loaded from jsDelivr, pinned to kSelect 1.11.0 with subresource integrity (<code>kselectSrc</code> for a self-hosted copy). Native selects until it arrives; one warning and native selects if it cannot be loaded.</td></tr>
+        <tr><td><code>true</code></td><td>Used; if the page has none, loaded from jsDelivr, pinned to kSelect 1.11.1 with subresource integrity (<code>kselectSrc</code> for a self-hosted copy). Native selects until it arrives; one warning and native selects if it cannot be loaded.</td></tr>
         <tr><td><code>false</code></td><td>Never.</td></tr>
         <tr><td>the <code>Kselect</code> constructor</td><td>Used, for a bundle that does not set the global.</td></tr>
       </tbody>
@@ -1629,7 +1629,7 @@ editor.describeHtml();  // string of HTML</code></pre>
 
 <footer class="site-footer">
   <div class="wrap">
-    kConditionsEditor 0.1.3 — MIT licensed.
+    kConditionsEditor 0.1.4 — MIT licensed.
     <a href="https://github.com/KAStrack/kConditionsEditor">Source on GitHub</a>.
   </div>
 </footer>

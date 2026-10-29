@@ -1,4 +1,4 @@
-/*! kConditionsEditor 0.1.3 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
+/*! kConditionsEditor 0.1.4 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -17,7 +17,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions Evaluator 0.1.3
+ * kConditions Evaluator 0.1.4
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -32,7 +32,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.1.3';
+  var LIB_VERSION = '0.1.4';
 
   /* ------------------------------------------------------------------ *
    * Errors
@@ -1218,7 +1218,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions SQL 0.1.3
+ * kConditions SQL 0.1.4
  * Translates a kConditions document into a self-contained SQL boolean
  * expression — the part that goes after WHERE in a SELECT.
  *
@@ -1245,7 +1245,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (K) {
   'use strict';
 
-  var VERSION = '0.1.3';
+  var VERSION = '0.1.4';
   var DAY_MS = 86400000;
 
   /* ------------------------------------------------------------------ *
@@ -1746,7 +1746,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditionsEditor 0.1.3
+ * kConditionsEditor 0.1.4
  * A zero-dependency conditions builder that takes over a <textarea>.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  *
@@ -1765,7 +1765,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (KConditions) {
   'use strict';
 
-  var VERSION = '0.1.3';
+  var VERSION = '0.1.4';
   var BUILTIN = KConditions.BUILTIN_OPERATORS;
   var GROUPS = KConditions.OPERATOR_GROUPS;
   var TYPE_GROUPS = KConditions.FIELD_TYPE_GROUPS;
@@ -1780,12 +1780,12 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
      uses by itself when the page has it (`kselect`, below). Pinned to a tag,
      with subresource integrity, for `kselect: true` on a page that has none.
      tests/js/kselect-pin.test.js holds these hashes to the vendored copy. */
-  var KSELECT_VERSION = '1.11.0';
+  var KSELECT_VERSION = '1.11.1';
   var KSELECT_SRC = {
     js: 'https://cdn.jsdelivr.net/gh/KAStrack/kselect.js@v' + KSELECT_VERSION + '/docs/kselect.min.js',
     css: 'https://cdn.jsdelivr.net/gh/KAStrack/kselect.js@v' + KSELECT_VERSION + '/docs/kselect.min.css',
-    jsIntegrity: 'sha384-zeUI+mXALYmSoayCv7d8yWFiDS4jvsH9DgAHUSX1JiErkD3Sdt/zsnqgC+TLInmG',
-    cssIntegrity: 'sha384-9VFG+rtksGUn5P9W7BTp0W2siJS2taiVh/6FN/fgzDRcSN7WgDrmDYIXhp2aVA+r'
+    jsIntegrity: 'sha384-VgyfD6RFYWgzchwGNVzPTEgkxC6aHYjvAkXeAFTs1xAsguQbLjbTq0EIEtLTIHQj',
+    cssIntegrity: 'sha384-gXx5CJOLUa7WdX763TpV2TPnZp+TRYhw9hwmne0qHVye02gXGi6c3xIqx4dnOsi5'
   };
   // The selects kSelect takes over unless told otherwise: the ones that can
   // be long. The operator list is short and keeps its {value} slot; the
