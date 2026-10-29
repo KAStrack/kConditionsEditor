@@ -25,7 +25,7 @@ use Kastrack\ConditionsEditor\Support\Values;
  */
 final class SqlBuilder
 {
-    public const VERSION = '0.1.2';
+    public const VERSION = '0.1.3';
 
     private const DAY_MS = 86400000;
 

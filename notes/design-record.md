@@ -5,7 +5,7 @@ per-version notes beside this file carry the detail; `CHANGELOG.md` is the
 user-facing version of the same story. Kept in the repository from 0.0.22 so it
 travels with the code.*
 
-Last updated: 2026-10-29 (version 0.1.2)
+Last updated: 2026-10-29 (version 0.1.3)
 
 ## What this is
 
@@ -902,11 +902,23 @@ kselect, axe-clean in light and dark, vendored from a tag. Detail in
   scrolling panels; all fixed. The light muted grey is now `#5f6875`.
 - **`dist/` committed** with its `LICENSE`, guarded by a byte-for-byte test.
 
+## v0.1.3 — kSelect, built in
+
+The editor uses kSelect for the long lists when the page has it (`'auto'`,
+the default), loads it from a pinned CDN with SRI when told to (`true`), or
+never (`false`). It is the editor acting as its own `decorateSelect` host, on
+the 0.1.2 machinery; a host's own hook wins. Closed, a kSelect is drawn as the
+word it replaces; open, its list is in a popover layer carrying the editor's
+theme, above a modal dialog. Detail in `0.1.3-kselect.md`.
+
 ## Open items / not yet done
 
 - Python, Ruby, Go SDKs (deferred; the fixtures are the contract for a port).
 - A decorated operator select gives up its `{value}` slot (the widget shows
   the whole label). Declining `'operator'` keeps it.
+- kSelect 1.11.0's open list fails axe's `aria-required-children` (a live
+  region and a group toggle inside its listbox). Upstream; the accessibility
+  check exempts exactly that and prints it.
 - Labels have no plural forms: "is more than 1 days from now". A `{value}`
   template cannot choose a word by the number; an ICU-style plural would.
 - Screen readers do not hear the brackets (`.kce-paren` is `aria-hidden`), so

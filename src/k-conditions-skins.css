@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.1.2 — alternative skins
+ * kConditionsEditor 0.1.3 — alternative skins
  *
  * Load after k-conditions-editor.css and pick one with the `skin` option:
  *
@@ -797,9 +797,109 @@
   border-color: var(--kce-accent);
 }
 
-/* A host's widget (decorateSelect) draws its own. */
-.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel.kce-sel-host::after {
+/* A host's widget (decorateSelect) draws its own. The editor's own kSelect
+   is drawn as the word it replaces, so it keeps the skin's chevron. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel.kce-sel-host:not(.kce-sel-ks)::after {
   content: none;
+}
+
+/* ================================================================== *
+ * The built-in kSelect, written out
+ *
+ * Closed, it reads as the word it stands in for — the field name bold, a
+ * value in the value's type, a dotted underline on hover and the accent one
+ * on focus — exactly as the plain select's label does; open, it is kSelect's
+ * searchable list. Three classes deep, so a host's own kSelect theme (a
+ * form-control height, a border, an inset shadow on .ks-control) does not
+ * turn the word back into a box. The search box, while open, lies over the
+ * word rather than beside it, so the row does not move.
+ * ================================================================== */
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-control {
+  min-height: 0;
+  padding: 1px;
+  gap: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: inherit;
+  line-height: inherit;
+  font: inherit;
+}
+
+/* A word is shorter than a 24px target; the hit area reaches past it,
+   unseen, as the add buttons' does, so the row is no taller for it. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-control::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 24px;
+  min-height: 100%;
+  transform: translateY(-50%);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-control:hover {
+  border-color: transparent;
+  border-bottom-color: currentColor;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks :is(.ks-control:focus-visible, .ks-open .ks-control) {
+  outline: none;
+  border-bottom: 1px solid var(--kce-accent);
+  background: var(--kce-hover);
+  border-radius: 3px 3px 0 0;
+  box-shadow: none;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-arrow { display: none; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-placeholder {
+  position: static;
+  color: var(--kce-text-muted);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-open .ks-control .ks-search-wrap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: max(100%, 12em);
+  min-width: 0;
+  z-index: 2;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-search-input {
+  height: 100%;
+  font: inherit;
+  padding: 0 4px;
+  background: var(--kce-bg);
+  border: 1px solid var(--kce-accent);
+  border-radius: 3px;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) :is(.kce-sel-field, .kce-sel-fieldvalue).kce-sel-ks .ks-single-value {
+  font-weight: 650;
+  color: var(--kce-field);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-literal.kce-sel-ks .ks-single-value {
+  font-family: var(--kce-font-mono);
+  font-size: 0.86em;
+  color: var(--kce-value);
+}
+
+/* A list value's tags read as the editor's own chips do. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-values.kce-sel-ks .ks-selection { gap: 3px; }
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-values.kce-sel-ks .ks-tag {
+  font-family: var(--kce-font-mono);
+  font-size: 0.82em;
+  color: var(--kce-value);
+  background: var(--kce-bg-sunken);
+  border-color: var(--kce-border);
 }
 
 /* ================================================================== *

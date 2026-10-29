@@ -4,6 +4,69 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] — 2026-10-29
+
+### Added
+
+- **kSelect, built in.** A field list can run to 40 entries, and a native
+  `<select>` cannot be searched. Many hosts already load
+  [kSelect](https://kastrack.github.io/kselect.js/), the searchable select
+  from the same author, and 0.1.2's `decorateSelect` let them wire it in — but
+  each had to write the glue, and get the release and the focus right. Now the
+  editor does it by itself:
+  - **`kselect: 'auto'`** (the default) uses `window.Kselect` when the page has
+    it, with no configuration. A kSelect that arrives after the editor (an
+    `import()` resolving later) upgrades the selects already drawn, where they
+    stand: the editor looks for 8 s after attaching and on the window's load,
+    and after that at its next change.
+  - **`kselect: true`** uses it, loading it from jsDelivr when the page has
+    none — pinned to kSelect 1.11.0, with subresource integrity — and upgrades
+    the native selects when it arrives. `kselectSrc` points elsewhere. If it
+    cannot be loaded: one warning, and the native selects stay.
+  - **`kselect: false`** never; **`kselect: Kselect`** (the constructor) for a
+    bundle that does not set the global.
+  - **The long lists only**, by default (`kselectRoles`): field, compared-with
+    field, a value from a field's choices, and a list of choices. The operator
+    keeps its `{value}` slot; the Value / Field switch has two entries.
+  - **A search box** on any list of more than 8 entries; field `group`s are its
+    headings. `kselectOptions` (an object, or a function per select) passes
+    kSelect options of your own.
+  - **Drawn as the sentence.** In prose and the equation skins the closed
+    kSelect is the word it replaces — field bold, value in the value's type,
+    dotted underline on hover — and shrinks like one, to the same floor. Open,
+    its list is in the editor's colours and dark mode, at least 14em wide, and
+    its search box lies over the word, so the row does not move. Its hit area
+    reaches 24px without making the row taller. Boxed keeps kSelect's box at
+    boxed's own size. Scoped so a host's kSelect theme (a form-control box on
+    every `.ks-control`) does not reach it.
+  - **Its lists open in a layer of the editor's own**: a `.kce` carrying the
+    editor's theme and skin, shown as a popover in the browser's top layer —
+    above a modal `<dialog>` the editor is in (a dialog clips what overflows
+    it, and is drawn above `<body>`), and raised each time a list opens, for a
+    dialog opened later. kSelect 1.10+; with 1.9 the lists open in `<body>`
+    in kSelect's own colours.
+  - **Its words through `labels`**: new keys `search`, `noResults`,
+    `selectedCount` (`{n} selected`) and `close`; a tag's remove button reuses
+    `removeValue`.
+  - **A host's own `decorateSelect` always wins**; setting `kselect: true` as
+    well is warned about. The built-in kSelect *is* a decorate / release /
+    focus trio on the 0.1.2 machinery, so focus after a pick or an undo,
+    Alt+Arrow, and releasing every widget on each redraw and on `destroy()`
+    behave exactly as for a host's widget.
+
+### Changed
+
+- **The AND / OR under a row** starts under a field kSelect's text, as under a
+  field name, rather than at its edge.
+
+### Known
+
+- kSelect 1.11.0's open list (`role="listbox"`) contains a live region and,
+  when grouped, a group-toggle button, which axe reports as
+  `aria-required-children`. It is kSelect's markup; the accessibility check
+  exempts that one rule on kSelect's list alone, prints it, and should drop the
+  exemption when kSelect fixes it.
+
 ## [0.1.2] — 2026-10-29
 
 For a host that translates every string, styles every select with its own widget,

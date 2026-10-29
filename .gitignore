@@ -1,5 +1,8 @@
 node_modules/
-vendor/
+# Composer's, at the root (and sdk/php/'s). Not tests/browser/vendor/, which
+# holds kSelect as a test fixture.
+/vendor/
+sdk/php/vendor/
 composer.lock
 package-lock.json
 .phpunit.cache/

@@ -126,13 +126,21 @@ function install(FIELDS) {
 (async () => {
   const site = await serve();
   scratch('no-overlaps.html', PAGE);
+  // The same with kSelect on the page: the field select is the editor's own kSelect.
+  scratch('no-overlaps-kselect.html', PAGE.replace('<script src="src/k-conditions-evaluator.js">',
+    '<link rel="stylesheet" href="tests/browser/vendor/kselect/kselect.min.css">' +
+    '<script src="tests/browser/vendor/kselect/kselect.min.js"></script><script src="src/k-conditions-evaluator.js">'));
   const b = await chromium.launch();
   const errs = [];
   const { ok, finish } = checker();
-  const p = await b.newPage({ viewport: { width: 1100, height: 800 } });
-  watchErrors(p, errs);
-  await p.goto(site.url + scratch.url('no-overlaps.html'));
-  await p.evaluate(install, FIELDS);
+  const plain = await b.newPage({ viewport: { width: 1100, height: 800 } });
+  watchErrors(plain, errs);
+  await plain.goto(site.url + scratch.url('no-overlaps.html'));
+  await plain.evaluate(install, FIELDS);
+  const withKselect = await b.newPage({ viewport: { width: 1100, height: 800 } });
+  watchErrors(withKselect, errs);
+  await withKselect.goto(site.url + scratch.url('no-overlaps-kselect.html'));
+  await withKselect.evaluate(install, FIELDS);
 
   const configs = [];
   for (const rule of Object.keys(RULES).filter((r) => r !== 'merge')) {
@@ -150,9 +158,22 @@ function install(FIELDS) {
       for (const placement of ['below', 'inline']) configs.push({ rule: 'merge', skin: 'prose', width, controls, previewStyle: 'bar', placement, merge: true });
     }
   }
+  // kSelect in the field select: prose both ways, and boxed.
+  for (const rule of ['last', 'middle']) {
+    for (const controls of ['hover', 'always']) {
+      for (const width of [545, 760]) {
+        for (const placement of ['below', 'inline']) configs.push({ rule, skin: 'prose', width, controls, previewStyle: 'bar', placement, ks: true });
+      }
+      configs.push({ rule, skin: 'boxed', width: 760, controls, previewStyle: 'bar', ks: true });
+    }
+  }
 
-  for (const cfg of configs) {
-    const tag = `${cfg.rule} ${cfg.skin}${cfg.placement ? '-' + cfg.placement : ''}@${cfg.width} ${cfg.previewStyle}/${cfg.controls}`;
+  // The kSelect configurations run as no-overlaps-kselect.js, a script of
+  // their own, so each half stays inside the runner's time per script.
+  const KSELECT_ONLY = process.env.KCE_OVERLAPS === 'kselect';
+  for (const cfg of configs.filter((c) => !!c.ks === KSELECT_ONLY)) {
+    const p = cfg.ks ? withKselect : plain;
+    const tag = `${cfg.ks ? 'kselect ' : ''}${cfg.rule} ${cfg.skin}${cfg.placement ? '-' + cfg.placement : ''}@${cfg.width} ${cfg.previewStyle}/${cfg.controls}`;
     let buttons = await p.evaluate(([d, o, w]) => window.__mk(d, o, w),
       [RULES[cfg.rule], Object.assign({ skin: cfg.skin, controls: cfg.controls, previewStyle: cfg.previewStyle },
         cfg.placement ? { connectorPlacement: cfg.placement } : {}), cfg.width]);

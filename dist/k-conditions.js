@@ -1,4 +1,4 @@
-/*! kConditionsEditor 0.1.2 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
+/*! kConditionsEditor 0.1.3 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -17,7 +17,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions Evaluator 0.1.2
+ * kConditions Evaluator 0.1.3
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -32,7 +32,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.1.2';
+  var LIB_VERSION = '0.1.3';
 
   /* ------------------------------------------------------------------ *
    * Errors
@@ -1218,7 +1218,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions SQL 0.1.2
+ * kConditions SQL 0.1.3
  * Translates a kConditions document into a self-contained SQL boolean
  * expression — the part that goes after WHERE in a SELECT.
  *
@@ -1245,7 +1245,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (K) {
   'use strict';
 
-  var VERSION = '0.1.2';
+  var VERSION = '0.1.3';
   var DAY_MS = 86400000;
 
   /* ------------------------------------------------------------------ *
@@ -1746,7 +1746,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditionsEditor 0.1.2
+ * kConditionsEditor 0.1.3
  * A zero-dependency conditions builder that takes over a <textarea>.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  *
@@ -1765,7 +1765,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (KConditions) {
   'use strict';
 
-  var VERSION = '0.1.2';
+  var VERSION = '0.1.3';
   var BUILTIN = KConditions.BUILTIN_OPERATORS;
   var GROUPS = KConditions.OPERATOR_GROUPS;
   var TYPE_GROUPS = KConditions.FIELD_TYPE_GROUPS;
@@ -1775,6 +1775,24 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 
   var uid = 0;
   function nextId() { uid += 1; return 'n' + uid; }
+
+  /* kSelect, the searchable select from the same author, which the editor
+     uses by itself when the page has it (`kselect`, below). Pinned to a tag,
+     with subresource integrity, for `kselect: true` on a page that has none.
+     tests/js/kselect-pin.test.js holds these hashes to the vendored copy. */
+  var KSELECT_VERSION = '1.11.0';
+  var KSELECT_SRC = {
+    js: 'https://cdn.jsdelivr.net/gh/KAStrack/kselect.js@v' + KSELECT_VERSION + '/docs/kselect.min.js',
+    css: 'https://cdn.jsdelivr.net/gh/KAStrack/kselect.js@v' + KSELECT_VERSION + '/docs/kselect.min.css',
+    jsIntegrity: 'sha384-zeUI+mXALYmSoayCv7d8yWFiDS4jvsH9DgAHUSX1JiErkD3Sdt/zsnqgC+TLInmG',
+    cssIntegrity: 'sha384-9VFG+rtksGUn5P9W7BTp0W2siJS2taiVh/6FN/fgzDRcSN7WgDrmDYIXhp2aVA+r'
+  };
+  // The selects kSelect takes over unless told otherwise: the ones that can
+  // be long. The operator list is short and keeps its {value} slot; the
+  // Value / Field switch has two entries.
+  var KSELECT_ROLES = ['field', 'fieldValue', 'value', 'values'];
+  // A list longer than this opens with a search box.
+  var KSELECT_SEARCH_OVER = 8;
 
   // The property on a <textarea> that points back at its editor. It is how
   // get() and detach() find an instance whose attach() return value was lost,
@@ -1959,6 +1977,12 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     datePlaceholder: 'YYYY-MM-DD',
     // The debug panel's SQL tab, when k-conditions-sql.js is not loaded.
     sqlMissing: 'Load k-conditions-sql.js to generate SQL.',
+    // kSelect's own words, when the editor uses it (see `kselect`).
+    // {n} is a count.
+    search: 'Search…',
+    noResults: 'No matches',
+    selectedCount: '{n} selected',
+    close: 'Close',
     // Operator names, by operator: { eq: 'är lika med', … }. A label may hold
     // a {value} slot for the operand: 'är inom de senaste {value} dagarna'.
     // Empty here; an operator not named falls back to its own label.
@@ -2063,6 +2087,19 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     // first focusable element in the select's shell — the widget — or the
     // select itself if it still shows.
     focusSelect: null,
+    // kSelect, built in, for the long lists. 'auto' uses it when the page has
+    // it (window.Kselect), true uses it and loads it from the CDN when the
+    // page has none, false never does — and the Kselect constructor itself
+    // means "this one", for a bundle that does not set the global. A host's
+    // own decorateSelect always wins over all of these.
+    kselect: 'auto',
+    // Which selects it takes over (roles, as decorateSelect has them).
+    kselectRoles: null,
+    // Options for each kSelect, over the editor's own: an object, or
+    // fn(select, { role, node, field }) returning one.
+    kselectOptions: null,
+    // Where `kselect: true` loads it from: { js, css, jsIntegrity, cssIntegrity }.
+    kselectSrc: null,
     debug: false,
     onChange: null
   };
@@ -2189,6 +2226,11 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     this.fieldIndex = {};
     var self = this;
     this.fields.forEach(function (f) { self.fieldIndex[f.name] = f; });
+
+    if (typeof this.options.decorateSelect === 'function' && (this.options.kselect === true || isKselect(this.options.kselect)) &&
+        typeof console !== 'undefined') {
+      console.warn('kConditionsEditor: both decorateSelect and kselect are set; the host\'s decorateSelect is used and kselect is ignored.');
+    }
 
     this.customOperators = extend({}, this.options.operators || {});
     this.listeners = {};
@@ -3896,6 +3938,122 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
    * widget standing in for the select that had it.
    * ------------------------------------------------------------------ */
 
+  /* ------------------------------------------------------------------ *
+   * kSelect, built in
+   *
+   * When the host has no decorateSelect of its own, the editor can be its own
+   * host for kSelect: the same decorate / release / focus path, with kSelect
+   * as the widget. Found on the page ('auto'), given (the constructor), or
+   * loaded from the CDN (true). Shared by every editor on the page: one load,
+   * one watch for a kSelect that arrives after the editors do.
+   * ------------------------------------------------------------------ */
+
+  function isKselect(k) {
+    return !!k && typeof k === 'function' && typeof k.init === 'function' && typeof k.getInstance === 'function';
+  }
+
+  /** The kSelect to use: the one given, else the page's, else null. */
+  function findKselect(option) {
+    if (isKselect(option)) return option;
+    var g = typeof window !== 'undefined' ? window.Kselect : null;
+    return isKselect(g) ? g : null;
+  }
+
+  // kselect.css declares its tokens on :root, so a stylesheet that is there
+  // shows as a value for one of them.
+  function kselectCssLoaded() {
+    try {
+      return !!window.getComputedStyle(document.documentElement).getPropertyValue('--ks-color-bg').trim();
+    } catch (e) { return false; }
+  }
+
+  var kselectLoad = null;
+
+  /**
+   * Load kSelect for `kselect: true`, once per page: the script if there is no
+   * Kselect, the stylesheet if there are no kSelect styles. Resolves with
+   * Kselect, rejects if the script fails (blocked, offline, a hash mismatch).
+   */
+  function loadKselect(given) {
+    if (kselectLoad) return kselectLoad;
+    given = given || {};
+    var src = extend({}, KSELECT_SRC, given);
+    // A source the host names is the host's to vouch for: only its own
+    // integrity, never the pinned hash of a different file.
+    if (src.js !== KSELECT_SRC.js && !given.jsIntegrity) src.jsIntegrity = null;
+    if (src.css !== KSELECT_SRC.css && !given.cssIntegrity) src.cssIntegrity = null;
+    kselectLoad = new Promise(function (resolve, reject) {
+      if (!kselectCssLoaded() && src.css) {
+        var link = el('link', null, { rel: 'stylesheet', href: src.css, 'data-kce-kselect': '' });
+        if (src.cssIntegrity) { link.integrity = src.cssIntegrity; link.crossOrigin = 'anonymous'; }
+        document.head.appendChild(link);
+      }
+      var present = findKselect(null);
+      if (present) { resolve(present); return; }
+      var script = el('script', null, { src: src.js, 'data-kce-kselect': '' });
+      if (src.jsIntegrity) { script.integrity = src.jsIntegrity; script.crossOrigin = 'anonymous'; }
+      script.onload = function () {
+        var k = findKselect(null);
+        if (k) resolve(k); else reject(new Error('kConditionsEditor: ' + src.js + ' loaded but set no Kselect'));
+      };
+      script.onerror = function () { reject(new Error('kConditionsEditor: could not load kSelect from ' + src.js)); };
+      document.head.appendChild(script);
+    });
+    // A failed load stays failed for the page: every redraw asks again, and
+    // each would otherwise add another <script> and another request.
+    return kselectLoad;
+  }
+
+  /*
+   * 'auto' and a kSelect that arrives after the editor — a host that
+   * import()s it after attaching, which leaves no <script> to watch. Editors
+   * that found none wait here, and are told when it turns up: looked for at
+   * 100 ms to 8 s after the first one started waiting, and on the window's
+   * load. After that, an editor's next render looks for itself.
+   */
+  var KSELECT_WATCH = [100, 250, 500, 1000, 2000, 4000, 8000];
+  var kselectWaiting = [];
+  var kselectTimers = [];
+  var kselectWatchDone = false;
+
+  function kselectLook() {
+    var k = findKselect(null);
+    if (!k) return;
+    var waiting = kselectWaiting;
+    stopKselectWatch();
+    waiting.forEach(function (editor) { editor.kselectArrived(k); });
+  }
+
+  function stopKselectWatch() {
+    kselectTimers.forEach(clearTimeout);
+    kselectTimers = [];
+    kselectWaiting = [];
+    if (typeof window !== 'undefined') window.removeEventListener('load', kselectLook);
+  }
+
+  function waitForKselect(editor) {
+    if (kselectWatchDone || kselectWaiting.indexOf(editor) !== -1) return;
+    kselectWaiting.push(editor);
+    if (kselectTimers.length) return;
+    KSELECT_WATCH.forEach(function (ms, i) {
+      kselectTimers.push(setTimeout(function () {
+        kselectLook();
+        // The window is over: from here on, renders look for themselves.
+        if (i === KSELECT_WATCH.length - 1) { kselectWatchDone = true; stopKselectWatch(); }
+      }, ms));
+    });
+    if (document.readyState !== 'complete') window.addEventListener('load', kselectLook);
+  }
+
+  function unwaitForKselect(editor) {
+    var i = kselectWaiting.indexOf(editor);
+    if (i !== -1) kselectWaiting.splice(i, 1);
+    if (!kselectWaiting.length) {
+      kselectTimers.forEach(clearTimeout);
+      kselectTimers = [];
+    }
+  }
+
   /**
    * Listen for a select's change. The key of the select being changed is
    * held while the handler runs, so a render it causes can put focus back
@@ -3918,8 +4076,22 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     return shell;
   };
 
+  /**
+   * Who decorates selects: 'host' (its own decorateSelect), 'kselect' (the
+   * built-in kSelect, found, given or to be loaded), or null (nobody).
+   */
+  Editor.prototype.decorator = function () {
+    if (typeof this.options.decorateSelect === 'function') return 'host';
+    var k = this.options.kselect;
+    if (k === false || k === 'off') return null;
+    if (k === true || isKselect(k)) return 'kselect';
+    // 'auto': only once there is one — or while one may still arrive, so a
+    // list of choices is built as the select kSelect will want.
+    return findKselect(null) || !kselectWatchDone ? 'kselect' : null;
+  };
+
   Editor.prototype.recordSelect = function (select, shell, role, node, field, decline) {
-    if (typeof this.options.decorateSelect !== 'function') return;
+    if (!this.decorator()) return;
     (this.undecorated = this.undecorated || []).push({
       select: select, shell: shell, role: role, node: node, field: field || null, decline: decline
     });
@@ -3934,57 +4106,221 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     var list = this.undecorated || [];
     this.undecorated = [];
     var hook = this.options.decorateSelect;
-    if (typeof hook !== 'function') return this;
+    if (typeof hook === 'function') {
+      var self = this;
+      list.forEach(function (entry) {
+        var result;
+        try {
+          result = hook(entry.select, {
+            role: entry.role, node: stripIds(entry.node), field: entry.field, editor: self
+          });
+        } catch (e) {
+          if (typeof console !== 'undefined') console.error(e);
+          result = false;
+        }
+        if (result === false) { if (entry.decline) entry.decline(); return; }
+        self.adoptDecorated(entry, result);
+      });
+      return this;
+    }
+    return this.decorateWithKselect(list);
+  };
+
+  /**
+   * A select a widget now stands in for. The widget shows the choice itself,
+   * so the label span would show it again beside it; a widget shows the whole
+   * operator label, operand slot and all, so the words that would follow the
+   * value would say it twice.
+   */
+  Editor.prototype.adoptDecorated = function (entry, result) {
     var self = this;
+    entry.select.kceDecorated = true;
+    entry.shell.classList.add('kce-sel-host');
+    var label = entry.shell.querySelector(':scope > .kce-sel-label');
+    if (label) entry.shell.removeChild(label);
+    if (entry.role === 'operator') {
+      var row = entry.shell.parentNode;
+      var tail = row && row.querySelector(':scope > .kce-op-tail');
+      if (tail) row.removeChild(tail);
+    }
     this.decorated = this.decorated || [];
+    this.decorated.push(entry);
+    // A widget changes its row's width when it arrives — later, for one
+    // that is imported, whether or not the host said so with a promise —
+    // and again whenever what it shows changes (a multi-select's tags). The
+    // AND / OR alignment, the floats and the guides are measured, so each
+    // shell is watched and the layout re-run when it changes size.
     if (!this.shellObserver && typeof ResizeObserver === 'function') {
       this.shellObserver = new ResizeObserver(function () {
         if (!self.destroyed && self.onViewportResize) self.onViewportResize();
       });
     }
+    if (this.shellObserver) this.shellObserver.observe(entry.shell);
+    if (result && typeof result.then === 'function') {
+      var settle = function () {
+        if (entry.select.kcePending === pending) entry.select.kcePending = null;
+        if (!self.destroyed && self.onViewportResize) self.onViewportResize();
+      };
+      var pending = result.then(settle, settle);
+      entry.select.kcePending = pending;
+    }
+    return this;
+  };
+
+  /**
+   * The built-in kSelect. The roles it takes (kselectRoles) are decorated now
+   * if kSelect is here; otherwise they wait — for the load (`true`) or for one
+   * to turn up ('auto') — drawn as the editor draws them meanwhile, and are
+   * upgraded where they stand when it comes, with no re-render. A list of
+   * choices cannot wait that way (its <select multiple> is no use bare), so it
+   * gets the chips now, and the rule is redrawn when kSelect arrives.
+   */
+  Editor.prototype.decorateWithKselect = function (list) {
+    var self = this;
+    var roles = Array.isArray(this.options.kselectRoles) ? this.options.kselectRoles : KSELECT_ROLES;
+    var mine = [];
     list.forEach(function (entry) {
-      var result;
+      if (roles.indexOf(entry.role) === -1) { if (entry.decline) entry.decline(); return; }
+      mine.push(entry);
+    });
+    this.kselectWaiting = [];
+    this.kselectChips = false;
+    if (!mine.length) return this;
+
+    var k = findKselect(this.options.kselect);
+    if (k) {
+      mine.forEach(function (entry) { self.kselectDecorate(k, entry); });
+      return this;
+    }
+    // Not here yet: draw what can wait, and wait.
+    mine.forEach(function (entry) {
+      if (entry.decline) { entry.decline(); self.kselectChips = true; }
+      else self.kselectWaiting.push(entry);
+    });
+    if (this.options.kselect === true) {
+      loadKselect(this.options.kselectSrc).then(function (loaded) {
+        self.kselectArrived(loaded);
+      }, function (err) {
+        if (!self.kselectWarned && typeof console !== 'undefined') console.warn(err.message + ' — using the native selects.');
+        self.kselectWarned = true;
+      });
+    } else {
+      waitForKselect(this);
+    }
+    return this;
+  };
+
+  /** kSelect is here: upgrade the selects that were waiting for it. */
+  Editor.prototype.kselectArrived = function (k) {
+    if (this.destroyed) return this;
+    var self = this;
+    var waiting = this.kselectWaiting || [];
+    this.kselectWaiting = [];
+    // Lists of choices were drawn as chips; they need the rule redrawn.
+    if (this.kselectChips && this.open) { this.kselectChips = false; this.render(); return this; }
+    // Read before decorating: kSelect hides the select, which drops focus.
+    var active = document.activeElement;
+    waiting.forEach(function (entry) {
+      if (self.tree.contains(entry.select)) self.kselectDecorate(k, entry);
+    });
+    // The select that had focus has a widget now; give the widget focus.
+    waiting.forEach(function (entry) {
+      if (active === entry.select && entry.select.kceDecorated) self.focusDecorated(entry.select);
+    });
+    return this;
+  };
+
+  /** One select, as a kSelect. */
+  Editor.prototype.kselectDecorate = function (k, entry) {
+    var labels = this.labels;
+    var select = entry.select;
+    var base = {
+      searchable: select.options.length > KSELECT_SEARCH_OVER,
+      allowClear: false,
+      // .kce-select styles the native control; on kSelect's wrapper it would
+      // draw a second box.
+      copyClassName: false,
+      dropdownParent: this.kselectLayer(),
+      placeholder: entry.role === 'values' ? labels.listAdd : labels.chooseField,
+      searchPlaceholder: labels.search,
+      noResultsText: labels.noResults,
+      summarizeSelectedText: labels.selectedCount,
+      closeText: labels.close,
+      // kSelect's placeholder is {label}; ours is {value}.
+      removeTagText: fillTemplate(labels.removeValue, { value: '{label}' })
+    };
+    var extra = this.options.kselectOptions;
+    if (typeof extra === 'function') {
       try {
-        result = hook(entry.select, {
-          role: entry.role, node: stripIds(entry.node), field: entry.field, editor: self
-        });
+        extra = extra(select, { role: entry.role, node: stripIds(entry.node), field: entry.field });
       } catch (e) {
         if (typeof console !== 'undefined') console.error(e);
-        result = false;
+        extra = null;
       }
-      if (result === false) {
-        if (entry.decline) entry.decline();
-        return;
-      }
-      // The widget shows the choice itself; the label span would show it
-      // again beside it.
-      entry.select.kceDecorated = true;
-      entry.shell.classList.add('kce-sel-host');
-      var label = entry.shell.querySelector(':scope > .kce-sel-label');
-      if (label) entry.shell.removeChild(label);
-      // A widget shows the whole operator label, operand slot and all, so the
-      // words that would follow the value would say it twice.
-      if (entry.role === 'operator') {
-        var row = entry.shell.parentNode;
-        var tail = row && row.querySelector(':scope > .kce-op-tail');
-        if (tail) row.removeChild(tail);
-      }
-      self.decorated.push(entry);
-      // A widget changes its row's width when it arrives — later, for one
-      // that is imported, whether or not the host said so with a promise —
-      // and again whenever what it shows changes (a multi-select's tags). The
-      // AND / OR alignment, the floats and the guides are measured, so each
-      // shell is watched and the layout re-run when it changes size.
-      if (self.shellObserver) self.shellObserver.observe(entry.shell);
-      if (result && typeof result.then === 'function') {
-        var settle = function () {
-          if (entry.select.kcePending === pending) entry.select.kcePending = null;
-          if (!self.destroyed && self.onViewportResize) self.onViewportResize();
-        };
-        var pending = result.then(settle, settle);
-        entry.select.kcePending = pending;
-      }
-    });
+    }
+    var self = this;
+    select.addEventListener('kselect:open', function () { self.raiseKselectLayer(); });
+    try {
+      k.init(select, extend(base, extra || {}));
+    } catch (e) {
+      if (typeof console !== 'undefined') console.error(e);
+      return this;
+    }
+    entry.kselect = k;
+    // Marks a select as the editor's own kSelect, which the stylesheet draws
+    // in the skin's manner; a host's widget is left to the host's theme.
+    entry.shell.classList.add('kce-sel-ks');
+    return this.adoptDecorated(entry, null);
+  };
+
+  /**
+   * Where this editor's kSelect lists open: one element of its own, carrying
+   * the editor's theme and skin, so a list is drawn in the editor's colours
+   * and dark mode though it is outside the tree (which clips).
+   *
+   * It is a popover, shown and empty, so it lives in the browser's top layer:
+   * above a modal <dialog> the editor is in (which is drawn above everything
+   * else, and clips what overflows it), and clear of any transformed or
+   * clipping ancestor. In that dialog when there is one, since a modal dialog
+   * leaves everything outside it inert; otherwise in <body>. It takes no room
+   * and no pointer; the lists inside it do. Where there is no popover, it is
+   * a box-less .kce in the same place, which serves everywhere but a dialog.
+   */
+  Editor.prototype.kselectLayer = function () {
+    if (!this.ksLayer) {
+      this.ksLayer = el('div', 'kce kce-ks-layer');
+      if (typeof this.ksLayer.showPopover === 'function') this.ksLayer.setAttribute('popover', 'manual');
+    }
+    this.syncKselectLayer();
+    var dialog = this.root && this.root.closest ? this.root.closest('dialog') : null;
+    var parent = dialog || document.body;
+    if (this.ksLayer.parentNode !== parent) parent.appendChild(this.ksLayer);
+    this.raiseKselectLayer();
+    return this.ksLayer;
+  };
+
+  /**
+   * Bring the layer to the top of the top layer. Run as a list opens: a
+   * dialog opened after the layer was shown sits above it, and a list in it
+   * would open underneath.
+   */
+  Editor.prototype.raiseKselectLayer = function () {
+    var layer = this.ksLayer;
+    if (!layer || !layer.isConnected || typeof layer.showPopover !== 'function') return this;
+    try {
+      if (layer.matches(':popover-open')) layer.hidePopover();
+      layer.showPopover();
+    } catch (e) { /* not in a document that can show it; it still works in place */ }
+    return this;
+  };
+
+  Editor.prototype.syncKselectLayer = function () {
+    var layer = this.ksLayer;
+    if (!layer || !this.root) return this;
+    ['data-kce-theme', 'data-kce-skin'].forEach(function (a) {
+      var v = this.root.getAttribute(a);
+      if (v === null) layer.removeAttribute(a); else layer.setAttribute(a, v);
+    }, this);
     return this;
   };
 
@@ -3993,12 +4329,17 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     var list = this.decorated || [];
     this.decorated = [];
     this.undecorated = [];
+    this.kselectWaiting = [];
     if (this.shellObserver) this.shellObserver.disconnect();
     var hook = this.options.releaseSelect;
-    if (typeof hook !== 'function') return this;
     list.forEach(function (entry) {
       try {
-        hook(entry.select, { role: entry.role, node: stripIds(entry.node), field: entry.field });
+        if (entry.kselect) {
+          var instance = entry.kselect.getInstance(entry.select);
+          if (instance) instance.destroy();
+        } else if (typeof hook === 'function') {
+          hook(entry.select, { role: entry.role, node: stripIds(entry.node), field: entry.field });
+        }
       } catch (e) {
         if (typeof console !== 'undefined') console.error(e);
       }
@@ -4569,6 +4910,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       var line = conn.parentNode;
       // A field select the host has decorated has no label: its widget's edge.
       var above = line.querySelector(':scope > .kce-condition .kce-sel-field .kce-sel-label') ||
+        line.querySelector(':scope > .kce-condition .kce-sel-field .ks-single-value') ||
         line.querySelector(':scope > .kce-condition .kce-sel-field') ||
         line.querySelector(':scope > .kce-paren-close');
       var btn = conn.querySelector('.kce-connector-btn');
@@ -4705,7 +5047,10 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       row.style.minWidth = '';
       for (var c = row.firstElementChild; c; c = c.nextElementSibling) {
         if (!/(^|\s)kce-sel(\s|$)/.test(c.className)) continue;
-        var label = c.querySelector('.kce-sel-label');
+        // The editor's own kSelect ellipsis its value as the label does, so
+        // it gives up width the same way, to the same floor.
+        var label = c.querySelector(':scope > .kce-sel-label') ||
+          (c.classList.contains('kce-sel-ks') ? c.querySelector('.ks-single-value') : null);
         if (!label) continue;
         var floor = 2.5 * (parseFloat(window.getComputedStyle(c).fontSize) || 14);
         var cs = window.getComputedStyle(label);
@@ -5660,11 +6005,11 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       return Object.prototype.hasOwnProperty.call(labelOf, String(v)) ? labelOf[String(v)] : String(v);
     };
 
-    // With a host widget, a list of choices is one <select multiple>: the
-    // widget's own tags, search and checkboxes are the better control, and
-    // the editor's chips would only repeat them. Without one — or if the
-    // host declines it — the chips below.
-    if (choices && choices.length && typeof this.options.decorateSelect === 'function') {
+    // With a host widget (or kSelect), a list of choices is one <select
+    // multiple>: the widget's own tags, search and checkboxes are the better
+    // control, and the editor's chips would only repeat them. Without one —
+    // or if the host declines it — the chips below.
+    if (choices && choices.length && this.decorator()) {
       var multi = el('select', 'kce-select kce-tag-select', {
         multiple: 'multiple', 'aria-label': this.labels.listInput, 'data-fk': slot + ':tag'
       });
@@ -5895,6 +6240,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
   Editor.prototype.setSkin = function (skin) {
     this.options.skin = skin;
     this.root.setAttribute('data-kce-skin', skin);
+    this.syncKselectLayer();
     // Flow and tree skins do not share a DOM, so a skin change is a re-render.
     if (this.open) this.render();
     return this;
@@ -5941,6 +6287,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     this.options.theme = theme;
     if (theme) this.root.setAttribute('data-kce-theme', theme);
     else this.root.removeAttribute('data-kce-theme');
+    this.syncKselectLayer();
     return this;
   };
 
@@ -6069,6 +6416,8 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     if (this.onKeyAnywhere) document.removeEventListener('keydown', this.onKeyAnywhere);
     if (this.clearOutside) document.removeEventListener('click', this.clearOutside, true);
     this.releaseSelects();
+    unwaitForKselect(this);
+    if (this.ksLayer && this.ksLayer.parentNode) this.ksLayer.parentNode.removeChild(this.ksLayer);
     if (this.root && this.root.parentNode) this.root.parentNode.removeChild(this.root);
     (this.hideTargets || [this.textarea]).forEach(function (el) {
       el.classList.remove('kce-concealed');

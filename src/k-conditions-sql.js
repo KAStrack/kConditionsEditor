@@ -1,5 +1,5 @@
 /*!
- * kConditions SQL 0.1.2
+ * kConditions SQL 0.1.3
  * Translates a kConditions document into a self-contained SQL boolean
  * expression — the part that goes after WHERE in a SELECT.
  *
@@ -26,7 +26,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (K) {
   'use strict';
 
-  var VERSION = '0.1.2';
+  var VERSION = '0.1.3';
   var DAY_MS = 86400000;
 
   /* ------------------------------------------------------------------ *

@@ -55,7 +55,8 @@ const BAD_DOC = { version: '1.0', root: { type: 'group', operator: 'and', childr
   { type: 'condition', field: 'name', operator: 'bogus', values: [] }
 ] } };
 
-const page = (skin) => `<!doctype html><html lang="sv"><head><meta charset="utf-8"><title>labels</title>
+const page = (skin, ks) => `<!doctype html><html lang="sv"><head><meta charset="utf-8"><title>labels</title>
+${ks ? '<link rel="stylesheet" href="tests/browser/vendor/kselect/kselect.min.css"><script src="tests/browser/vendor/kselect/kselect.min.js"></script>' : ''}
 <link rel="stylesheet" href="src/k-conditions-editor.css"><link rel="stylesheet" href="src/k-conditions-skins.css">
 <script src="src/k-conditions-evaluator.js"></script><script src="src/k-conditions-sql.js"></script>
 <script src="src/k-conditions-editor.js"></script></head><body>
@@ -105,6 +106,20 @@ function harvest() {
     root.querySelectorAll('optgroup').forEach((og) => out.push({ where: 'optgroup', text: og.label }));
   });
   return out;
+}
+
+/** What is left of a harvest once the markers, the data and punctuation go. */
+function strays(seen) {
+  const out = [];
+  seen.forEach((s) => {
+    // Innermost first: a template's filled placeholder is a marker too.
+    let rest = s.text;
+    for (let before = null; before !== rest;) { before = rest; rest = rest.replace(/‹[^‹›]*›/g, ' '); }
+    DATA.forEach((w) => { rest = rest.split(w).join(' '); });
+    rest = rest.replace(/[\s()[\]×↑↓⠿…,.:"'\-0-9]/g, '');
+    if (rest) out.push(s.state + ' · ' + s.where + ' · ' + JSON.stringify(s.text));
+  });
+  return Array.from(new Set(out));
 }
 
 (async () => {
@@ -197,6 +212,34 @@ function harvest() {
     const unique = Array.from(new Set(strays));
     ok(skin + ': no string bypasses labels', unique.length === 0, unique.slice(0, 20));
     ok(skin + ': the harvest read something', seen.length > 100, { count: seen.length });
+    await p.close();
+  }
+
+  // The editor's own kSelect: its words (search, no matches, a tag's remove,
+  // the count) come from labels too. Its lists are in the editor's layer, a
+  // .kce of its own, which the harvest reads.
+  for (const skin of ['prose', 'boxed']) {
+    const p = await browser.newPage({ viewport: { width: 1300, height: 1000 } });
+    watchErrors(p, errs);
+    scratch('labels-ks-' + skin + '.html', page(skin, true));
+    await p.goto(site.url + scratch.url('labels-ks-' + skin + '.html'));
+    await p.waitForTimeout(200);
+    const seen = [];
+    const take = async (state) => { (await p.evaluate(harvest)).forEach((x) => seen.push(Object.assign({ state }, x))); };
+    ok(skin + ' kSelect: in use', await p.evaluate(() => document.querySelectorAll('.kce-sel-ks').length > 3));
+    await take('kselect open');
+    for (const which of ['.kce-sel-field', '.kce-sel-literal', '.kce-sel-values']) {
+      await p.click(`.kce-tree ${which}.kce-sel-ks .ks-control >> nth=0`);
+      await p.waitForTimeout(150);
+      await take('kselect ' + which + ' list');
+      await p.keyboard.type('zzzz');
+      await p.waitForTimeout(150);
+      await take('kselect ' + which + ' no match');
+      await p.keyboard.press('Escape');
+      await p.waitForTimeout(100);
+    }
+    const left = strays(seen);
+    ok(skin + ' kSelect: no string bypasses labels', left.length === 0, left.slice(0, 20));
     await p.close();
   }
 

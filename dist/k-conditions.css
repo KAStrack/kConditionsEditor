@@ -1,6 +1,6 @@
-/*! kConditionsEditor 0.1.2 — base stylesheet and every skin | MIT | https://github.com/KAStrack/kConditionsEditor */
+/*! kConditionsEditor 0.1.3 — base stylesheet and every skin | MIT | https://github.com/KAStrack/kConditionsEditor */
 /*!
- * kConditionsEditor 0.1.2 — base stylesheet + the "boxed" skin
+ * kConditionsEditor 0.1.3 — base stylesheet + the "boxed" skin
  *
  * Every colour and metric is a CSS custom property, so the whole editor can be
  * restyled by overriding the --kce-* variables on .kce or any ancestor.
@@ -201,6 +201,14 @@ textarea.kce-hidden-textarea {
 .kce-condition > .kce-values { flex: 0 100000 auto; min-width: 60px; }
 .kce-condition > .kce-sel { flex: 0 1 auto; min-width: 0; }
 .kce-condition > .kce-sel.kce-sel-host { flex: 0 0 auto; }
+/* …except the editor's own kSelect, whose value ellipsis like a label. */
+.kce-condition > .kce-sel.kce-sel-ks,
+.kce-value > .kce-sel.kce-sel-ks { flex: 0 1 auto; min-width: 0; }
+.kce .kce-tree .kce-sel.kce-sel-ks > .ks-wrapper { flex: 0 1 auto; }
+.kce .kce-tree .kce-sel.kce-sel-ks > .ks-wrapper,
+.kce .kce-sel-ks .ks-control,
+.kce .kce-sel-ks .ks-selection { min-width: 0; max-width: 100%; }
+.kce .kce-sel-ks .ks-control { flex-wrap: nowrap; }
 .kce-condition > .kce-grip,
 .kce-condition > .kce-move,
 .kce-condition > .kce-remove,
@@ -382,6 +390,78 @@ textarea.kce-hidden-textarea {
   opacity: 1;
   appearance: auto;
   cursor: auto;
+}
+
+/* kSelect, built in (the `kselect` option). Its colours come from the
+   editor's tokens — inside the rule, and in the editor's layer, where its
+   lists open (.kce-ks-layer: a .kce carrying the editor's theme and skin, so
+   dark mode and a host's .kce overrides reach a list outside the tree). Only
+   the editor's own kSelects (.kce-sel-ks): a host that decorates with its own
+   kSelect keeps its own theme. */
+.kce.kce-ks-layer { display: contents; }
+
+/* As a popover (where the browser has them): a box of no size and no
+   pointer at the viewport's corner, nothing of the popover's own frame or a
+   skin's board. Its lists are fixed to the viewport and take the pointer. */
+.kce.kce-ks-layer[popover] {
+  display: block;
+  position: fixed;
+  inset: 0 auto auto 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  color: var(--kce-text);
+  pointer-events: none;
+}
+
+.kce.kce-ks-layer[popover] > * { pointer-events: auto; }
+
+.kce-ks-layer,
+.kce .kce-sel-ks {
+  --ks-font-family: inherit;
+  --ks-font-size: 0.9375rem;
+  --ks-line-height: 1.45;
+  --ks-color-bg: var(--kce-bg);
+  --ks-color-border: var(--kce-border-strong);
+  --ks-color-border-focus: var(--kce-accent);
+  --ks-color-text: var(--kce-text);
+  --ks-color-placeholder: var(--kce-text-muted);
+  --ks-color-option-hover: var(--kce-accent-soft);
+  --ks-color-option-selected: var(--kce-accent);
+  --ks-color-option-selected-text: var(--kce-accent-text);
+  --ks-color-option-selected-bg: var(--kce-accent-soft);
+  --ks-color-option-selected-fg: var(--kce-accent-strong);
+  --ks-color-option-selected-row: var(--kce-accent-soft);
+  --ks-color-group-header: var(--kce-bg-sunken);
+  --ks-color-group-label: var(--kce-text-muted);
+  --ks-color-tag-bg: var(--kce-accent-soft);
+  --ks-color-tag-text: var(--kce-accent-strong);
+  --ks-color-tag-border: var(--kce-border-strong);
+  --ks-color-tag-remove: var(--kce-text-muted);
+  --ks-color-tag-remove-hover: var(--kce-danger);
+  --ks-color-arrow: var(--kce-text-muted);
+  --ks-color-arrow-open: var(--kce-accent);
+  --ks-color-checkbox-border: var(--kce-border-strong);
+  --ks-color-checkbox-checked: var(--kce-accent);
+  --ks-color-search-bg: var(--kce-bg-sunken);
+  --ks-radius-control: var(--kce-radius-sm);
+  --ks-radius-dropdown: var(--kce-radius-sm);
+}
+
+/* The list opens from a word, not from a box, so it is not as narrow as the
+   word: wide enough to read a field name in, and a card of its own rather
+   than the bottom half of a box. */
+.kce-ks-layer .ks-dropdown {
+  min-width: 14em;
+  max-width: min(28em, calc(100vw - 16px));
+  margin-top: 3px;
+  border-top: 1.5px solid var(--ks-color-border-focus);
+  border-radius: var(--ks-radius-dropdown);
 }
 
 /* A widget beside the select is sized by what it shows, not by a host rule
@@ -915,6 +995,21 @@ textarea.kce-hidden-textarea {
 
 /* The words after an operator's operand, beside the boxes, in their type. */
 .kce[data-kce-skin="boxed"] .kce-op-tail { font-size: 0.875em; color: var(--kce-text); }
+
+/* The built-in kSelect keeps its box here, at the size of boxed's own
+   select (.kce-sel-label below): the same border, padding and type, so a row
+   is no wider for it. */
+.kce[data-kce-skin="boxed"] .kce-sel-ks .ks-control {
+  min-height: 0;
+  padding: 6px 26px 6px 8px;
+  border-width: 1px;
+  border-color: var(--kce-border);
+  font-size: 0.875em;
+  line-height: inherit;
+  box-shadow: none;
+}
+
+.kce[data-kce-skin="boxed"] .kce-sel-ks .ks-arrow { right: 8px; }
 
 .kce[data-kce-skin="boxed"] .kce-sel-label {
   padding-right: 26px;
@@ -1679,7 +1774,7 @@ textarea.kce-hidden-textarea {
 .kcd-sep, .kcd-join { color: var(--kcd-op); }
 
 /*!
- * kConditionsEditor 0.1.2 — alternative skins
+ * kConditionsEditor 0.1.3 — alternative skins
  *
  * Load after k-conditions-editor.css and pick one with the `skin` option:
  *
@@ -2477,9 +2572,109 @@ textarea.kce-hidden-textarea {
   border-color: var(--kce-accent);
 }
 
-/* A host's widget (decorateSelect) draws its own. */
-.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel.kce-sel-host::after {
+/* A host's widget (decorateSelect) draws its own. The editor's own kSelect
+   is drawn as the word it replaces, so it keeps the skin's chevron. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel.kce-sel-host:not(.kce-sel-ks)::after {
   content: none;
+}
+
+/* ================================================================== *
+ * The built-in kSelect, written out
+ *
+ * Closed, it reads as the word it stands in for — the field name bold, a
+ * value in the value's type, a dotted underline on hover and the accent one
+ * on focus — exactly as the plain select's label does; open, it is kSelect's
+ * searchable list. Three classes deep, so a host's own kSelect theme (a
+ * form-control height, a border, an inset shadow on .ks-control) does not
+ * turn the word back into a box. The search box, while open, lies over the
+ * word rather than beside it, so the row does not move.
+ * ================================================================== */
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-control {
+  min-height: 0;
+  padding: 1px;
+  gap: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: inherit;
+  line-height: inherit;
+  font: inherit;
+}
+
+/* A word is shorter than a 24px target; the hit area reaches past it,
+   unseen, as the add buttons' does, so the row is no taller for it. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-control::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 24px;
+  min-height: 100%;
+  transform: translateY(-50%);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-control:hover {
+  border-color: transparent;
+  border-bottom-color: currentColor;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks :is(.ks-control:focus-visible, .ks-open .ks-control) {
+  outline: none;
+  border-bottom: 1px solid var(--kce-accent);
+  background: var(--kce-hover);
+  border-radius: 3px 3px 0 0;
+  box-shadow: none;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-arrow { display: none; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-placeholder {
+  position: static;
+  color: var(--kce-text-muted);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-open .ks-control .ks-search-wrap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: max(100%, 12em);
+  min-width: 0;
+  z-index: 2;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-ks .ks-search-input {
+  height: 100%;
+  font: inherit;
+  padding: 0 4px;
+  background: var(--kce-bg);
+  border: 1px solid var(--kce-accent);
+  border-radius: 3px;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) :is(.kce-sel-field, .kce-sel-fieldvalue).kce-sel-ks .ks-single-value {
+  font-weight: 650;
+  color: var(--kce-field);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-literal.kce-sel-ks .ks-single-value {
+  font-family: var(--kce-font-mono);
+  font-size: 0.86em;
+  color: var(--kce-value);
+}
+
+/* A list value's tags read as the editor's own chips do. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-values.kce-sel-ks .ks-selection { gap: 3px; }
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-values.kce-sel-ks .ks-tag {
+  font-family: var(--kce-font-mono);
+  font-size: 0.82em;
+  color: var(--kce-value);
+  background: var(--kce-bg-sunken);
+  border-color: var(--kce-border);
 }
 
 /* ================================================================== *

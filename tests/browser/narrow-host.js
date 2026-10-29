@@ -133,6 +133,13 @@ function install(FIELDS) {
 (async () => {
   const site = await serve();
   scratch('narrow-host.html', PAGE);
+  // With kSelect, and a host theme for it of the kind a form framework ships:
+  // a form-control box on every .ks-control.
+  scratch('narrow-host-kselect.html', PAGE
+    .replace('<script src="src/k-conditions-evaluator.js">',
+      '<link rel="stylesheet" href="tests/browser/vendor/kselect/kselect.min.css">' +
+      '<script src="tests/browser/vendor/kselect/kselect.min.js"></script><script src="src/k-conditions-evaluator.js">')
+    .replace('</style>', '  .ks-control { min-height: 42px; padding: 8px 40px 8px 12px; border: 1px solid #c9ced6; border-radius: 6px; box-shadow: inset 0 1px 2px rgba(0,0,0,.08); }\n</style>'));
   const b = await chromium.launch();
   const errs = [];
   const { ok, finish } = checker();
@@ -362,6 +369,50 @@ function install(FIELDS) {
     ['grip', 'down', 'remove'].forEach((k) => ok('touch ' + skin + ' ' + k + ' shown at rest',
       rest[k].opacity === 1 && rest[k].ratio >= 3, rest[k]));
     ok('touch ' + skin + ' add buttons open at rest', rest.adds, rest);
+  }
+
+  // The editor's own kSelect in a 545px dialog with the host's form CSS and
+  // kSelect theme: rows still one line, nothing out of the editor, the AND / OR
+  // under the field name's text, and the field's widget a 24px target.
+  {
+    const ctx = await b.newContext({ viewport: { width: 1000, height: 900 } });
+    const k = await ctx.newPage();
+    watchErrors(k, errs);
+    await k.goto(site.url + scratch.url('narrow-host-kselect.html'));
+    await k.evaluate(install, FIELDS);
+    for (const inline of [false, true]) {
+      const tag = 'kselect prose' + (inline ? '-inline' : '') + '@545+host';
+      await k.evaluate(([d, o, bx]) => window.__mk(d, o, bx), [REPORT, inline ? { skin: 'prose', connectorPlacement: 'inline', controls: 'always' } : { skin: 'prose', controls: 'always' }, { width: 545, host: true }]);
+      await k.waitForTimeout(150);
+      const r = await k.evaluate((inline) => {
+        const tree = document.querySelector('.kce-tree');
+        const kce = document.querySelector('.kce').getBoundingClientRect();
+        const rows = Array.from(document.querySelectorAll('.kce-condition'));
+        const lines = Array.from(document.querySelectorAll('.kce-line')).map((l) => {
+          const c = l.querySelector(':scope > .kce-condition'), b = l.querySelector(':scope > .kce-connector .kce-connector-btn');
+          if (!c || !b) return null;
+          const text = (e) => e.getBoundingClientRect().left + parseFloat(getComputedStyle(e).paddingLeft);
+          return Math.abs(text(c.querySelector('.kce-sel-field .ks-single-value')) - text(b));
+        }).filter((x) => x !== null);
+        const ctl = document.querySelector('.kce-sel-field .ks-control');
+        return {
+          ks: document.querySelectorAll('.kce-sel-ks').length,
+          oneLine: rows.every((row) => row.getBoundingClientRect().height < 40),
+          overflow: tree.scrollWidth - tree.clientWidth,
+          inside: rows.every((row) => row.getBoundingClientRect().right <= kce.right + 0.5),
+          border: getComputedStyle(ctl).borderTopWidth,
+          aligned: inline ? true : lines.length === 2 && lines.every((d) => d <= 1),
+          lines,
+          target: window.__target(ctl)
+        };
+      }, inline);
+      ok(tag + ': the field selects are kSelects', r.ks === 3, r);
+      ok(tag + ': rows are one line, unboxed by the host theme', r.oneLine && r.border === '0px', r);
+      ok(tag + ': nothing overflows the editor', r.overflow <= 1 && r.inside, r);
+      if (!inline) ok(tag + ': the AND / OR starts under the field name', r.aligned, r);
+      ok(tag + ': the field widget is a 24px target', r.target && r.target.ok, r.target);
+    }
+    await ctx.close();
   }
 
   finish(errs);

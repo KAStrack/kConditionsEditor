@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.1.2 — base stylesheet + the "boxed" skin
+ * kConditionsEditor 0.1.3 — base stylesheet + the "boxed" skin
  *
  * Every colour and metric is a CSS custom property, so the whole editor can be
  * restyled by overriding the --kce-* variables on .kce or any ancestor.
@@ -200,6 +200,14 @@ textarea.kce-hidden-textarea {
 .kce-condition > .kce-values { flex: 0 100000 auto; min-width: 60px; }
 .kce-condition > .kce-sel { flex: 0 1 auto; min-width: 0; }
 .kce-condition > .kce-sel.kce-sel-host { flex: 0 0 auto; }
+/* …except the editor's own kSelect, whose value ellipsis like a label. */
+.kce-condition > .kce-sel.kce-sel-ks,
+.kce-value > .kce-sel.kce-sel-ks { flex: 0 1 auto; min-width: 0; }
+.kce .kce-tree .kce-sel.kce-sel-ks > .ks-wrapper { flex: 0 1 auto; }
+.kce .kce-tree .kce-sel.kce-sel-ks > .ks-wrapper,
+.kce .kce-sel-ks .ks-control,
+.kce .kce-sel-ks .ks-selection { min-width: 0; max-width: 100%; }
+.kce .kce-sel-ks .ks-control { flex-wrap: nowrap; }
 .kce-condition > .kce-grip,
 .kce-condition > .kce-move,
 .kce-condition > .kce-remove,
@@ -381,6 +389,78 @@ textarea.kce-hidden-textarea {
   opacity: 1;
   appearance: auto;
   cursor: auto;
+}
+
+/* kSelect, built in (the `kselect` option). Its colours come from the
+   editor's tokens — inside the rule, and in the editor's layer, where its
+   lists open (.kce-ks-layer: a .kce carrying the editor's theme and skin, so
+   dark mode and a host's .kce overrides reach a list outside the tree). Only
+   the editor's own kSelects (.kce-sel-ks): a host that decorates with its own
+   kSelect keeps its own theme. */
+.kce.kce-ks-layer { display: contents; }
+
+/* As a popover (where the browser has them): a box of no size and no
+   pointer at the viewport's corner, nothing of the popover's own frame or a
+   skin's board. Its lists are fixed to the viewport and take the pointer. */
+.kce.kce-ks-layer[popover] {
+  display: block;
+  position: fixed;
+  inset: 0 auto auto 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  color: var(--kce-text);
+  pointer-events: none;
+}
+
+.kce.kce-ks-layer[popover] > * { pointer-events: auto; }
+
+.kce-ks-layer,
+.kce .kce-sel-ks {
+  --ks-font-family: inherit;
+  --ks-font-size: 0.9375rem;
+  --ks-line-height: 1.45;
+  --ks-color-bg: var(--kce-bg);
+  --ks-color-border: var(--kce-border-strong);
+  --ks-color-border-focus: var(--kce-accent);
+  --ks-color-text: var(--kce-text);
+  --ks-color-placeholder: var(--kce-text-muted);
+  --ks-color-option-hover: var(--kce-accent-soft);
+  --ks-color-option-selected: var(--kce-accent);
+  --ks-color-option-selected-text: var(--kce-accent-text);
+  --ks-color-option-selected-bg: var(--kce-accent-soft);
+  --ks-color-option-selected-fg: var(--kce-accent-strong);
+  --ks-color-option-selected-row: var(--kce-accent-soft);
+  --ks-color-group-header: var(--kce-bg-sunken);
+  --ks-color-group-label: var(--kce-text-muted);
+  --ks-color-tag-bg: var(--kce-accent-soft);
+  --ks-color-tag-text: var(--kce-accent-strong);
+  --ks-color-tag-border: var(--kce-border-strong);
+  --ks-color-tag-remove: var(--kce-text-muted);
+  --ks-color-tag-remove-hover: var(--kce-danger);
+  --ks-color-arrow: var(--kce-text-muted);
+  --ks-color-arrow-open: var(--kce-accent);
+  --ks-color-checkbox-border: var(--kce-border-strong);
+  --ks-color-checkbox-checked: var(--kce-accent);
+  --ks-color-search-bg: var(--kce-bg-sunken);
+  --ks-radius-control: var(--kce-radius-sm);
+  --ks-radius-dropdown: var(--kce-radius-sm);
+}
+
+/* The list opens from a word, not from a box, so it is not as narrow as the
+   word: wide enough to read a field name in, and a card of its own rather
+   than the bottom half of a box. */
+.kce-ks-layer .ks-dropdown {
+  min-width: 14em;
+  max-width: min(28em, calc(100vw - 16px));
+  margin-top: 3px;
+  border-top: 1.5px solid var(--ks-color-border-focus);
+  border-radius: var(--ks-radius-dropdown);
 }
 
 /* A widget beside the select is sized by what it shows, not by a host rule
@@ -914,6 +994,21 @@ textarea.kce-hidden-textarea {
 
 /* The words after an operator's operand, beside the boxes, in their type. */
 .kce[data-kce-skin="boxed"] .kce-op-tail { font-size: 0.875em; color: var(--kce-text); }
+
+/* The built-in kSelect keeps its box here, at the size of boxed's own
+   select (.kce-sel-label below): the same border, padding and type, so a row
+   is no wider for it. */
+.kce[data-kce-skin="boxed"] .kce-sel-ks .ks-control {
+  min-height: 0;
+  padding: 6px 26px 6px 8px;
+  border-width: 1px;
+  border-color: var(--kce-border);
+  font-size: 0.875em;
+  line-height: inherit;
+  box-shadow: none;
+}
+
+.kce[data-kce-skin="boxed"] .kce-sel-ks .ks-arrow { right: 8px; }
 
 .kce[data-kce-skin="boxed"] .kce-sel-label {
   padding-right: 26px;

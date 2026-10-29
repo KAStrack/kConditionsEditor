@@ -81,7 +81,7 @@ stylesheet is required for every skin except `boxed`, and
 carries the built files for that version. To vendor a release, take `dist/` from the
 tag (it holds the `LICENSE`) and record the version, which is also in each file's
 banner — or load it from a CDN that serves tags, such as
-`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.2/dist/k-conditions.min.js`.
+`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.3/dist/k-conditions.min.js`.
 The npm package carries the same files. The sources stay the deliverable: edit `src/`,
 then rebuild; `npm test` fails if `dist/` is not what the build makes from `src/`.
 
@@ -155,7 +155,7 @@ if (K.evaluate(document, submission, { environment: 'server' })) {
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.1.2",
+  "generator": "kConditionsEditor/0.1.3",
   "operators": {},
   "root": {
     "type": "group",
@@ -677,6 +677,10 @@ exposes your column names and the whole rule to anyone looking at the page.
 | `decorateSelect` | `null` | `(select, { role, node, field, editor }) => void \| false \| Promise` — hand each `<select>` to the host's own widget. See [A host's own select widget](#a-hosts-own-select-widget) |
 | `releaseSelect` | `null` | `(select, { role, node, field }) => void` — tear down a decorated select's widget before a render discards it, and on `destroy()` |
 | `focusSelect` | `null` | `(select) => void` — focus a decorated select's widget after a render. Without it, the first focusable thing in the select's shell |
+| `kselect` | `'auto'` | [kSelect](https://kastrack.github.io/kselect.js/) for the long lists: `'auto'` uses it when the page has it, `true` uses it and loads it from the CDN if not, `false` never; or pass the `Kselect` constructor. See [kSelect, built in](#kselect-built-in) |
+| `kselectRoles` | long lists | Which selects kSelect takes: `['field', 'fieldValue', 'value', 'values']` unless given |
+| `kselectOptions` | `null` | kSelect options over the editor's own: an object, or `(select, { role, node, field }) => object` |
+| `kselectSrc` | pinned CDN | Where `kselect: true` loads it from: `{ js, css, jsIntegrity, cssIntegrity }` |
 | `debug` | `false` | Show the View source panel |
 | `onChange` | `null` | `(document, payload) => void`; the payload also carries `sql` |
 
@@ -1225,6 +1229,10 @@ widget shows the whole label and the operand follows it.)
 | `wrapGroup` | Group everything in this set, then continue with {operator} | tooltip of `AND(…)` / `OR(…)`, read as its description |
 | `switchGroup` | Switch this group to {operator} | tooltip of an AND / OR you can click |
 | `datePlaceholder` | YYYY-MM-DD | a date typed into a text box (`input: { type: 'text' }`) |
+| `search` | Search… | kSelect's search box (when the editor uses kSelect) |
+| `noResults` | No matches | kSelect's list when the search matches nothing |
+| `selectedCount` | {n} selected | kSelect's summary of a long list value |
+| `close` | Close | kSelect's close button on a phone's full-screen list |
 | `addGroup` / `chooseOperator` | + Group / Choose… | not shown at present; kept so existing label sets still apply |
 
 `emptyText` is the same as `labels.empty` and wins if both are given. Field labels,
@@ -1284,6 +1292,50 @@ compared with). `node` is a copy of the condition; `field` is its field definiti
   Decline `'operator'` to keep "is within the last [7] days".
 
 `tests/browser/decorate-select.js` drives a stand-in widget built the way kselect is.
+
+### kSelect, built in
+
+Field lists and value lists can be long, and a native `<select>` cannot be searched. If
+the page already has [kSelect](https://kastrack.github.io/kselect.js/) — the searchable
+select from the same author — the editor uses it **by itself, with no configuration**:
+
+```html
+<link rel="stylesheet" href="kselect.min.css">
+<script src="kselect.min.js"></script>          <!-- already on your page -->
+<script>KConditionsEditor.attach('#rule', { fields });</script>   <!-- nothing new to set -->
+```
+
+| `kselect` | What happens |
+|---|---|
+| `'auto'` (default) | Used when `window.Kselect` is there. If it arrives after the editor (an `import()` that resolves later), the selects already drawn are upgraded where they stand: the editor looks for it for 8 s after attaching, and on the window's load, and after that at its next change. |
+| `true` | Used; if the page has none, it is loaded from jsDelivr, pinned to kSelect 1.11.0 with subresource integrity (`kselectSrc` points elsewhere, for a self-hosted copy or a strict CSP). The selects are drawn natively until it arrives, then upgraded. If it cannot be loaded, one console warning and the native selects stay. |
+| `false` | Never, even if the page has it. |
+| the `Kselect` constructor | Used, for a bundle that imports kSelect as a module without setting the global. |
+
+- **Which selects:** the long lists — the field, the field compared with, a value from a
+  field's choices, and a list of choices (a `<select multiple>`, with kSelect's tags and
+  checkboxes in place of the chips). The operator list is short and keeps its `{value}`
+  slot ("is within the last [7] days"), and the Value / Field switch has two entries, so
+  both stay native. `kselectRoles` changes the set.
+- **A search box** opens with any list of more than 8 entries; field `group`s are its
+  headings.
+- **It reads as the sentence.** In prose and the equation skins the closed kSelect is drawn
+  as the word it replaces — the field name bold, a value in the value's type, a dotted
+  underline on hover — and gives up width the same way, ellipsis and all. Opening it gives
+  kSelect's searchable list, in the editor's colours and dark mode, at least 14em wide; its
+  search box lies over the word, so nothing on the row moves. Boxed keeps kSelect's box, at
+  boxed's own size. A host theme that gives every `.ks-control` a form-control box does not
+  reach these.
+- **Its words are yours:** `labels.search`, `labels.noResults`, `labels.selectedCount`
+  (`{n} selected`) and `labels.close`, and a tag's remove button is `labels.removeValue`.
+- **Its lists** open in a layer of the editor's own (a `.kce` carrying its theme and skin,
+  shown as a popover in the browser's top layer), so they are seen above a modal `<dialog>`
+  the editor is in, and are not clipped by anything around it. kSelect 1.10 or later; with
+  1.9 the lists open in `<body>` in kSelect's own colours, and outside a dialog that is
+  the only difference.
+- **A host's own `decorateSelect` always wins**: the built-in kSelect is then off (and
+  setting `kselect: true` as well is warned about). Focus, undo, Alt+Arrow, releasing the
+  widgets on every redraw and on `destroy()` all work as they do for a host's widget.
 
 ## Accessibility
 
@@ -1371,9 +1423,10 @@ SPEC.md                       the document specification
 
 ## Status
 
-**0.1.2** — every string translatable (with placeholders, and a `{value}` slot for an
-operator's operand), a hook for a host's own select widget, field groups, axe-clean in
-every skin and theme, and `dist/` committed so each tag carries its build. The document
+**0.1.3** — kSelect, built in: detected and used for the long lists with no
+configuration, loadable from the CDN, drawn as the sentence. 0.1.2 made every string
+translatable, added a hook for a host's own select widget and field groups, made every skin
+axe-clean, and committed `dist/` so each tag carries its build. The document
 format is unchanged and still versioned `1.0`, and the conformance fixtures pin the
 semantics, but nothing is frozen yet; expect the API to move before 1.0.
 

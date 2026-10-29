@@ -50,8 +50,9 @@ const THEMES = [
   { name: 'scheme-dark', theme: null, scheme: 'dark', bg: '#171a1f' }
 ];
 
-function page(skin, t, controls) {
+function page(skin, t, controls, ks) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>axe</title>
+${ks ? '<link rel="stylesheet" href="tests/browser/vendor/kselect/kselect.min.css"><script src="tests/browser/vendor/kselect/kselect.min.js"></script>' : ''}
 <link rel="stylesheet" href="src/k-conditions-editor.css"><link rel="stylesheet" href="src/k-conditions-skins.css">
 <script src="src/k-conditions-evaluator.js"></script><script src="src/k-conditions-sql.js"></script>
 <script src="src/k-conditions-editor.js"></script></head>
@@ -74,17 +75,34 @@ window.collapsed = KConditionsEditor.attach('#u', Object.assign({ summaryHtml: t
   const errs = [];
   const { ok, finish } = checker();
 
+  // Findings in kSelect's own markup, not the editor's: its open list
+  // (role=listbox) holds a live region and, when grouped, a group toggle
+  // button, which a listbox may not contain. Reported upstream (kselect.js);
+  // exempted here only on the list itself, and printed, so it stays seen.
+  const KSELECT_UPSTREAM = [{ id: 'aria-required-children', target: /ks-dropdown/ }];
+  const noted = new Set();
+
   async function audit(p, label) {
-    const violations = await p.evaluate(async (tags) => {
+    let violations = await p.evaluate(async (tags) => {
       const r = await window.axe.run(document.querySelectorAll('.kce').length > 1
         ? { include: Array.prototype.map.call(document.querySelectorAll('.kce'), (n) => [n]) }
         : document.querySelector('.kce'), { runOnly: { type: 'tag', values: tags } });
       return r.violations.map((v) => ({
         id: v.id,
-        nodes: v.nodes.slice(0, 4).map((n) => n.target.join(' ') + ' — ' +
+        nodes: v.nodes.map((n) => n.target.join(' ') + ' — ' +
           ((n.any[0] && n.any[0].message) || n.failureSummary || '').slice(0, 140))
       }));
     }, TAGS);
+    violations = violations.map((v) => {
+      const upstream = KSELECT_UPSTREAM.filter((u) => u.id === v.id)[0];
+      if (!upstream) return v;
+      const ours = v.nodes.filter((n) => !upstream.target.test(n.split(' — ')[0]));
+      if (ours.length !== v.nodes.length && !noted.has(v.id)) {
+        noted.add(v.id);
+        console.log('NOTE kSelect upstream: ' + v.id + ' on its open list — ' + v.nodes[0].split(' — ')[1]);
+      }
+      return ours.length ? { id: v.id, nodes: ours } : null;
+    }).filter(Boolean);
     ok(label + ': no axe violations', violations.length === 0, violations);
   }
 
@@ -163,6 +181,32 @@ window.collapsed = KConditionsEditor.attach('#u', Object.assign({ summaryHtml: t
 
         await ctx.close();
       }
+    }
+  }
+
+  // The editor's own kSelect: closed, and with each kind of list open (its
+  // list is in the editor's layer, a .kce of its own, which the audit reads).
+  for (const skin of ['prose', 'boxed', 'blackboard']) {
+    for (const t of THEMES) {
+      const ctx = await browser.newContext({ viewport: { width: 1200, height: 1000 }, colorScheme: t.scheme });
+      const p = await ctx.newPage();
+      watchErrors(p, errs);
+      const name = `a11y-kselect-${skin}-${t.name}.html`;
+      scratch(name, page(skin, t, 'always', true));
+      await p.goto(site.url + scratch.url(name));
+      await p.addScriptTag({ path: AXE });
+      await p.waitForTimeout(200);
+      const tag = `kselect / ${skin} / ${t.name}`;
+      ok(tag + ': kSelect is in use', await p.evaluate(() => document.querySelectorAll('.kce-sel-ks').length > 3));
+      await audit(p, tag + ' / closed');
+      for (const which of ['.kce-sel-field', '.kce-sel-literal', '.kce-sel-values']) {
+        await p.click(`.kce-tree ${which}.kce-sel-ks .ks-control >> nth=0`);
+        await p.waitForTimeout(200);
+        await audit(p, tag + ' / ' + which + ' open');
+        await p.keyboard.press('Escape');
+        await p.waitForTimeout(100);
+      }
+      await ctx.close();
     }
   }
 

@@ -73,7 +73,8 @@ function install(FIELDS) {
   /** Everything about row i that this script judges. */
   window.__row = function (i) {
     const row = document.querySelectorAll('.kce-condition')[i];
-    const label = row.querySelector('.kce-sel-field .kce-sel-label');
+    // With kSelect, the field's widget shows the name in its value.
+    const label = row.querySelector('.kce-sel-field .kce-sel-label') || row.querySelector('.kce-sel-field .ks-single-value');
     const lab = label.getBoundingClientRect();
     const band = [lab.top - 4, lab.bottom + 4];
     const mid = (e) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
@@ -119,29 +120,40 @@ function install(FIELDS) {
 (async () => {
   const site = await serve();
   scratch('one-line-rows.html', PAGE);
+  // The same, with kSelect on the page: the editor's own kSelect takes the
+  // field and value selects, and the rows must hold to the same rules.
+  scratch('one-line-rows-kselect.html', PAGE.replace('<script src="src/k-conditions-evaluator.js">',
+    '<link rel="stylesheet" href="tests/browser/vendor/kselect/kselect.min.css">' +
+    '<script src="tests/browser/vendor/kselect/kselect.min.js"></script><script src="src/k-conditions-evaluator.js">'));
   const b = await chromium.launch();
   const errs = [];
   const { ok, finish } = checker();
 
-  async function open(ctxOpts) {
+  async function open(ctxOpts, pageName) {
     const ctx = await b.newContext(Object.assign({ viewport: { width: 1100, height: 800 } }, ctxOpts || {}));
     const p = await ctx.newPage();
     watchErrors(p, errs);
-    await p.goto(site.url + scratch.url('one-line-rows.html'));
+    await p.goto(site.url + scratch.url(pageName || 'one-line-rows.html'));
     await p.evaluate(install, FIELDS);
     return p;
   }
 
-  const p = await open();
+  const plain = await open();
+  const p = plain;
+  const withKselect = await open(null, 'one-line-rows-kselect.html');
 
-  // prose twice: AND / OR below each row (the default), and inline.
-  for (const variant of ['prose', 'prose-inline', 'equation', 'boxed']) {
+  // prose twice: AND / OR below each row (the default), and inline. Then
+  // prose, inline prose and boxed again with the editor's own kSelect.
+  for (const entry of ['prose', 'prose-inline', 'equation', 'boxed', 'ks:prose', 'ks:prose-inline', 'ks:boxed']) {
+    const ks = entry.indexOf('ks:') === 0;
+    const variant = entry.replace('ks:', '');
+    const p = ks ? withKselect : plain;
     const skin = variant === 'prose-inline' ? 'prose' : variant;
     const placement = variant === 'prose-inline' ? { connectorPlacement: 'inline' } : {};
     for (const controls of ['hover', 'always']) {
       for (const width of [545, 640, 760]) {
         for (const [name, v] of Object.entries(VARIANTS)) {
-          const tag = `${variant}/${controls}@${width} ${name}`;
+          const tag = `${ks ? 'kselect ' : ''}${variant}/${controls}@${width} ${name}`;
           await p.evaluate(([d, o, w]) => window.__mk(d, o, w), [rule(v), Object.assign({ skin, controls }, placement), width]);
           const rows = await p.evaluate(() => document.querySelectorAll('.kce-condition').length);
           for (let i = 0; i < rows; i++) {
