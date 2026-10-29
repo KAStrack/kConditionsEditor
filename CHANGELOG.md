@@ -4,6 +4,148 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] — 2026-10-29
+
+For a host that translates every string, styles every select with its own widget,
+and must pass axe in light and dark — what the Herräng Dance Camp system's
+Applications Review page needs, and what any translated host would have hit
+the same way. The document format is unchanged (spec `1.0`). Upgrading changes
+three things you might notice: the N-day date operators read differently (below),
+the light theme's muted grey is a shade darker, and `dist/` is in the repository.
+
+### Added
+
+- **Every string through `labels`, and the operators and their groups too.**
+  The operator names ("is equal to", "includes any of") and the headings of the
+  operator list ("Equality", "Date", "Custom") were fixed in the evaluator's
+  table, and the accessible names and tooltips — "Field", "Operator", "Value
+  source", "Compare with field", "Remove …", "Group everything in this set, then
+  continue with …", the add buttons' and AND / OR's tooltips — were English
+  written into the code, as were the list dropdown's "+ add…", the date
+  placeholder, the undo/redo tooltips and the messages under an incomplete rule.
+  A translated host could not reach any of them. Now:
+  - `labels.operators` (`{ eq: 'är lika med', … }`), `labels.groups`
+    (`{ equality: 'Likhet', custom: 'Egna', … }`) and `labels.problems` (by
+    problem code) merge key by key; a key left out stays English.
+  - New keys: `fieldSelect`, `operatorSelect`, `valueSourceSelect`,
+    `compareFieldSelect`, `valueInput`, `valueFrom`, `valueTo`, `listInput`,
+    `listAdd`, `removeValue`, `addToGroup`, `addNewGroup`, `wrapGroup`,
+    `switchGroup`, `undoTitle`, `redoTitle`, `datePlaceholder`, `sqlMissing`.
+  - **Placeholders**: a label holding `{value}` or `{operator}` is a template,
+    so a translation puts the value where its word order wants it —
+    `removeValue: 'Ta bort {value}'`, `wrapGroup: '… {operator}'`. Before, the
+    English was concatenated around the value, which fixed the order for every
+    language.
+  - The value controls had **no accessible name at all**: a screen reader met
+    "edit text" and "combo box" with nothing to say what for. Each now has one
+    (`valueInput`, and `valueFrom` / `valueTo` for `between`).
+  - `KConditionsEditor.defaultLabels()` returns every key with its English,
+    the builtin operators' labels included — the list a translation has to
+    cover. The README lists every key, its English and where it appears.
+  - A browser check replaces every label with a marker, drives the editor
+    through every state, and fails on any visible, spoken or tooltip text that
+    did not come from `labels`.
+- **`describe()` and `describeHtml()` take `labels`** — the editor's own
+  object, passed as it is — and read `and`, `or`, `not`, `andJoin`, `empty` and
+  `labels.operators` from it, in both SDKs. The collapsed summary does the same,
+  so the summary and a host's own `describe()` call read in the same language.
+  They said "AND", "OR", "NOT" and "and" in English whatever the editor showed.
+  `describeHtml()` still escapes everything, translated words included, and
+  picks `kcd-or` from the operator rather than from the word, so a translated
+  "ELLER" keeps the OR colour.
+- **An operator label can place its operand: `{value}`.** "is within the last
+  N days" was the label, and the number went after it, so the row read "is
+  within the last N days [7]" and `describe()` "is within the last N days 7".
+  A label may now hold a `{value}` slot. On the row the words before it stand
+  in the operator's place, then the value box, then the words after it — "is
+  within the last [7] days"; `describe()` puts the value in the same place,
+  keeping the spacing written round the slot (`'在过去{value}天内'` reads
+  `在过去7天内`); the operator list shows the label whole with `…` in the slot.
+- **Field groups.** A field's optional `group` (a display string) lists it
+  under an `<optgroup>` of that name, in the field list and the compare-with
+  list, groups in the order they first appear, ungrouped fields first. With 40
+  fields from three sources, a flat list was a haystack. A new condition takes
+  the first field the list shows. `comparableWith: 'group:…'` already matched
+  `group`, and still does.
+- **`decorateSelect`, `releaseSelect` and `focusSelect`: a host's own select
+  widget.** A host that turns every `<select>` into a widget had no way to
+  reach the editor's, which are rebuilt on every render. `decorateSelect(select,
+  { role, node, field, editor })` is called for each select once it is built,
+  filled and on the page, on every render; `role` is `field`, `operator`,
+  `value`, `values`, `source` or `fieldValue`. Return `false` to decline one, or
+  the widget's promise if it arrives later. `releaseSelect` is called before a
+  render discards a decorated select, and on `destroy()` — without it, a widget
+  that portals its dropdown to `<body>` (kselect does) leaves one behind per
+  select per render. Focus survives a re-render through the widget: the editor
+  resolves the focused element to its select through the select's shell (or a
+  `data-kce-for`), falls back to the select being changed when focus is in a
+  widget's portalled list, and then calls `focusSelect`, or focuses the first
+  focusable element in the shell — waiting for a widget that has not arrived,
+  and retrying for a few frames when the host did not return its promise. A
+  decorated select's shell draws no label and no chevron beside the widget, and
+  does not shrink; it is watched, so a widget that lands late or changes width
+  re-runs the layout (the AND / OR column, the floats, the guides). With `decorateSelect`, a list of choices is one `<select
+  multiple>` (role `values`), so the widget's tags and checkboxes replace the
+  editor's chips; values keep the order they were added in.
+- **`validateDocument()` problems carry `code` and `params`** alongside the
+  English `message`, in both SDKs — what `labels.problems` is keyed by. The
+  shared fixtures now pin every problem in both SDKs (`validateCases`), and the
+  codes are tabled in SPEC.md.
+- **An accessibility check**: axe-core over every skin, in light, dark and a
+  dark reader with no theme, with controls on hover and at rest, in nine states
+  each (a row hovered, each add button's preview, the clear question, the tidy
+  note, the debug panel, the summary, the unreadable-field notice). Zero
+  violations required. The README says which colour pairs a host that sets its
+  own tokens must keep.
+- **`dist/` is committed**, with the `LICENSE` in it, so every tag carries its
+  build and can be vendored (or loaded from a CDN serving the tag) without a
+  build step. `npm test` fails when `dist/` or `docs/dist/` is not what
+  `build.js` makes from `src/` now.
+
+### Changed
+
+- **The four N-day date operators read with the number in place**: "is within
+  the last {value} days", "is within the next {value} days", "is more than
+  {value} days ago", "is more than {value} days from now". `describe()` output
+  for them changes from `[Arrival] is within the last N days 7` to
+  `[Arrival] is within the last 7 days`, in both SDKs. Anything that matched
+  on the old sentence will need the new one.
+- **The light theme's muted grey** (`--kce-text-muted`, `--kce-op`, and prose's
+  and ledger's operator colour) is `#5f6875`, from `#6a7482` and ledger's
+  `#78838f`. The old values were 4.2:1 on a hovered row, under the 4.5:1 AA
+  needs; ledger's was 3.9:1 at rest.
+- **Chips in a list of choices show the choice's label** ("Week 2"), as the
+  dropdown and `describe()` do. They showed the stored value ("w2").
+
+### Fixed
+
+- **Contrast**, found by the new check: the Clear confirmation was white on
+  the dark theme's red (3:1) — it now uses a new `--kce-danger-text` token;
+  the +AND button's hover was the AND blue on its own tint (4.25:1) — the hover
+  colour is now drawn a fifth of the way towards the text colour, which keeps
+  the hue and clears AA for a host's colours too; boxed's active OR in dark was
+  white on light orange (2.2:1); the debug panel's active tab was 4.25:1; and
+  blackboard had no `--kce-accent-strong` of its own, so it inherited the
+  light theme's navy (1.3:1).
+- **The JSON box, the debug panel and the unreadable-field notice** scroll, and
+  could not be reached by keyboard to be scrolled. They take focus now.
+- **The AND / OR under a row** lines up with a decorated field's widget, as it
+  does with the field name.
+- **`AND(…)` / `OR(…)` are named by what they show.** Their aria-label
+  replaced the visible text with a sentence, so a host translating one but not
+  the other broke WCAG 2.5.3 (label in name), and axe said so. The visible text
+  is the name now, and the sentence (`wrapGroup`) the description.
+
+### Verified with
+
+kselect 1.9.0 (HDC's vendored copy), inside HDC's `app.css`,
+`kselect_theme.css` and `kconditions_theme.css`, with a Swedish label set and 40
+grouped fields: picking a field through the widget, an arrow-key step on the
+closed widget and Ctrl+Z all leave focus on the widget for the same row, with a
+returned promise and without one; every re-render releases its widgets, leaving
+no dropdowns in `<body>`. `tests/browser/decorate-select.js` drives a stand-in
+widget built the same way.
+
 ## [0.1.1] — 2026-10-19
 
 The first tagged release. 0.1.0 was prepared as the first tag, but these fixes

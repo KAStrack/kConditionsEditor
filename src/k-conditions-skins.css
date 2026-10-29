@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.1.1 — alternative skins
+ * kConditionsEditor 0.1.2 — alternative skins
  *
  * Load after k-conditions-editor.css and pick one with the `skin` option:
  *
@@ -168,7 +168,8 @@
   color: var(--kce-field);
 }
 
-.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-operator .kce-sel-label {
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-operator .kce-sel-label,
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-op-tail {
   color: var(--kce-op);
   font-style: italic;
 }
@@ -352,12 +353,14 @@
   --kce-or: #f0a878;
   --kce-accent: #93c9e8;
   --kce-accent-text: #1b2223;
+  --kce-accent-strong: #c6e3f4;
   /* This skin never inherited one, so anything using it — the +AND hover, and
      now the grouping preview — was painting a light blue block on a dark board. */
   --kce-accent-soft: #24384a;
   --kce-border: #38443f;
   --kce-border-strong: #55635d;
   --kce-danger: #ef8f7f;
+  --kce-danger-text: #1b2223;
   /* This skin paints its own dark board without switching the theme tokens, so
      the removal tint needs its own dark values or it lands as a light pink
      block with unreadable chalk text on it. */
@@ -444,7 +447,7 @@
 .kce[data-kce-skin="ledger"] {
   --kce-gutter: 22px;
   --kce-field: #202832;
-  --kce-op: #78838f;
+  --kce-op: #5f6875;
   --kce-value: #2b6b4f;
   --kce-and: #46536a;
   --kce-or: #8a5a2b;
@@ -532,7 +535,7 @@
 .kce[data-kce-skin="prose"] {
   --kce-indent-step: 1.9em;
   --kce-field: #1d2530;
-  --kce-op: #6a7482;
+  --kce-op: #5f6875;
   --kce-value: #1a5f8a;
   line-height: 1.5;
 }
@@ -645,7 +648,8 @@
 }
 
 .kce[data-kce-skin="prose"] .kce-sel-field .kce-sel-label { font-weight: 650; color: var(--kce-field); }
-.kce[data-kce-skin="prose"] .kce-sel-operator .kce-sel-label { color: var(--kce-op); font-style: italic; }
+.kce[data-kce-skin="prose"] .kce-sel-operator .kce-sel-label,
+.kce[data-kce-skin="prose"] .kce-op-tail { color: var(--kce-op); font-style: italic; }
 .kce[data-kce-skin="prose"] .kce-sel-fieldvalue .kce-sel-label { font-weight: 650; color: var(--kce-field); }
 .kce[data-kce-skin="prose"] .kce-sel-fieldvalue .kce-sel-label::before { content: '['; opacity: 0.45; }
 .kce[data-kce-skin="prose"] .kce-sel-fieldvalue .kce-sel-label::after { content: ']'; opacity: 0.45; }
@@ -791,6 +795,11 @@
 
 .kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel:not(.kce-sel-source):is(:hover, :focus-within)::after {
   border-color: var(--kce-accent);
+}
+
+/* A host's widget (decorateSelect) draws its own. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel.kce-sel-host::after {
+  content: none;
 }
 
 /* ================================================================== *

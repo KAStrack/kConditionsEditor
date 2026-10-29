@@ -1,6 +1,6 @@
 # kConditions Document Specification
 
-Version `1.0` — emitted by kConditionsEditor 0.1.1
+Version `1.0` — emitted by kConditionsEditor 0.1.2
 
 A **condition document** is a JSON object describing a boolean expression over a
 set of named fields. It is produced by the editor and consumed by any SDK.
@@ -8,7 +8,7 @@ set of named fields. It is produced by the editor and consumed by any SDK.
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.1.1",
+  "generator": "kConditionsEditor/0.1.2",
   "operators": {},
   "root": {
     "type": "group",
@@ -173,10 +173,17 @@ unresolved-operator policy applies.
 | `date_after`              | is after                           | 1     | date         |
 | `date_between`            | is between                         | 2     | date, date   |
 | `date_is_today`           | is today                           | 0     | —            |
-| `date_within_last_days`   | is within the last N days          | 1     | number       |
-| `date_within_next_days`   | is within the next N days          | 1     | number       |
-| `date_more_than_days_ago` | is more than N days ago            | 1     | number       |
-| `date_more_than_days_ahead` | is more than N days from now     | 1     | number       |
+| `date_within_last_days`   | is within the last {value} days    | 1     | number       |
+| `date_within_next_days`   | is within the next {value} days    | 1     | number       |
+| `date_more_than_days_ago` | is more than {value} days ago      | 1     | number       |
+| `date_more_than_days_ahead` | is more than {value} days from now | 1   | number       |
+
+`{value}` in a label marks where the operand reads: `describe()` gives
+`[Arrival] is within the last 7 days`, and the editor puts the value box there. Any
+operator label may carry one (a custom operator's, or a translation passed in
+`labels.operators`); the spacing round it is kept as written. A label without one
+has its operand after it. Labels are presentation only: nothing in a document
+refers to them.
 
 Accepted date literals: `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, a date and time with no
 zone (`YYYY-MM-DD HH:MM[:SS[.mmm]]`, a space or a `T` between them), full ISO 8601
@@ -216,6 +223,31 @@ are false. Anything else is neither, and both operators return false.
 true for `""`, `[]` and `{}`.
 
 ---
+
+### Validation
+
+`validateDocument()` (both SDKs) returns a list of problems, empty when the document
+is valid. Each is `{ path, code, params, message }`: `message` is the English, and
+`code` and `params` are what it was built from, so a host can say it in another
+language. The editor's `labels.problems` takes the same keys and placeholders.
+
+| `code`            | `params`                       | English                                                |
+|-------------------|--------------------------------|--------------------------------------------------------|
+| `notObject`       | —                              | Node is not an object                                  |
+| `groupOperator`   | —                              | Group operator must be "and" or "or"                   |
+| `groupChildren`   | —                              | Group children must be an array                        |
+| `nodeType`        | `type`                         | Unknown node type "{type}"                             |
+| `noField`         | —                              | Condition has no field                                 |
+| `unknownField`    | `field`                        | Unknown field "{field}" (a condition's, or a value's)  |
+| `unknownOperator` | `operator`                     | Unknown operator "{operator}"                          |
+| `listArity`       | `operator`                     | Operator "{operator}" expects a single list value      |
+| `arity`           | `operator`, `expected`, `actual` | Operator "{operator}" expects {expected} value(s), got {actual} |
+| `valueNotObject`  | —                              | Value must be an object                                |
+| `valueNoField`    | —                              | Field value has no field name                          |
+| `valueSource`     | —                              | Value source must be "literal" or "field"              |
+
+The shared fixtures (`validateCases`) hold both SDKs to the same problems, in the
+same order, with the same path, code, params and message.
 
 ## 3. Custom operators
 

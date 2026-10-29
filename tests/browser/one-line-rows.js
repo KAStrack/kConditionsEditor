@@ -32,7 +32,10 @@ const VARIANTS = {
   enumLong: cv('team', 'eq', ['emea']),
   between: cv('n', 'between', [100000, 250000]),
   tags: cv('a', 'in_list', [['refund', 'cancel', 'chargeback', 'dispute', 'fraud']]),
-  dateBetween: cv('d', 'date_between', ['2026-01-01', '2026-12-31'])
+  dateBetween: cv('d', 'date_between', ['2026-01-01', '2026-12-31']),
+  // An operator label with a {value} slot: the words after the operand ride
+  // the row too, after the value.
+  slotted: cv('d', 'date_more_than_days_ahead', [365])
 };
 // The variant at depth 0 and again inside a group, where it is not last.
 const rule = (v) => ({ version: '1.0', root: { type: 'group', operator: 'and', children: [

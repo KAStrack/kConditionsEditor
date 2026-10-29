@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.1.1 — base stylesheet + the "boxed" skin
+ * kConditionsEditor 0.1.2 — base stylesheet + the "boxed" skin
  *
  * Every colour and metric is a CSS custom property, so the whole editor can be
  * restyled by overriding the --kce-* variables on .kce or any ancestor.
@@ -19,15 +19,17 @@
   --kce-rule: #b6bdc8;
   --kce-paren: #59636f;
   --kce-text: #1d2530;
-  --kce-text-muted: #6a7482;
+  --kce-text-muted: #5f6875;
   --kce-field: #1d2530;
-  --kce-op: #6a7482;
+  --kce-op: #5f6875;
   --kce-value: #1a5f8a;
   --kce-accent: #2f6fd0;
   --kce-accent-strong: #14448f;
   --kce-accent-text: #ffffff;
   --kce-accent-soft: #e8f0fc;
   --kce-danger: #c0392b;
+  /* Text on a --kce-danger fill (the "Clear" confirmation). */
+  --kce-danger-text: #ffffff;
   --kce-danger-soft: #fdeceb;
   --kce-danger-edge: #f0b8b2;
   --kce-and: #2f6fd0;
@@ -82,6 +84,7 @@
     --kce-accent-text: #0d1117;
     --kce-accent-soft: #1e2b40;
     --kce-danger: #ef6b5c;
+    --kce-danger-text: #0d1117;
     --kce-danger-soft: #3b211e;
     --kce-danger-edge: #6d3830;
     --kce-and: #5b9bff;
@@ -112,6 +115,7 @@
   --kce-accent-text: #0d1117;
   --kce-accent-soft: #1e2b40;
   --kce-danger: #ef6b5c;
+  --kce-danger-text: #0d1117;
   --kce-danger-soft: #3b211e;
   --kce-danger-edge: #6d3830;
   --kce-and: #5b9bff;
@@ -195,6 +199,7 @@ textarea.kce-hidden-textarea {
 
 .kce-condition > .kce-values { flex: 0 100000 auto; min-width: 60px; }
 .kce-condition > .kce-sel { flex: 0 1 auto; min-width: 0; }
+.kce-condition > .kce-sel.kce-sel-host { flex: 0 0 auto; }
 .kce-condition > .kce-grip,
 .kce-condition > .kce-move,
 .kce-condition > .kce-remove,
@@ -345,6 +350,47 @@ textarea.kce-hidden-textarea {
   text-overflow: ellipsis;
   max-width: 100%;
   pointer-events: none;
+}
+
+/* The words of an operator label that follow its operand — the "days" of
+   "is within the last [7] days" (a {value} slot; see renderCondition). Part
+   of the operator, so drawn as the operator is. */
+.kce-op-tail {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  color: var(--kce-op);
+}
+
+/* A select the host has decorated (decorateSelect): its widget shows the
+   choice, so the shell is only a box to hold it, and the select underneath,
+   if the widget leaves it showing, is an ordinary control again rather than
+   a transparent overlay. A widget cannot ellipsis, so the shell does not
+   shrink; a row too wide for its line scrolls instead (fitRows). */
+.kce-sel.kce-sel-host {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: auto;
+  max-width: none;
+}
+
+.kce .kce-tree .kce-sel.kce-sel-host > select {
+  position: static;
+  width: auto;
+  height: auto;
+  opacity: 1;
+  appearance: auto;
+  cursor: auto;
+}
+
+/* A widget beside the select is sized by what it shows, not by a host rule
+   written for full-width form fields. */
+.kce .kce-tree .kce-sel.kce-sel-host > :not(select) {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
 }
 
 .kce-input {
@@ -567,6 +613,17 @@ textarea.kce-hidden-textarea {
 .kce-add-or:focus-visible {
   color: var(--kce-or);
   background: var(--kce-warn-bg);
+}
+
+/* The light theme's AND blue on its hover tint was 4.25:1. Drawn a fifth of
+   the way towards the text colour it keeps its hue and clears 4.5:1 in every
+   theme — and for a host's own --kce-and / --kce-or too, since it moves
+   towards whatever the text colour is. */
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  .kce-add:hover,
+  .kce-add:focus-visible { color: color-mix(in srgb, var(--kce-and) 80%, var(--kce-text)); }
+  .kce-add-or:hover,
+  .kce-add-or:focus-visible { color: color-mix(in srgb, var(--kce-or) 80%, var(--kce-text)); }
 }
 
 .kce-connector-btn {
@@ -813,7 +870,7 @@ textarea.kce-hidden-textarea {
 
 .kce[data-kce-skin="boxed"] .kce-logic-btn + .kce-logic-btn { border-left: 1px solid var(--kce-border-strong); }
 .kce[data-kce-skin="boxed"] .kce-logic-btn.is-active { background: var(--kce-accent); color: var(--kce-accent-text); }
-.kce[data-kce-skin="boxed"] .kce-group[data-op="or"] .kce-logic-btn.is-active { background: var(--kce-or); color: #fff; }
+.kce[data-kce-skin="boxed"] .kce-group[data-op="or"] .kce-logic-btn.is-active { background: var(--kce-or); color: var(--kce-accent-text); }
 
 .kce[data-kce-skin="boxed"] .kce-not {
   display: inline-flex;
@@ -854,6 +911,9 @@ textarea.kce-hidden-textarea {
   background: var(--kce-bg);
   color: var(--kce-text);
 }
+
+/* The words after an operator's operand, beside the boxes, in their type. */
+.kce[data-kce-skin="boxed"] .kce-op-tail { font-size: 0.875em; color: var(--kce-text); }
 
 .kce[data-kce-skin="boxed"] .kce-sel-label {
   padding-right: 26px;
@@ -953,7 +1013,9 @@ textarea.kce-hidden-textarea {
 }
 
 .kce-devtools-tab:hover { color: var(--kce-accent); }
-.kce-devtools-tab.is-active { background: var(--kce-accent-soft); color: var(--kce-accent); }
+/* The accent on its own soft tint is 4.25:1 in the light theme; the strong
+   accent reads at 8:1 in both. */
+.kce-devtools-tab.is-active { background: var(--kce-accent-soft); color: var(--kce-accent-strong); }
 
 .kce-devtools-copy { font-size: 0.72em !important; padding: 3px 9px !important; }
 
@@ -1026,15 +1088,17 @@ textarea.kce-hidden-textarea {
   padding: 4px 10px !important;
 }
 
+/* Text on the fill is its own token: white on the light theme's red is 5.4:1,
+   but on the dark theme's lighter red it was 3:1. */
 .kce-clear-yes {
   background: var(--kce-danger);
   border-color: var(--kce-danger);
-  color: #fff;
+  color: var(--kce-danger-text);
 }
 
 .kce-clear-yes:hover {
   filter: brightness(1.1);
-  color: #fff;
+  color: var(--kce-danger-text);
   border-color: var(--kce-danger);
 }
 
@@ -1306,7 +1370,7 @@ textarea.kce-hidden-textarea {
 
 /* --- color: the range is written in the hue -------------------------- */
 
-.kce[data-kce-preview="color"] :is(.kce-will-group, .kce-will-remove) :is(.kce-sel-label, .kce-input, .kce-tag, .kce-join, .kce-paren, .kce-negate-marker, .kce-connector-btn),
+.kce[data-kce-preview="color"] :is(.kce-will-group, .kce-will-remove) :is(.kce-sel-label, .kce-op-tail, .kce-input, .kce-tag, .kce-join, .kce-paren, .kce-negate-marker, .kce-connector-btn),
 .kce[data-kce-preview="color"] :is(.kce-will-group, .kce-will-remove):is(.kce-paren, .kce-negate-marker, .kce-connector-btn) {
   color: var(--kce-mark) !important;
 }
@@ -1348,6 +1412,7 @@ textarea.kce-hidden-textarea {
 /* --- underline: names and operators ---------------------------------- */
 
 .kce[data-kce-preview="underline"] :is(.kce-will-group, .kce-will-remove) :is(.kce-sel-field, .kce-sel-operator, .kce-sel-fieldvalue) .kce-sel-label,
+.kce[data-kce-preview="underline"] :is(.kce-will-group, .kce-will-remove) .kce-op-tail,
 .kce[data-kce-preview="underline"] :is(.kce-will-group, .kce-will-remove) .kce-connector-btn,
 .kce[data-kce-preview="underline"] .kce-connector-btn:is(.kce-will-group, .kce-will-remove) {
   text-decoration: underline 2px var(--kce-mark) !important;
@@ -1563,7 +1628,7 @@ textarea.kce-hidden-textarea {
 
 .kcd {
   --kcd-field: var(--kce-field, #1d2530);
-  --kcd-op: var(--kce-op, #6a7482);
+  --kcd-op: var(--kce-op, #5f6875);
   --kcd-value: var(--kce-value, #1a5f8a);
   --kcd-and: var(--kce-and, #2f6fd0);
   --kcd-or: var(--kce-or, #a8560c);

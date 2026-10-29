@@ -21,6 +21,7 @@ use Kastrack\ConditionsEditor\Evaluator;
 use Kastrack\ConditionsEditor\Exception\ConditionException;
 use Kastrack\ConditionsEditor\Skip;
 use Kastrack\ConditionsEditor\SqlBuilder;
+use Kastrack\ConditionsEditor\Support\Labels;
 
 use function Kastrack\ConditionsEditor\evaluate;
 
@@ -290,6 +291,49 @@ foreach ($fixtures['describeCases'] as $case) {
             preg_match('#<(img|script|b)\b#i', (string) $stripped) === 0,
             'no unescaped tags survive'
         );
+    });
+}
+
+/* ------------------------------------------------------------------ *
+ * Label templates — the same helpers as the JavaScript SDK's
+ * ------------------------------------------------------------------ */
+
+fwrite(STDOUT, "\nLabel templates\n");
+
+check('fillTemplate fills named placeholders and leaves unknown ones as written', static function (): void {
+    assertSame('Remove Florida', Labels::fillTemplate('Remove {value}', ['value' => 'Florida']));
+    assertSame('1 0 1', Labels::fillTemplate('{a} {b} {a}', ['a' => 1, 'b' => 0]));
+    assertSame('Ta bort {value}', Labels::fillTemplate('Ta bort {value}', []));
+    assertSame('{value}', Labels::fillTemplate('{value}', ['value' => null]));
+});
+
+check('splitOperatorLabel splits at the first {value}, keeping the spacing', static function (): void {
+    assertSame(null, Labels::splitOperatorLabel('is between'));
+    assertSame(['head' => 'is within the last', 'before' => ' ', 'after' => ' ', 'tail' => 'days'],
+        Labels::splitOperatorLabel('is within the last {value} days'));
+    assertSame(['head' => '在过去', 'before' => '', 'after' => '', 'tail' => '天内'], Labels::splitOperatorLabel('在过去{value}天内'));
+    assertSame(['head' => '', 'before' => '', 'after' => ' ', 'tail' => 'or more '], Labels::splitOperatorLabel('{value} or more {value}'));
+    assertSame('is within the last … days', Labels::operatorLabelText('is within the last {value} days'));
+    assertSame('is set', Labels::operatorLabelText('is set'));
+});
+
+/* ------------------------------------------------------------------ *
+ * Shared validateDocument() fixtures
+ * ------------------------------------------------------------------ */
+
+fwrite(STDOUT, "\nShared validate fixtures\n");
+
+foreach ($fixtures['validateCases'] as $case) {
+    check($case['name'], static function () use ($case): void {
+        // The whole problem, not just the message: the code and params are
+        // what a translated message is built from, so they are the contract.
+        // Compared as JSON so an empty params map reads the same in both.
+        $problems = Evaluator::validateDocument($case['document'], $case['options'] ?? []);
+        $norm = static fn (array $list): string => (string) json_encode(array_map(
+            static fn (array $p): array => ['path' => $p['path'], 'code' => $p['code'], 'params' => (object) $p['params'], 'message' => $p['message']],
+            $list
+        ), JSON_UNESCAPED_UNICODE);
+        assertSame($norm($case['expected']), $norm($problems), 'problems');
     });
 }
 

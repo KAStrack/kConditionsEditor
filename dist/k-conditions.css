@@ -1,0 +1,2520 @@
+/*! kConditionsEditor 0.1.2 — base stylesheet and every skin | MIT | https://github.com/KAStrack/kConditionsEditor */
+/*!
+ * kConditionsEditor 0.1.2 — base stylesheet + the "boxed" skin
+ *
+ * Every colour and metric is a CSS custom property, so the whole editor can be
+ * restyled by overriding the --kce-* variables on .kce or any ancestor.
+ * Alternative skins live in k-conditions-skins.css and are selected with the
+ * `skin` option (or data-kce-skin on the root element).
+ *
+ * MIT Licence.
+ */
+
+.kce {
+  /* palette */
+  --kce-bg: #ffffff;
+  --kce-bg-sunken: #f6f7f9;
+  --kce-bg-group: #fbfcfd;
+  --kce-border: #d8dce3;
+  --kce-border-strong: #b6bdc8;
+  --kce-rule: #b6bdc8;
+  --kce-paren: #59636f;
+  --kce-text: #1d2530;
+  --kce-text-muted: #5f6875;
+  --kce-field: #1d2530;
+  --kce-op: #5f6875;
+  --kce-value: #1a5f8a;
+  --kce-accent: #2f6fd0;
+  --kce-accent-strong: #14448f;
+  --kce-accent-text: #ffffff;
+  --kce-accent-soft: #e8f0fc;
+  --kce-danger: #c0392b;
+  /* Text on a --kce-danger fill (the "Clear" confirmation). */
+  --kce-danger-text: #ffffff;
+  --kce-danger-soft: #fdeceb;
+  --kce-danger-edge: #f0b8b2;
+  --kce-and: #2f6fd0;
+  --kce-and-muted: #6d87ad;
+  --kce-or: #a8560c;
+  --kce-or-strong: #7a3d05;
+  --kce-or-muted: #a0805e;
+  --kce-warn-bg: #fdf3e7;
+  --kce-warn-text: #8a5a12;
+
+  /* metrics */
+  --kce-radius: 7px;
+  --kce-radius-sm: 5px;
+  --kce-gap: 8px;
+  --kce-indent: 18px;
+  --kce-row-gap: 6px;
+  --kce-font: inherit;
+  --kce-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --kce-font-size: 0.9375rem;
+
+  font-family: var(--kce-font);
+  font-size: var(--kce-font-size);
+  color: var(--kce-text);
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+.kce *,
+.kce *::before,
+.kce *::after { box-sizing: border-box; }
+
+/* An author `display` beats the UA stylesheet's [hidden] rule, and several
+   elements here are flex containers that get toggled with .hidden. */
+.kce [hidden] { display: none !important; }
+
+@media (prefers-color-scheme: dark) {
+  .kce:not([data-kce-theme="light"]) {
+    --kce-bg: #171a1f;
+    --kce-bg-sunken: #1d2128;
+    --kce-bg-group: #1b1f26;
+    --kce-border: #333a45;
+    --kce-border-strong: #4a5361;
+    --kce-rule: #4a5361;
+    --kce-paren: #9aa5b4;
+    --kce-text: #e6e9ee;
+    --kce-text-muted: #98a1af;
+    --kce-field: #e6e9ee;
+    --kce-op: #98a1af;
+    --kce-value: #7fc4e8;
+    --kce-accent: #5b9bff;
+    --kce-accent-strong: #a9caff;
+    --kce-accent-text: #0d1117;
+    --kce-accent-soft: #1e2b40;
+    --kce-danger: #ef6b5c;
+    --kce-danger-text: #0d1117;
+    --kce-danger-soft: #3b211e;
+    --kce-danger-edge: #6d3830;
+    --kce-and: #5b9bff;
+    --kce-and-muted: #8ba3c4;
+    --kce-or: #e0a066;
+    --kce-or-strong: #f5c396;
+    --kce-or-muted: #c1a184;
+    --kce-warn-bg: #33291a;
+    --kce-warn-text: #e6c07a;
+  }
+}
+
+.kce[data-kce-theme="dark"] {
+  --kce-bg: #171a1f;
+  --kce-bg-sunken: #1d2128;
+  --kce-bg-group: #1b1f26;
+  --kce-border: #333a45;
+  --kce-border-strong: #4a5361;
+  --kce-rule: #4a5361;
+  --kce-paren: #9aa5b4;
+  --kce-text: #e6e9ee;
+  --kce-text-muted: #98a1af;
+  --kce-field: #e6e9ee;
+  --kce-op: #98a1af;
+  --kce-value: #7fc4e8;
+  --kce-accent: #5b9bff;
+  --kce-accent-strong: #a9caff;
+  --kce-accent-text: #0d1117;
+  --kce-accent-soft: #1e2b40;
+  --kce-danger: #ef6b5c;
+  --kce-danger-text: #0d1117;
+  --kce-danger-soft: #3b211e;
+  --kce-danger-edge: #6d3830;
+  --kce-and: #5b9bff;
+  --kce-and-muted: #8ba3c4;
+  --kce-or: #e0a066;
+  --kce-or-strong: #f5c396;
+  --kce-or-muted: #c1a184;
+  --kce-warn-bg: #33291a;
+  --kce-warn-text: #e6c07a;
+}
+
+/* Prefer a true blend of the operator hue with the muted text colour, so a
+   retheme only has to set --kce-and / --kce-or and these follow. */
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  .kce {
+    --kce-and-muted: color-mix(in srgb, var(--kce-and) 55%, var(--kce-text-muted));
+    --kce-or-muted: color-mix(in srgb, var(--kce-or) 55%, var(--kce-text-muted));
+  }
+}
+
+/* Visually hidden but still in the form: the field keeps posting, and with
+   hideTarget the same treatment applies to whatever wraps it. */
+.kce-concealed,
+textarea.kce-hidden-textarea {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ================================================================== *
+ * Structural base — shared by every skin
+ * ================================================================== */
+
+.kce[data-state="open"] .kce-summary { display: none; }
+.kce[data-state="collapsed"] .kce-body { display: none; }
+
+.kce-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--kce-gap);
+}
+
+.kce-summary-text { flex: 1 1 auto; min-width: 0; word-break: break-word; }
+
+.kce-group-children {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--kce-row-gap);
+}
+
+/* Rows are as wide as their content, never as wide as the container. This is
+   what stops a rule reading as a stack of full-width form controls.
+
+   A row never wraps. It used to, and in a wrapping flex container line-breaking
+   is decided before anything is allowed to shrink — so a row a few pixels too
+   wide for a dialog sent its move arrows and × to a second line, every row
+   reserved a blank band for them, and they appeared below the thing being
+   pointed at. Now the value slot gives up the width: it shrinks first, the
+   field and operator names ellipsis only once it is down to its minimum, and
+   the controls never shrink at all.
+
+   Items align on their baselines, not their centres. The one value that may
+   still take more than a line — a tag list, whose chips wrap inside their box
+   — then grows downwards, while the field, operator, arrows and × stay on its
+   first line. Centred, they sat halfway down a tall row, below the field
+   name. */
+.kce-condition {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 6px;
+  width: max-content;
+  max-width: 100%;
+}
+
+.kce-condition > .kce-values { flex: 0 100000 auto; min-width: 60px; }
+.kce-condition > .kce-sel { flex: 0 1 auto; min-width: 0; }
+.kce-condition > .kce-sel.kce-sel-host { flex: 0 0 auto; }
+.kce-condition > .kce-grip,
+.kce-condition > .kce-move,
+.kce-condition > .kce-remove,
+.kce-condition > .kce-not { flex: 0 0 auto; }
+
+/* A value of fixed size — one input, or the two of `between` — stays on one
+   line and shrinks; only a tag list wraps, inside its own box. The floor is
+   kept by the value slot (below), sized by what it holds, and the inputs
+   inside share whatever it has — a floor on each input instead would let
+   them spill out of a slot squeezed below their sum, over the arrows and ×. */
+.kce-values,
+.kce-value {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.kce-value { flex: 0 1 auto; }
+
+.kce .kce-tree .kce-value > input.kce-input { flex: 0 1 auto; min-width: 0; }
+
+/* A choice value is a dropdown shell, not an input: let its label ellipsis
+   like the field and operator names do. */
+.kce-value > .kce-sel { flex: 0 1 auto; min-width: 0; }
+
+/* The value slot's floor: enough to type in, or to read a date in. Two values
+   (`between`, joined by "and") need twice that and the join. An operator with
+   no value (is set, is empty) has an empty slot, which holds nothing. */
+.kce-condition > .kce-values:has(input[type="date"]) { min-width: 8em; }
+.kce-condition > .kce-values:has(> .kce-join) { min-width: 8em; }
+.kce-condition > .kce-values:has(> .kce-join):has(input[type="date"]) { min-width: 16em; }
+.kce-condition > .kce-values:has(.kce-taglist) { min-width: 8em; }
+.kce-condition > .kce-values:empty { min-width: 0; }
+
+/* Group guides (flow layout): a thin line down the left of a bracketed
+   group's rows, placed by positionGuides(). Faint at rest — it is a reading
+   aid, and the brackets still carry the meaning — and full strength while the
+   group's AND / OR or one of its brackets is pointed at or focused. */
+.kce-guide {
+  --kce-guide: var(--kce-and);
+  position: absolute;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--kce-guide);
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.kce-guide.is-or { --kce-guide: var(--kce-or); }
+
+/* A negated group is drawn dashed, as the ledger skin draws its guides. */
+.kce-guide.is-negated {
+  background: none;
+  border-left: 2px dashed var(--kce-guide);
+  border-radius: 0;
+}
+
+.kce-guide.is-lit { opacity: 1; }
+
+/* The rule's own line appears only while one of its AND / OR is pointed at. */
+.kce-guide.kce-guide-root { opacity: 0; }
+.kce-guide.kce-guide-root.is-lit { opacity: 1; }
+
+/* While dragging, a guide would mark a range that is about to change. */
+.kce-dragging .kce-guide { opacity: 0; }
+
+/* A group's tools, floated after its opening bracket by fitGroupTools() so
+   they take no room from the row on that line. */
+.kce-group-tools.kce-tools-float {
+  position: absolute;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ *
+ * The flow layout's line: a row, then its AND / OR and add buttons, then
+ * perhaps a bracket opening the next group. Never wrapped: the AND / OR after
+ * a row belongs on that row's line, and when the line is short the row gives
+ * up the width (its value first). Wrapping sent the AND / OR, and the add
+ * buttons with it, to a line of their own below the row.
+ * ------------------------------------------------------------------ */
+.kce-line {
+  flex-wrap: nowrap;
+  align-items: baseline;
+}
+
+.kce-line > .kce-condition { flex: 0 1 auto; min-width: 0; }
+.kce-line > :not(.kce-condition) { flex: 0 0 auto; }
+
+/* `connectorPlacement: 'below'` (the default): the AND / OR after a row, or
+   after a closing bracket, goes on a row of its own beneath it — with any
+   bracket it opens, "AND (" — and alignConnectorsBelow() starts it where the
+   field name starts. Still one .kce-line: the line is the row's, for hover,
+   focus, drag and the guides, and breaking it here is a CSS matter. The row
+   is alone before the break, so it still never wraps; it shrinks, as before.
+   The break is a full-width item of no height, ordered between the row (or
+   the bracket) and everything after it. */
+.kce[data-kce-connectors="below"] .kce-line:has(> .kce-connector) {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+
+.kce[data-kce-connectors="below"] .kce-line:has(> .kce-connector)::before {
+  content: '';
+  order: 1;
+  flex: 0 0 100%;
+  height: 0;
+}
+
+.kce[data-kce-connectors="below"] .kce-line:has(> .kce-connector) > * { order: 2; }
+.kce[data-kce-connectors="below"] .kce-line:has(> .kce-connector) > :is(.kce-condition, .kce-paren-close) { order: 0; }
+
+/* `connectorPlacement: 'inline'`: the row's arrows and × ride in the strip
+   after its AND / OR (renderFlow moves them), after the add buttons. */
+.kce-adds > .kce-btn + .kce-row-ctl { margin-left: 6px; }
+.kce-adds > .kce-row-ctl { flex: 0 0 auto; }
+
+.kce-spacer { flex: 1 1 auto; }
+
+/* Selects render at the width of their chosen option, not their widest one:
+   the real <select> sits transparently over a span holding the label. */
+.kce-sel {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  vertical-align: baseline;
+}
+
+.kce-sel > select {
+  position: absolute;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  margin: 0; padding: 0;
+  border: 0;
+  opacity: 0;
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+.kce-sel-label {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  pointer-events: none;
+}
+
+/* The words of an operator label that follow its operand — the "days" of
+   "is within the last [7] days" (a {value} slot; see renderCondition). Part
+   of the operator, so drawn as the operator is. */
+.kce-op-tail {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  color: var(--kce-op);
+}
+
+/* A select the host has decorated (decorateSelect): its widget shows the
+   choice, so the shell is only a box to hold it, and the select underneath,
+   if the widget leaves it showing, is an ordinary control again rather than
+   a transparent overlay. A widget cannot ellipsis, so the shell does not
+   shrink; a row too wide for its line scrolls instead (fitRows). */
+.kce-sel.kce-sel-host {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: auto;
+  max-width: none;
+}
+
+.kce .kce-tree .kce-sel.kce-sel-host > select {
+  position: static;
+  width: auto;
+  height: auto;
+  opacity: 1;
+  appearance: auto;
+  cursor: auto;
+}
+
+/* A widget beside the select is sized by what it shows, not by a host rule
+   written for full-width form fields. */
+.kce .kce-tree .kce-sel.kce-sel-host > :not(select) {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+}
+
+.kce-input {
+  font: inherit;
+  color: inherit;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* The editor lives inside other people's forms, and forms style their inputs:
+   a dialog's `.form input[type=text] { width: 24rem; height: 42px; … }` turned
+   the prose value slot into a 384px box and pushed every row past the edge.
+   These pin the box metrics the editor depends on — autosize() sets width via
+   the `size` attribute, which only works while width is auto — at a
+   specificity above element and class-scoped host rules. The skins then set
+   border, padding and background at their own (higher) specificity. A host
+   rule scoped by an ID still wins; exclude the editor there with
+   `:not(.kce *)`. */
+.kce .kce-tree input.kce-input {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  line-height: inherit;
+  float: none;
+}
+
+/* The real <select> is an invisible overlay on its label (see .kce-sel), so it
+   is pinned to the label's box rather than to its own content. */
+.kce .kce-tree .kce-sel > select {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  float: none;
+}
+
+.kce .kce-tree input.kce-tag-input {
+  border: 0;
+  background: transparent;
+  padding: 3px 2px;
+}
+
+/* :where() keeps this at the specificity of two classes, so the editor's own
+   button rules below can still set a margin where they mean to. */
+.kce .kce-tree :where(button) {
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  box-shadow: none;
+  text-transform: none;
+  float: none;
+}
+
+/* Hidden by default; the equation skins turn these on. */
+.kce-negate-marker { display: none; }
+.kce-connector { display: none; }
+
+/* ================================================================== *
+ * Shared controls
+ * ================================================================== */
+
+.kce-btn {
+  appearance: none;
+  font: inherit;
+  font-size: 0.875em;
+  line-height: 1.2;
+  padding: 7px 12px;
+  border-radius: var(--kce-radius-sm);
+  border: 1px solid var(--kce-border-strong);
+  background: var(--kce-bg);
+  color: var(--kce-text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.kce-btn:hover { border-color: var(--kce-accent); color: var(--kce-accent); }
+
+.kce-btn-primary {
+  background: var(--kce-accent);
+  border-color: var(--kce-accent);
+  color: var(--kce-accent-text);
+}
+.kce-btn-primary:hover { filter: brightness(1.08); color: var(--kce-accent-text); }
+
+.kce-btn-ghost {
+  border-style: dashed;
+  color: var(--kce-text-muted);
+  padding: 5px 10px;
+}
+
+.kce-icon-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--kce-text-muted);
+  font-size: 1.15em;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--kce-radius-sm);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.kce-icon-btn:hover { background: var(--kce-bg-sunken); color: var(--kce-danger); }
+
+.kce-group-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* The add buttons sit next to the logic word they extend, but they are
+   controls, not logic — so they are boxed and quiet, and stay out of the way
+   until the pointer is on the line they belong to.
+   Collapsed with max-width rather than display:none, so they remain in the tab
+   order and reveal themselves on focus. In the flow layout they keep their
+   room instead (below), so pointing at a line moves nothing. */
+.kce-adds {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.kce-adds-starter,
+.kce-adds:focus-within,
+.kce-line:hover .kce-adds,
+.kce-connector:hover > .kce-adds,
+.kce-group-children > *:hover + .kce-connector > .kce-adds,
+.kce[data-kce-controls="always"] .kce-adds {
+  max-width: 24em;
+  overflow: visible;
+  opacity: 1;
+}
+
+/* In the flow layout the add buttons share the row's line, and a line does
+   not wrap — so if they took no room until revealed, revealing them would
+   take it from the row, and the value would narrow under the pointer. So they
+   never grow: with controls shown at rest they keep their room in the line,
+   and revealed on hover they float (floatAdds() / positionAdds() in the
+   script) — after the AND / OR if the line has space, otherwise as a strip
+   just below it. (In the tree layout they sit on a connector line of their
+   own, where growing moves nothing.) */
+.kce-line > .kce-adds {
+  max-width: none;
+  overflow: visible;
+}
+
+/* An invisible float must not take the pointer from what is under it — the
+   next line, when it hangs below — but it stays in the tab order, and focus
+   reveals it like hover does. */
+.kce .kce-line > .kce-adds.kce-adds-float {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  pointer-events: none;
+}
+
+.kce-line:is(:hover, :focus-within) > .kce-adds.kce-adds-float { pointer-events: auto; }
+
+/* Hanging below the line it belongs to, over the next one: given a ground of
+   its own so it reads as a strip of controls, not as part of the next row. */
+.kce-line > .kce-adds.kce-adds-below {
+  padding: 3px;
+  border-radius: var(--kce-radius-sm);
+  background: var(--kce-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+/* Boxed, and carrying the hue of the operator they add — but blended back
+   toward the muted text colour and set a weight lighter, so they never compete
+   with the AND / OR that actually describe the rule. Pointing at one restores
+   the full colour. */
+.kce-add {
+  appearance: none;
+  font: inherit;
+  /* Floored, because 0.7em of a 12px host is an 8.5px label. */
+  font-size: max(0.7em, 10px);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  padding: 3px 7px;
+  border: 1px solid;
+  border-radius: 4px;
+  background: var(--kce-bg-sunken);
+  cursor: pointer;
+  white-space: nowrap;
+
+  color: var(--kce-and-muted, var(--kce-text-muted));
+  border-color: var(--kce-border-strong);
+}
+
+.kce-add-or { color: var(--kce-or-muted, var(--kce-text-muted)); }
+
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  .kce-add { border-color: color-mix(in srgb, currentColor 35%, var(--kce-border)); }
+}
+
+.kce-add:hover,
+.kce-add:focus-visible {
+  color: var(--kce-and);
+  border-color: currentColor;
+  background: var(--kce-accent-soft);
+}
+
+.kce-add-or:hover,
+.kce-add-or:focus-visible {
+  color: var(--kce-or);
+  background: var(--kce-warn-bg);
+}
+
+/* The light theme's AND blue on its hover tint was 4.25:1. Drawn a fifth of
+   the way towards the text colour it keeps its hue and clears 4.5:1 in every
+   theme — and for a host's own --kce-and / --kce-or too, since it moves
+   towards whatever the text colour is. */
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  .kce-add:hover,
+  .kce-add:focus-visible { color: color-mix(in srgb, var(--kce-and) 80%, var(--kce-text)); }
+  .kce-add-or:hover,
+  .kce-add-or:focus-visible { color: color-mix(in srgb, var(--kce-or) 80%, var(--kce-text)); }
+}
+
+.kce-connector-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* The add buttons and the AND / OR word are set small on purpose — they must
+   not compete with the rule they belong to — but a target is not a glyph. A
+   transparent pseudo-element extends each to at least 24×24 around its centre
+   without making the line any taller or the label any heavier. */
+.kce-add,
+.kce-connector-btn { position: relative; }
+
+.kce-add::before,
+.kce-connector-btn::before {
+  content: '';
+  position: absolute;
+  top: min(0px, calc(50% - 12px));
+  bottom: min(0px, calc(50% - 12px));
+  left: min(0px, calc(50% - 12px));
+  right: min(0px, calc(50% - 12px));
+}
+
+/* ================================================================== *
+ * Tag list for "is one of"
+ * ================================================================== */
+
+.kce-taglist {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.kce-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.85em;
+  max-width: 100%;
+}
+
+.kce-tag > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.kce-tag-x {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--kce-text-muted);
+  cursor: pointer;
+  font-size: 1.05em;
+  line-height: 1;
+  padding: 0 2px;
+}
+.kce-tag-x:hover { color: var(--kce-danger); }
+
+.kce-tag-input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 3px 2px;
+}
+
+/* ================================================================== *
+ * Footer, messages, JSON — shared chrome
+ * ================================================================== */
+
+/* The controls sit at the left, in the order you reach for them. The problems
+   list used to take the free space and push them all to the right edge; it now
+   takes a row of its own above them, and collapses when there is nothing to
+   say — sync() empties it, so :empty is the test. */
+.kce-footer { flex-wrap: wrap; justify-content: flex-start; }
+.kce-messages { flex: 1 1 100%; min-width: 0; }
+.kce-messages:empty { display: none; }
+
+.kce-problems {
+  margin: 0;
+  padding: 8px 10px 8px 26px;
+  list-style: disc;
+  font-size: 0.8125em;
+  background: var(--kce-warn-bg);
+  color: var(--kce-warn-text);
+  border-radius: var(--kce-radius-sm);
+}
+
+.kce-problems-title {
+  list-style: none;
+  margin-left: -16px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+/* What the field held when the editor could not read it. Sits between the
+   summary and the body, so it shows collapsed or open; the field keeps that
+   content until the first change, and with the textarea concealed this is the
+   only place a person sees it. Warn tokens only, so the dark blocks and
+   blackboard need nothing of their own. */
+.kce-preserved {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  background: var(--kce-warn-bg);
+  color: var(--kce-warn-text);
+  border-radius: var(--kce-radius-sm);
+  font-size: 0.8125em;
+}
+.kce-preserved[hidden] { display: none; }
+.kce-preserved-text { font-weight: 600; margin: 0 0 8px; }
+.kce-preserved-source {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  max-height: 12em;
+  overflow: auto;
+  background: var(--kce-bg-sunken);
+  color: var(--kce-text);
+  border: 1px solid var(--kce-border);
+  border-radius: var(--kce-radius-sm);
+  font-family: var(--kce-font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}
+.kce-preserved-dismiss {
+  font-size: 0.8em !important;
+  padding: 5px 10px !important;
+  color: var(--kce-text-muted);
+  border-color: var(--kce-border);
+}
+.kce-preserved-dismiss:hover { color: var(--kce-text); border-color: var(--kce-border-strong); }
+
+.kce-json-wrap {
+  border-top: 1px solid var(--kce-border);
+  padding: 8px 12px 12px;
+  background: var(--kce-bg-sunken);
+}
+
+.kce-json-wrap > summary {
+  cursor: pointer;
+  font-size: 0.8125em;
+  color: var(--kce-text-muted);
+  padding: 2px 0;
+}
+
+.kce-json {
+  margin: 8px 0 0;
+  padding: 10px;
+  max-height: 320px;
+  overflow: auto;
+  background: var(--kce-bg);
+  border: 1px solid var(--kce-border);
+  border-radius: var(--kce-radius-sm);
+  font-family: var(--kce-font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.kce-empty-group {
+  color: var(--kce-text-muted);
+  font-style: italic;
+  font-size: 0.875em;
+}
+
+/* ================================================================== *
+ * Skin: boxed  (the default)
+ * ================================================================== */
+
+.kce[data-kce-skin="boxed"] .kce-summary {
+  padding: 10px 12px;
+  background: var(--kce-bg-sunken);
+  border: 1px solid var(--kce-border);
+  border-radius: var(--kce-radius);
+}
+
+.kce[data-kce-skin="boxed"] .kce-summary-text {
+  font-family: var(--kce-font-mono);
+  font-size: 0.875em;
+}
+
+.kce[data-kce-skin="boxed"] .kce-summary-text.is-empty {
+  font-family: var(--kce-font);
+  color: var(--kce-text-muted);
+  font-style: italic;
+}
+
+.kce[data-kce-skin="boxed"] .kce-body {
+  border: 1px solid var(--kce-border);
+  border-radius: var(--kce-radius);
+  background: var(--kce-bg);
+  overflow: hidden;
+}
+
+.kce[data-kce-skin="boxed"] .kce-tree { padding: 12px; }
+
+.kce[data-kce-skin="boxed"] .kce-group {
+  border: 1px solid var(--kce-border);
+  border-left: 3px solid var(--kce-and);
+  border-radius: var(--kce-radius);
+  background: var(--kce-bg-group);
+  width: 100%;
+}
+
+.kce[data-kce-skin="boxed"] .kce-group[data-op="or"] { border-left-color: var(--kce-or); }
+.kce[data-kce-skin="boxed"] .kce-group.is-negated { border-style: dashed; }
+/* A group a change would merge away (see markTidy). */
+.kce[data-kce-skin="boxed"] .kce-group.kce-will-unbracket { border-color: var(--kce-danger); }
+
+.kce[data-kce-skin="boxed"] .kce-group-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--kce-border);
+}
+
+.kce[data-kce-skin="boxed"] .kce-logic {
+  display: inline-flex;
+  border: 1px solid var(--kce-border-strong);
+  border-radius: var(--kce-radius-sm);
+  overflow: hidden;
+}
+
+.kce[data-kce-skin="boxed"] .kce-logic-btn {
+  appearance: none;
+  font: inherit;
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 5px 11px;
+  border: 0;
+  background: var(--kce-bg);
+  color: var(--kce-text-muted);
+  cursor: pointer;
+}
+
+.kce[data-kce-skin="boxed"] .kce-logic-btn + .kce-logic-btn { border-left: 1px solid var(--kce-border-strong); }
+.kce[data-kce-skin="boxed"] .kce-logic-btn.is-active { background: var(--kce-accent); color: var(--kce-accent-text); }
+.kce[data-kce-skin="boxed"] .kce-group[data-op="or"] .kce-logic-btn.is-active { background: var(--kce-or); color: var(--kce-accent-text); }
+
+.kce[data-kce-skin="boxed"] .kce-not {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--kce-text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.kce[data-kce-skin="boxed"] .kce-not input { margin: 0; }
+
+/* Boxed keeps its header AND/OR toggle, so the connector word is redundant —
+   but the add button that rides on it is not. */
+.kce[data-kce-skin="boxed"] .kce-connector { display: block; }
+.kce[data-kce-skin="boxed"] .kce-connector .kce-connector-btn { display: none; }
+
+.kce[data-kce-skin="boxed"] .kce-group-children { padding: 10px; gap: var(--kce-gap); }
+.kce[data-kce-skin="boxed"] .kce-group-children > .kce-group { margin-left: var(--kce-indent); width: calc(100% - var(--kce-indent)); }
+
+.kce[data-kce-skin="boxed"] .kce-condition {
+  padding: 7px 8px;
+  background: var(--kce-bg);
+  border: 1px solid var(--kce-border);
+  border-radius: var(--kce-radius-sm);
+}
+
+.kce[data-kce-skin="boxed"] .kce-condition.is-negated { border-style: dashed; }
+
+.kce[data-kce-skin="boxed"] .kce-sel-label,
+.kce[data-kce-skin="boxed"] .kce-input:not(.kce-tag-input) {
+  font-size: 0.875em;
+  padding: 6px 8px;
+  border: 1px solid var(--kce-border);
+  border-radius: var(--kce-radius-sm);
+  background: var(--kce-bg);
+  color: var(--kce-text);
+}
+
+/* The words after an operator's operand, beside the boxes, in their type. */
+.kce[data-kce-skin="boxed"] .kce-op-tail { font-size: 0.875em; color: var(--kce-text); }
+
+.kce[data-kce-skin="boxed"] .kce-sel-label {
+  padding-right: 26px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.kce[data-kce-skin="boxed"] .kce-sel:focus-within .kce-sel-label,
+.kce[data-kce-skin="boxed"] .kce-input:focus {
+  outline: 2px solid var(--kce-accent);
+  outline-offset: -1px;
+  border-color: var(--kce-accent);
+}
+
+.kce[data-kce-skin="boxed"] .kce-join { font-size: 0.8em; color: var(--kce-text-muted); padding: 0 2px; }
+
+.kce[data-kce-skin="boxed"] .kce-taglist {
+  padding: 3px 4px;
+  border: 1px solid var(--kce-border);
+  border-radius: var(--kce-radius-sm);
+  background: var(--kce-bg);
+  min-width: 140px;
+}
+
+/* The tag box's own minimum is the value slot's floor here, or it would spill
+   out of a slot squeezed to the general one. */
+.kce[data-kce-skin="boxed"] .kce-condition > .kce-values:has(.kce-taglist) { min-width: 140px; }
+
+.kce[data-kce-skin="boxed"] .kce-taglist:focus-within { outline: 2px solid var(--kce-accent); outline-offset: -1px; }
+
+.kce[data-kce-skin="boxed"] .kce-tag {
+  padding: 2px 4px 2px 7px;
+  border-radius: 999px;
+  background: var(--kce-accent-soft);
+  font-size: 0.8em;
+}
+
+.kce[data-kce-skin="boxed"] .kce-tag-input { font-size: 0.875em; }
+
+/* A free-text slot should look like somewhere to type. */
+.kce[data-kce-skin="boxed"] .kce-input:not(.kce-tag-input) {
+  border-bottom-width: 2px;
+  border-bottom-color: var(--kce-border-strong);
+}
+
+.kce[data-kce-skin="boxed"] .kce-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--kce-gap);
+  padding: 10px 12px;
+  border-top: 1px solid var(--kce-border);
+  background: var(--kce-bg-sunken);
+}
+
+@media (max-width: 620px) {
+  .kce { --kce-indent: 10px; }
+  .kce-condition { width: 100%; }
+}
+
+/* ================================================================== *
+ * Debug source panel (only rendered when `debug: true`)
+ * ================================================================== */
+
+.kce-devtools {
+  margin-top: 10px;
+  border: 1px solid var(--kce-border);
+  border-radius: var(--kce-radius-sm);
+  background: var(--kce-bg-sunken);
+  overflow: hidden;
+}
+
+.kce-devtools-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--kce-border);
+}
+
+.kce-devtools-tabs { display: inline-flex; gap: 2px; }
+
+.kce-devtools-tab {
+  appearance: none;
+  font: inherit;
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--kce-text-muted);
+  cursor: pointer;
+}
+
+.kce-devtools-tab:hover { color: var(--kce-accent); }
+/* The accent on its own soft tint is 4.25:1 in the light theme; the strong
+   accent reads at 8:1 in both. */
+.kce-devtools-tab.is-active { background: var(--kce-accent-soft); color: var(--kce-accent-strong); }
+
+.kce-devtools-copy { font-size: 0.72em !important; padding: 3px 9px !important; }
+
+.kce-devtools-body {
+  margin: 0;
+  padding: 12px;
+  max-height: 340px;
+  overflow: auto;
+  background: var(--kce-bg);
+  font-family: var(--kce-font-mono);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--kce-text);
+}
+
+.kce-devtools-toggle {
+  font-size: 0.78em !important;
+  padding: 4px 10px !important;
+  color: var(--kce-text-muted);
+}
+
+.kce[data-kce-skin="prose"] .kce-devtools-toggle,
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-devtools-toggle {
+  border: 0;
+  background: transparent;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+/* ================================================================== *
+ * Clear and start over
+ * ================================================================== */
+
+.kce-clear { display: inline-flex; align-items: center; }
+
+.kce-clear-start {
+  font-size: 0.8em !important;
+  padding: 5px 10px !important;
+  color: var(--kce-text-muted);
+  border-color: var(--kce-border);
+}
+
+.kce-clear-start:hover {
+  color: var(--kce-danger);
+  border-color: var(--kce-danger);
+}
+
+.kce-clear-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--kce-danger);
+  border-radius: var(--kce-radius-sm);
+  background: var(--kce-bg);
+}
+
+.kce-clear-question {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--kce-danger);
+  white-space: nowrap;
+}
+
+.kce-clear-yes,
+.kce-clear-cancel {
+  font-size: 0.78em !important;
+  padding: 4px 10px !important;
+}
+
+/* Text on the fill is its own token: white on the light theme's red is 5.4:1,
+   but on the dark theme's lighter red it was 3:1. */
+.kce-clear-yes {
+  background: var(--kce-danger);
+  border-color: var(--kce-danger);
+  color: var(--kce-danger-text);
+}
+
+.kce-clear-yes:hover {
+  filter: brightness(1.1);
+  color: var(--kce-danger-text);
+  border-color: var(--kce-danger);
+}
+
+.kce-clear-cancel {
+  color: var(--kce-text-muted);
+  border-color: var(--kce-border);
+}
+.kce-clear-cancel:hover { color: var(--kce-text); border-color: var(--kce-border-strong); }
+
+/* The wrap button acts on the whole group rather than on one row, so it is set
+   slightly apart from the two that add a single condition. */
+.kce-adds > .kce-add-wrap {
+  margin-left: 4px;
+  letter-spacing: 0.02em;
+}
+
+/* ================================================================== *
+ * Undo / redo
+ * ================================================================== */
+
+.kce-history { display: inline-flex; align-items: center; gap: 6px; }
+
+.kce-history-btn {
+  font-size: 0.8em !important;
+  padding: 5px 10px !important;
+  color: var(--kce-text-muted);
+  border-color: var(--kce-border);
+}
+
+.kce-history-btn:not(:disabled):hover {
+  color: var(--kce-accent);
+  border-color: var(--kce-accent);
+}
+
+/* Kept in place rather than hidden when there is nothing to undo: the pair is
+   a fixed landmark in the footer, and a control that comes and goes is harder
+   to find than one that is simply dim. */
+.kce-history-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  border-color: var(--kce-border);
+  color: var(--kce-text-muted);
+}
+
+/* ================================================================== *
+ * Reordering: grip, move buttons, drop indicator
+ * ================================================================== */
+
+/* Rows are wall-to-wall selects and inputs, so dragging from anywhere would
+   fight text selection and dropdowns. Hence a grip — quiet until the row is
+   hovered, like every other control here.
+
+   The glyph is small; the target is not. The box is 24×24 (the WCAG 2.2
+   minimum) with the glyph centred in it, and negative margins hand most of the
+   extra back, so the row is no taller and the field name moves only a few
+   pixels. It was a 12×10 target for a drag affordance. */
+.kce-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin: -4px -4px -4px 0;
+  font-size: 0.85em;
+  line-height: 1;
+  color: var(--kce-text-muted);
+  opacity: 0;
+  cursor: grab;
+  user-select: none;
+  /* Required, or a touch drag scrolls the page instead. */
+  touch-action: none;
+  transition: opacity 0.12s ease;
+}
+.kce-grip:active { cursor: grabbing; }
+
+/* In a group's tool strip or header the next control sits closer than a
+   row's field does, and an overlap would let it take the grip's right edge. */
+.kce-group-tools > .kce-grip,
+.kce-group-head > .kce-grip { margin-right: 0; }
+
+.kce-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+/* 24×24 targets, laid out as if 20 tall so they do not heighten the row. */
+.kce-move > .kce-move-btn {
+  width: 24px;
+  height: 24px;
+  margin: -2px 0;
+  font-size: 0.85em;
+}
+.kce-move-btn:hover { color: var(--kce-accent); }
+
+/* At the ends of a list one arrow has nowhere to go. It used to stay at a
+   quarter opacity: too faint to read as a control, visible enough to read as
+   noise. It is hidden instead, and keeps its space so the row does not reflow
+   as something travels up the list. */
+.kce-move-btn:disabled { visibility: hidden; cursor: default; }
+
+/* Revealing is a switch, not a dimmer. Opacity goes 0 → 1 and the colour
+   (--kce-text-muted, 4.7:1 on white) carries the contrast; the previous 0.55
+   left these at about 2:1, below the 3:1 a control glyph needs.
+
+   One trigger per row: in the flow layout that is the .kce-line (a condition,
+   or the opening line of a group, which carries the group's tools); in the
+   tree layout it is the .kce-condition or the group's header. Focus anywhere
+   in the row reveals them too, so a keyboard user sees what they reach. */
+.kce-line:is(:hover, :focus-within) :is(.kce-grip, .kce-move),
+.kce-condition:is(:hover, :focus-within) :is(.kce-grip, .kce-move),
+.kce-group-head:is(:hover, :focus-within) :is(.kce-grip, .kce-move) { opacity: 1; }
+
+/* `controls: 'always'` shows them at rest — and so does a screen with no
+   hover, where a control that waits for one is a control that does not
+   exist (applyControls() sets the attribute for both). The skins' own ×,
+   group tools and source switch follow in k-conditions-skins.css. The boxed
+   skin keeps its controls visible in either mode. */
+.kce[data-kce-controls="always"] :is(.kce-grip, .kce-move),
+.kce[data-kce-skin="boxed"] .kce-grip,
+.kce[data-kce-skin="boxed"] .kce-move { opacity: 1; }
+
+.kce-tree { position: relative; }
+
+/* While a drag is in flight the whole editor stops trying to select text, and
+   the row being moved stays visible but recedes — the eye should be on the
+   indicator, not on where the row came from. */
+.kce-dragging { user-select: none; cursor: grabbing; }
+
+/* Mid-drag the only thing that should be lit is the row being moved and the
+   indicator. Everything the pointer happens to pass over stays quiet. */
+.kce-dragging .kce-adds,
+.kce-dragging .kce-move,
+.kce-dragging .kce-grip,
+.kce-dragging .kce-remove { opacity: 0 !important; }
+/* Collapsed only where collapsing moves nothing: in the flow layout they keep
+   their room, or every line would change width under the drag. */
+.kce-dragging .kce-connector .kce-adds { max-width: 0 !important; overflow: hidden !important; }
+.kce-dragging .kce-drag-source .kce-grip { opacity: 0.75 !important; }
+
+.kce-drag-source {
+  opacity: 0.4;
+  background: var(--kce-hover);
+  border-radius: var(--kce-radius-sm);
+}
+
+.kce-drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  margin-top: -1px;
+  border-top: 2px solid var(--kce-accent);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* The boundary either side of where the row already is: shown, so the drop
+   target is never invisible, but dimmed, because releasing there does nothing. */
+.kce-drop-indicator.is-noop { opacity: 0.25; }
+
+/* ================================================================== *
+ * Previews — "this is what the button will do"
+ *
+ * Pointing at (or focusing) an add button previews the rows that end up
+ * bracketed together, the operators between them, and where the new condition
+ * lands. Pointing at a × previews everything that would go. Both mark the same
+ * kind of set — Editor#previewTargets() — and the `previewStyle` option picks
+ * how that set is drawn, independently of the skin:
+ *
+ *   highlight  a tint and outline on each element (the 0.0.16 look)
+ *   bar        one thin bar in the margin beside the range   (the default)
+ *   region     one soft wash over the range
+ *   fade       everything outside the range fades back
+ *   color      text in the range takes the colour
+ *   marker     each row's drag grip becomes a coloured dot
+ *   underline  names, operators and AND / OR in the range are underlined
+ *
+ * A style paints with --kce-mark (and --kce-mark-soft / --kce-mark-edge),
+ * which the hue class sets: AND blue, OR orange, removal red. Every one of
+ * those tokens exists in all four palette blocks, so no style needs its own.
+ *
+ * No style may move anything: the hovered button has the pointer, and a
+ * button that shifted would lose it, clear the preview, move back, and
+ * flicker. Overlays are absolutely positioned; everything else is colour,
+ * opacity or decoration. The ghost always goes after the button's own line.
+ * ================================================================== */
+
+:is(.kce-will-group, .kce-preview-mark, .kce-ghost, .kce-flash).is-and {
+  --kce-mark: var(--kce-and);
+  --kce-mark-soft: var(--kce-accent-soft);
+  --kce-mark-edge: var(--kce-and-muted);
+}
+
+:is(.kce-will-group, .kce-preview-mark, .kce-ghost, .kce-flash).is-or {
+  --kce-mark: var(--kce-or);
+  --kce-mark-soft: var(--kce-warn-bg);
+  --kce-mark-edge: var(--kce-or-muted);
+}
+
+.kce-will-remove {
+  --kce-mark: var(--kce-danger);
+  --kce-mark-soft: var(--kce-danger-soft);
+  --kce-mark-edge: var(--kce-danger-edge);
+}
+
+/* Nothing quiet should be hiding while the damage is being shown. */
+.kce-will-remove .kce-remove { opacity: 1 !important; color: var(--kce-danger); }
+
+/* --- highlight: a tint and outline on each element ------------------- */
+
+/* !important because the row's own :hover background is on at the same time —
+   the pointer is inside the row it is about to delete — and the skins set it
+   at equal specificity, later. (Hovering a *group's* × does not hit this,
+   because the pointer is not on the child rows — which is how the row case
+   shipped in 0.0.25 showing its border but not its fill.) */
+.kce[data-kce-preview="highlight"] :is(.kce-will-group, .kce-will-remove) {
+  border-radius: var(--kce-radius-sm);
+  background: var(--kce-mark-soft) !important;
+  box-shadow: 0 0 0 1px var(--kce-mark-edge);
+}
+
+/* Brackets and NOT take the hue but not the fill — a bracket in a box reads
+   as a separate thing. !important because the skins colour them at a higher
+   specificity, and a bracket that kept its colour would say the group
+   survives the click when it does not. */
+.kce[data-kce-preview="highlight"] :is(.kce-will-group, .kce-will-remove):is(.kce-paren, .kce-negate-marker) {
+  background: transparent !important;
+  box-shadow: none;
+  color: var(--kce-mark) !important;
+  opacity: 1 !important;
+}
+
+/* --- bar and region: one shape for the whole range ------------------- */
+
+/* Drawn by drawPreviewMark(), which measures the union of the range. */
+.kce-preview-mark {
+  position: absolute;
+  pointer-events: none;
+}
+
+.kce[data-kce-preview="bar"] .kce-preview-mark {
+  background: var(--kce-mark);
+  border-radius: 2px;
+}
+
+/* Over the text rather than under it: under would be hidden by any skin that
+   gives its rows a background (boxed). At this strength it tints, it does not
+   obscure. */
+.kce[data-kce-preview="region"] .kce-preview-mark {
+  background: color-mix(in srgb, var(--kce-mark) 12%, transparent);
+  border-radius: var(--kce-radius-sm);
+}
+
+/* --- fade: everything else recedes ----------------------------------- */
+
+.kce[data-kce-preview="fade"] .kce-tree :is(.kce-condition, .kce-paren, .kce-negate-marker, .kce-connector-btn, .kce-empty-group) {
+  transition: opacity 0.12s ease;
+}
+
+.kce[data-kce-preview="fade"] .kce-tree.kce-previewing
+  :is(.kce-condition, .kce-paren, .kce-negate-marker, .kce-connector-btn, .kce-empty-group):not(.kce-will-group, .kce-will-remove, .kce-will-unbracket, .kce-will-group *, .kce-will-remove *) {
+  opacity: 0.3;
+}
+
+/* --- color: the range is written in the hue -------------------------- */
+
+.kce[data-kce-preview="color"] :is(.kce-will-group, .kce-will-remove) :is(.kce-sel-label, .kce-op-tail, .kce-input, .kce-tag, .kce-join, .kce-paren, .kce-negate-marker, .kce-connector-btn),
+.kce[data-kce-preview="color"] :is(.kce-will-group, .kce-will-remove):is(.kce-paren, .kce-negate-marker, .kce-connector-btn) {
+  color: var(--kce-mark) !important;
+}
+
+/* --- marker: the drag grip becomes a dot ----------------------------- */
+
+.kce[data-kce-preview="marker"] :is(.kce-will-group, .kce-will-remove) .kce-grip,
+.kce[data-kce-preview="marker"] .kce-condition:is(.kce-will-group, .kce-will-remove) > .kce-grip {
+  opacity: 1 !important;
+  font-size: 0;
+}
+
+.kce[data-kce-preview="marker"] :is(.kce-will-group, .kce-will-remove) .kce-grip::before,
+.kce[data-kce-preview="marker"] .kce-condition:is(.kce-will-group, .kce-will-remove) > .kce-grip::before {
+  content: var(--kce-preview-marker, '●');
+  font-size: 10px;
+  line-height: 1;
+  color: var(--kce-mark);
+}
+
+/* A row with no grip (the only child of its group, or allowDrag: false) gets
+   the dot in its margin instead, so the range never has a gap in it. */
+.kce[data-kce-preview="marker"] :is(.kce-condition:is(.kce-will-group, .kce-will-remove), :is(.kce-will-group, .kce-will-remove) .kce-condition):not(:has(> .kce-grip)) {
+  position: relative;
+}
+
+.kce[data-kce-preview="marker"] :is(.kce-condition:is(.kce-will-group, .kce-will-remove), :is(.kce-will-group, .kce-will-remove) .kce-condition):not(:has(> .kce-grip))::before {
+  content: var(--kce-preview-marker, '●');
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--kce-mark);
+  pointer-events: none;
+}
+
+/* --- underline: names and operators ---------------------------------- */
+
+.kce[data-kce-preview="underline"] :is(.kce-will-group, .kce-will-remove) :is(.kce-sel-field, .kce-sel-operator, .kce-sel-fieldvalue) .kce-sel-label,
+.kce[data-kce-preview="underline"] :is(.kce-will-group, .kce-will-remove) .kce-op-tail,
+.kce[data-kce-preview="underline"] :is(.kce-will-group, .kce-will-remove) .kce-connector-btn,
+.kce[data-kce-preview="underline"] .kce-connector-btn:is(.kce-will-group, .kce-will-remove) {
+  text-decoration: underline 2px var(--kce-mark) !important;
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: none;
+}
+
+/* In the styles that mark words rather than shapes, the brackets and NOT in
+   range take the hue — they are the punctuation of the range. */
+.kce:is([data-kce-preview="marker"], [data-kce-preview="underline"]) :is(.kce-will-group, .kce-will-remove):is(.kce-paren, .kce-negate-marker, .kce-connector-btn),
+.kce:is([data-kce-preview="marker"], [data-kce-preview="underline"]) :is(.kce-will-group, .kce-will-remove) :is(.kce-paren, .kce-negate-marker, .kce-connector-btn) {
+  color: var(--kce-mark) !important;
+}
+
+/* --- the ghost: where the new condition lands ------------------------ */
+
+/* The highlight style's placeholder: a dashed pill. */
+.kce-ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px dashed currentColor;
+  border-radius: var(--kce-radius-sm);
+  background: var(--kce-accent-soft);
+  color: var(--kce-and-muted);
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.kce-ghost.is-or {
+  background: var(--kce-warn-bg);
+  color: var(--kce-or-muted);
+}
+
+/* Every other style writes it the way the rule will read: the operator that
+   joins it, in its hue, then the placeholder in muted italics. No box — it is
+   a line of the rule that does not exist yet, not a control. */
+.kce-ghost.kce-ghost-text {
+  gap: 0.6em;
+  padding: 1px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--kce-text-muted);
+  font-size: 1em;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.kce-ghost-text .kce-ghost-op {
+  font-size: max(0.72em, 10px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--kce-mark);
+}
+
+/* In the flow layout the ghost's line starts at the indent, where a row's
+   grip sits; start the text where a row's text starts, clear of the bar. */
+.kce-ghost-line > .kce-ghost-text { margin-left: 25px; }
+
+.kce-ghost-text .kce-ghost-label {
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+/* The ghost is a preview, not content: it must never be draggable, focusable
+   or hit-testable, or pointing at it would count as leaving the button. */
+.kce-ghost-line { pointer-events: none; }
+
+/* --- brackets a change would leave with nothing to do ---------------- */
+
+/* Marked by markTidy() while a button whose click would merge a group is
+   pointed at or focused, in every preview style: the brackets in the removal
+   colour, struck through, and the group's guide with them. The tree skins
+   draw their brackets on the group's box; skins.css colours those. */
+.kce-paren.kce-will-unbracket {
+  color: var(--kce-danger) !important;
+  opacity: 1 !important;
+  text-decoration: line-through 2px var(--kce-danger);
+}
+
+.kce-guide.kce-will-unbracket {
+  --kce-guide: var(--kce-danger);
+  opacity: 1;
+}
+
+/* --- after the click: the rows that moved, and the note -------------- */
+
+/* A tint over the rows that came out of the brackets, in their new group's
+   AND / OR colour, fading out. Over the text like the region preview, and
+   as transparent to the pointer. */
+.kce-flash {
+  position: absolute;
+  pointer-events: none;
+  border-radius: var(--kce-radius-sm);
+  background: color-mix(in srgb, var(--kce-mark) 16%, transparent);
+  animation: kce-flash 1.6s ease-in forwards;
+}
+
+@keyframes kce-flash {
+  0%, 35% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* "Removed unneeded brackets · Undo". Placed by placeTidyNote(): floated
+   level with a moved row or its AND / OR, or in the footer by Undo. 20px
+   tall, so it fits in the gap between two rows beside an AND / OR; the Undo
+   reaches 24px with a transparent ::before, as the AND / OR do. */
+.kce-tidy-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  height: 20px;
+  max-width: 100%;
+  padding: 0 1px 0 9px;
+  border: 1px solid var(--kce-border);
+  border-radius: 999px;
+  background: var(--kce-bg);
+  color: var(--kce-text-muted);
+  font-size: 0.78em;
+  line-height: 1;
+  white-space: nowrap;
+  transition: opacity 0.25s ease;
+}
+
+.kce-tidy-note-text { line-height: 16px; }
+
+.kce-tidy-note.kce-tidy-note-float {
+  position: absolute;
+  z-index: 2;
+}
+
+.kce-tidy-note.is-leaving { opacity: 0; }
+
+.kce .kce-tidy-note-undo {
+  appearance: none;
+  position: relative;
+  box-sizing: border-box;
+  margin: 0;
+  width: auto;
+  height: 16px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--kce-accent);
+  font: inherit;
+  font-weight: 600;
+  line-height: 16px;
+  cursor: pointer;
+}
+
+.kce .kce-tidy-note-undo::before {
+  content: '';
+  position: absolute;
+  inset: -4px -2px;
+}
+
+.kce .kce-tidy-note-undo:hover,
+.kce .kce-tidy-note-undo:focus-visible {
+  background: var(--kce-accent-soft);
+  color: var(--kce-accent-strong);
+}
+
+/* The note's words, for a screen reader: present, but not on screen. */
+.kce-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kce-flash { animation: none; }
+  .kce-tidy-note { transition: none; }
+}
+
+/* The hideTextarea: 'toggle' control, sitting with the other footer buttons. */
+.kce-source-toggle-wrap { display: inline-flex; align-items: center; }
+
+.kce-source-toggle {
+  font-size: 0.8em !important;
+  padding: 5px 10px !important;
+  color: var(--kce-text-muted);
+  border-color: var(--kce-border);
+}
+.kce-source-toggle:hover { color: var(--kce-accent); border-color: var(--kce-accent); }
+.kce-source-toggle[aria-expanded="true"] {
+  color: var(--kce-accent);
+  border-color: var(--kce-accent);
+  background: var(--kce-accent-soft);
+}
+
+/* ================================================================== *
+ * describeHtml() — a rule rendered read-only
+ *
+ * Deliberately not scoped to .kce: the point of describeHtml() is that a
+ * stored rule can be printed anywhere, including from PHP with no editor on
+ * the page. Inside an editor the --kce-* tokens are defined and win; standalone
+ * the fallbacks apply, so it looks right either way.
+ * ================================================================== */
+
+.kcd {
+  --kcd-field: var(--kce-field, #1d2530);
+  --kcd-op: var(--kce-op, #5f6875);
+  --kcd-value: var(--kce-value, #1a5f8a);
+  --kcd-and: var(--kce-and, #2f6fd0);
+  --kcd-or: var(--kce-or, #a8560c);
+  --kcd-paren: var(--kce-paren, #59636f);
+}
+
+@media (prefers-color-scheme: dark) {
+  .kcd {
+    --kcd-field: var(--kce-field, #e6e9ee);
+    --kcd-op: var(--kce-op, #98a1af);
+    --kcd-value: var(--kce-value, #7fc4e8);
+    --kcd-and: var(--kce-and, #5b9bff);
+    --kcd-or: var(--kce-or, #e0a066);
+    --kcd-paren: var(--kce-paren, #9aa5b4);
+  }
+}
+
+.kcd-field { font-weight: 650; color: var(--kcd-field); }
+.kcd-op { color: var(--kcd-op); font-style: italic; }
+
+/* Dashed rather than solid: a solid underline reads as a link and invites a
+   click that does nothing. Dashed matches how the editor paints a free-text
+   value, so the read-only rendering and the editable one look like the same
+   thing. */
+.kcd-value {
+  color: var(--kcd-value);
+  border-bottom: 1px dashed currentColor;
+  padding-bottom: 1px;
+}
+
+.kcd-logic {
+  font-size: 0.82em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--kcd-and);
+}
+.kcd-logic.kcd-or { color: var(--kcd-or); }
+
+.kcd-not {
+  font-size: 0.82em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--kcd-or);
+}
+
+.kcd-paren { color: var(--kcd-paren); font-weight: 600; }
+.kcd-sep, .kcd-join { color: var(--kcd-op); }
+
+/*!
+ * kConditionsEditor 0.1.2 — alternative skins
+ *
+ * Load after k-conditions-editor.css and pick one with the `skin` option:
+ *
+ *   KConditionsEditor.attach('#conditions', { skin: 'equation' });
+ *
+ *   prose       the default — the rule pretty-printed as an indented
+ *               expression with real parentheses (uses the flow layout)
+ *   equation    typeset expression: bracket gutters, no boxes
+ *   blackboard  the equation layout on a dark board, chalk palette
+ *   ledger      least ink: hairline guides instead of brackets
+ *   boxed       every row a card (defined in the base stylesheet)
+ *
+ * This file is required unless you are using the `boxed` skin.
+ *
+ * MIT Licence.
+ */
+
+/* ================================================================== *
+ * Shared by every "written out" skin
+ * ================================================================== */
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) {
+  --kce-hover: rgba(127, 140, 160, 0.11);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) {
+  --kce-gutter: 26px;
+  --kce-row-gap: 3px;
+  --kce-hover: rgba(127, 140, 160, 0.11);
+}
+
+/* --- chrome stripped back ----------------------------------------- */
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-body {
+  border: 0;
+  background: transparent;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-tree {
+  padding: 4px 0 10px;
+  overflow-x: auto;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-summary {
+  padding: 4px 0;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-summary-text.is-empty {
+  color: var(--kce-text-muted);
+  font-style: italic;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--kce-gap);
+  /* Room beneath the buttons: without it the footer sits flush against
+     whatever follows the editor on the page. Boxed and blackboard pad their
+     own footers; these skins draw no box, so the padding is the only gap. */
+  padding: 6px 0 10px;
+}
+
+/* --- group: NOT marker, bracketed children, tools out to the side -- */
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, max-content);
+  align-items: start;
+  width: max-content;
+  max-width: 100%;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group-children {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group.is-negated > .kce-negate-marker {
+  display: block;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--kce-or);
+  padding: 5px 7px 0 2px;
+}
+
+/* The header keeps only the add/remove tools, parked to the right of the
+   expression and quiet until you go looking for them. Only the innermost
+   group under the pointer shows its tools; outer groups used to show theirs at
+   0.4 opacity as well, which put several half-legible rails on screen at once
+   and none of them at a contrast you could act on. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group-head {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group:focus-within > .kce-group-head,
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group:hover:not(:has(.kce-group:hover)) > .kce-group-head { opacity: 1; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-logic,
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-not,
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-spacer { display: none; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group-tools .kce-btn {
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 0.78em;
+  color: var(--kce-text-muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group-tools .kce-btn:hover { color: var(--kce-accent); }
+
+/* --- the connector between siblings -------------------------------- */
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-connector { display: block; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-connector-btn {
+  font-size: max(0.72em, 10px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--kce-and);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-connector[data-op="or"] .kce-connector-btn { color: var(--kce-or); }
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-connector-btn:hover { background: var(--kce-hover); }
+
+/* --- the condition line -------------------------------------------- */
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-condition {
+  gap: 5px;
+  padding: 2px 6px 2px 4px;
+  border-radius: 5px;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-condition:hover { background: var(--kce-hover); }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-label {
+  padding: 1px 1px;
+  border-bottom: 1px dotted transparent;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel:hover .kce-sel-label { border-bottom-color: currentColor; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel:focus-within .kce-sel-label {
+  border-bottom: 1px solid var(--kce-accent);
+  background: var(--kce-hover);
+  border-radius: 3px 3px 0 0;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-field .kce-sel-label {
+  font-weight: 650;
+  color: var(--kce-field);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-operator .kce-sel-label,
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-op-tail {
+  color: var(--kce-op);
+  font-style: italic;
+}
+
+/* A field used as a value is written like a field, in brackets. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-fieldvalue .kce-sel-label {
+  font-weight: 650;
+  color: var(--kce-field);
+}
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-fieldvalue .kce-sel-label::before { content: '['; opacity: 0.45; }
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-fieldvalue .kce-sel-label::after { content: ']'; opacity: 0.45; }
+
+/* The literal/field switch is a real control but reads as clutter in a
+   sentence. It keeps its space — so nothing shifts — and appears on hover.
+   A field used as a value is already legible from its [brackets]. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-source { margin: 0 -2px; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-source .kce-sel-label {
+  font-size: 0;
+  border-bottom-color: transparent !important;
+  padding: 0 3px;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-source .kce-sel-label::after {
+  content: '⌄';
+  display: block;
+  font-size: 11px;
+  line-height: 1;
+  margin-top: -3px;
+  color: var(--kce-text-muted);
+  opacity: 0.4;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-condition:hover .kce-sel-source .kce-sel-label::after,
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-source:focus-within .kce-sel-label::after { opacity: 1; color: var(--kce-accent); }
+
+/* Native date inputs bring a picker button; keep it quiet until wanted. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-input[type="date"] {
+  field-sizing: content;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.28;
+  padding: 0;
+  margin-left: 2px;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-condition:hover .kce-input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.7; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-input:not(.kce-tag-input),
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-sel-literal .kce-sel-label {
+  font-family: var(--kce-font-mono);
+  font-size: 0.86em;
+  color: var(--kce-value);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted transparent;
+  padding: 1px 2px;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-input:hover { border-bottom-color: var(--kce-accent); }
+
+/* Free-text slots carry a standing underline: without one an empty value is
+   indistinguishable from a gap, and nobody knows to click it. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-input:not(.kce-tag-input) {
+  border-bottom: 1px dashed var(--kce-rule);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-connector-tail { padding-top: 1px; }
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-adds { margin-left: 6px; }
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-connector { display: flex; align-items: center; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-input:focus {
+  outline: none;
+  border-bottom: 1px solid var(--kce-accent);
+  background: var(--kce-hover);
+  border-radius: 3px 3px 0 0;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-join {
+  font-size: 0.78em;
+  font-style: italic;
+  color: var(--kce-text-muted);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-condition .kce-remove {
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  margin: -2px 0;
+  font-size: 1em;
+}
+
+/* Revealed at full opacity: the muted colour is what keeps it quiet. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-condition:is(:hover, :focus-within) .kce-remove { opacity: 1; }
+
+/* --- tag list ------------------------------------------------------ */
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-taglist { gap: 3px; }
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-tag {
+  font-family: var(--kce-font-mono);
+  font-size: 0.8em;
+  color: var(--kce-value);
+  background: var(--kce-hover);
+  border-radius: 3px;
+  padding: 1px 3px 1px 5px;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-tag-input {
+  font-family: var(--kce-font-mono);
+  font-size: 0.8em;
+  color: var(--kce-value);
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-taglist:focus-within { outline: none; }
+
+/* ================================================================== *
+ * Skin: equation — brackets and indentation, on paper
+ * ================================================================== */
+
+.kce[data-kce-skin="equation"] .kce-group > .kce-group-children {
+  position: relative;
+  padding: 2px 15px 2px 17px;
+}
+
+.kce[data-kce-skin="equation"] .kce-group > .kce-group-children::before,
+.kce[data-kce-skin="equation"] .kce-group > .kce-group-children::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  width: 7px;
+  border: 1px solid var(--kce-rule);
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.kce[data-kce-skin="equation"] .kce-group > .kce-group-children::before {
+  left: 3px;
+  border-right: 0;
+  border-radius: 5px 0 0 5px;
+}
+
+.kce[data-kce-skin="equation"] .kce-group > .kce-group-children::after {
+  right: 3px;
+  border-left: 0;
+  border-radius: 0 5px 5px 0;
+}
+
+/* The outermost group needs no bracket around the whole rule. */
+.kce[data-kce-skin="equation"] .kce-tree > .kce-group > .kce-group-children { padding-left: 2px; padding-right: 2px; }
+
+/* Brackets a change would merge away (see markTidy), in the removal colour. */
+.kce[data-kce-skin="equation"] .kce-group.kce-will-unbracket > .kce-group-children::before,
+.kce[data-kce-skin="equation"] .kce-group.kce-will-unbracket > .kce-group-children::after {
+  border-color: var(--kce-danger);
+  opacity: 1;
+}
+.kce[data-kce-skin="equation"] .kce-tree > .kce-group > .kce-group-children::before,
+.kce[data-kce-skin="equation"] .kce-tree > .kce-group > .kce-group-children::after { display: none; }
+
+.kce[data-kce-skin="equation"] .kce-summary-text { font-size: 0.95em; }
+
+/* ================================================================== *
+ * Skin: blackboard — the same layout, written in chalk
+ * ================================================================== */
+
+.kce[data-kce-skin="blackboard"] {
+  color-scheme: dark;
+  --kce-bg: #222a2c;
+  --kce-bg-sunken: #1b2223;
+  --kce-text: #e9eeea;
+  --kce-text-muted: #9aa8a3;
+  --kce-field: #f2f6f2;
+  --kce-op: #a9b7b2;
+  --kce-value: #f0d79a;
+  --kce-rule: #7c8b86;
+  --kce-paren: #b3c1bc;
+  --kce-and: #93c9e8;
+  --kce-or: #f0a878;
+  --kce-accent: #93c9e8;
+  --kce-accent-text: #1b2223;
+  --kce-accent-strong: #c6e3f4;
+  /* This skin never inherited one, so anything using it — the +AND hover, and
+     now the grouping preview — was painting a light blue block on a dark board. */
+  --kce-accent-soft: #24384a;
+  --kce-border: #38443f;
+  --kce-border-strong: #55635d;
+  --kce-danger: #ef8f7f;
+  --kce-danger-text: #1b2223;
+  /* This skin paints its own dark board without switching the theme tokens, so
+     the removal tint needs its own dark values or it lands as a light pink
+     block with unreadable chalk text on it. */
+  --kce-danger-soft: #40292a;
+  --kce-danger-edge: #74463f;
+  --kce-hover: rgba(233, 238, 234, 0.09);
+  --kce-warn-bg: #3a3324;
+  --kce-warn-text: #e8c98a;
+  color: var(--kce-text);
+}
+
+.kce[data-kce-skin="blackboard"] .kce-body,
+.kce[data-kce-skin="blackboard"] .kce-summary {
+  background: linear-gradient(180deg, #263032 0%, #1f2729 100%);
+  border: 1px solid #131819;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.kce[data-kce-skin="blackboard"] .kce-summary { padding: 12px 18px; }
+.kce[data-kce-skin="blackboard"] .kce-tree { padding: 18px 20px 14px; }
+.kce[data-kce-skin="blackboard"] .kce-footer { padding: 4px 20px 14px; border: 0; background: transparent; }
+
+.kce[data-kce-skin="blackboard"] .kce-condition,
+.kce[data-kce-skin="blackboard"] .kce-connector-btn,
+.kce[data-kce-skin="blackboard"] .kce-negate-marker { letter-spacing: 0.015em; }
+
+.kce[data-kce-skin="blackboard"] .kce-group > .kce-group-children {
+  position: relative;
+  padding: 3px 16px 3px 18px;
+}
+
+.kce[data-kce-skin="blackboard"] .kce-group > .kce-group-children::before,
+.kce[data-kce-skin="blackboard"] .kce-group > .kce-group-children::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  width: 8px;
+  border: 1px solid var(--kce-rule);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.kce[data-kce-skin="blackboard"] .kce-group > .kce-group-children::before {
+  left: 3px;
+  border-right: 0;
+  border-radius: 6px 0 0 6px;
+}
+
+.kce[data-kce-skin="blackboard"] .kce-group > .kce-group-children::after {
+  right: 3px;
+  border-left: 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.kce[data-kce-skin="blackboard"] .kce-tree > .kce-group > .kce-group-children { padding-left: 2px; padding-right: 2px; }
+
+.kce[data-kce-skin="blackboard"] .kce-group.kce-will-unbracket > .kce-group-children::before,
+.kce[data-kce-skin="blackboard"] .kce-group.kce-will-unbracket > .kce-group-children::after {
+  border-color: var(--kce-danger);
+  opacity: 1;
+}
+.kce[data-kce-skin="blackboard"] .kce-tree > .kce-group > .kce-group-children::before,
+.kce[data-kce-skin="blackboard"] .kce-tree > .kce-group > .kce-group-children::after { display: none; }
+
+.kce[data-kce-skin="blackboard"] .kce-btn {
+  background: transparent;
+  border-color: var(--kce-border-strong);
+  color: var(--kce-text-muted);
+}
+.kce[data-kce-skin="blackboard"] .kce-btn:hover { color: var(--kce-accent); border-color: var(--kce-accent); }
+
+.kce[data-kce-skin="blackboard"] .kce-btn-primary {
+  background: transparent;
+  border-color: var(--kce-accent);
+  color: var(--kce-accent);
+}
+
+/* ================================================================== *
+ * Skin: ledger — least ink. Indentation, hairline guides, no brackets.
+ * ================================================================== */
+
+.kce[data-kce-skin="ledger"] {
+  --kce-gutter: 22px;
+  --kce-field: #202832;
+  --kce-op: #5f6875;
+  --kce-value: #2b6b4f;
+  --kce-and: #46536a;
+  --kce-or: #8a5a2b;
+}
+
+@media (prefers-color-scheme: dark) {
+  .kce[data-kce-skin="ledger"]:not([data-kce-theme="light"]) {
+    --kce-field: #e8ecf1;
+    --kce-op: #9aa5b1;
+    --kce-value: #7fc9a3;
+    --kce-and: #9fb0cc;
+    --kce-or: #d9a071;
+  }
+}
+
+/* The same for `theme: 'dark'` on a reader in light mode. Without it the
+   light values above outrank the base [data-kce-theme="dark"] tokens (equal
+   specificity, later stylesheet). */
+.kce[data-kce-skin="ledger"][data-kce-theme="dark"] {
+  --kce-field: #e8ecf1;
+  --kce-op: #9aa5b1;
+  --kce-value: #7fc9a3;
+  --kce-and: #9fb0cc;
+  --kce-or: #d9a071;
+}
+
+.kce[data-kce-skin="ledger"] .kce-group > .kce-group-children {
+  padding: 1px 0 1px var(--kce-gutter);
+  border-left: 1px solid color-mix(in srgb, var(--kce-rule) 42%, transparent);
+}
+
+/* No guide down the outside of the whole rule — only around real groups. */
+.kce[data-kce-skin="ledger"] .kce-tree > .kce-group > .kce-group-children {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.kce[data-kce-skin="ledger"] .kce-connector-btn {
+  font-size: max(0.68em, 10px);
+  letter-spacing: 0.1em;
+  padding: 1px 4px 1px 2px;
+}
+
+.kce[data-kce-skin="ledger"] .kce-group.is-negated > .kce-group-children {
+  border-left-style: dashed;
+  border-left-color: color-mix(in srgb, var(--kce-or) 55%, transparent);
+}
+
+.kce[data-kce-skin="ledger"] .kce-group.kce-will-unbracket > .kce-group-children {
+  border-left-color: var(--kce-danger);
+}
+
+/* ================================================================== *
+ * Narrow screens — the tool rail cannot sit outside the expression
+ * ================================================================== */
+
+@media (max-width: 700px) {
+  .kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group-head {
+    position: static;
+    margin: 2px 0 4px;
+    opacity: 1;
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+/* The same, for a narrow host on a wide screen — a dialog, a sidebar. The
+   viewport query above cannot see those, so fitGroupRail() measures whether
+   the rail fits and sets this class when it does not. */
+.kce.kce-rail-inside:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group-head {
+  position: static;
+  margin: 2px 0 4px;
+  opacity: 1;
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* ================================================================== *
+ * Skin: prose — the rule pretty-printed as an indented expression.
+ *
+ * Uses the flow layout (one line per condition, indentation by depth,
+ * brackets as punctuation), not the nested-box DOM the other skins use.
+ * ================================================================== */
+
+.kce[data-kce-skin="prose"] {
+  --kce-indent-step: 1.9em;
+  --kce-field: #1d2530;
+  --kce-op: #5f6875;
+  --kce-value: #1a5f8a;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .kce[data-kce-skin="prose"]:not([data-kce-theme="light"]) {
+    --kce-field: #e6e9ee;
+    --kce-op: #98a1af;
+    --kce-value: #7fc4e8;
+  }
+}
+
+/* The same for `theme: 'dark'` on a reader in light mode (see ledger). */
+.kce[data-kce-skin="prose"][data-kce-theme="dark"] {
+  --kce-field: #e6e9ee;
+  --kce-op: #98a1af;
+  --kce-value: #7fc4e8;
+}
+
+.kce[data-kce-skin="prose"] .kce-body { border: 0; background: transparent; }
+.kce[data-kce-skin="prose"] .kce-summary { padding: 4px 0; }
+.kce[data-kce-skin="prose"] .kce-summary-text.is-empty { color: var(--kce-text-muted); font-style: italic; }
+.kce[data-kce-skin="prose"] .kce-tree { padding: 6px 0 10px; overflow-x: auto; }
+.kce[data-kce-skin="prose"] .kce-footer { display: flex; gap: var(--kce-gap); padding: 6px 0 10px; }
+
+/* --- lines ---------------------------------------------------------- */
+
+.kce[data-kce-skin="prose"] .kce-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-height: 1.85em;
+  border-radius: 4px;
+}
+
+.kce[data-kce-skin="prose"] .kce-paren {
+  /* Brackets are the only thing carrying the grouping in this skin — there are
+     no boxes and no rules — so they are structure, not decoration, and get
+     their own token rather than the hairline colour used for guides. */
+  color: var(--kce-paren, var(--kce-rule));
+  font-size: 1.3em;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 1;
+  user-select: none;
+}
+
+.kce[data-kce-skin="prose"] .kce-negate-marker {
+  display: inline;
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--kce-or);
+}
+
+.kce[data-kce-skin="prose"] .kce-connector { display: inline-flex; align-items: center; }
+
+/* Below a `)`, an AND / OR followed by `(` sits on a row as tall as that
+   bracket, which leaves it room under the `)`. Without one, the row was only
+   as tall as the small AND / OR, and it sat hard against the `)`. An unseen,
+   zero-width bracket gives the row the same height either way, so the gap is
+   the same at every level and in any font. */
+.kce[data-kce-skin="prose"][data-kce-connectors="below"] .kce-line:has(> .kce-paren-close):has(> .kce-connector):not(:has(> .kce-paren-open))::after {
+  content: '(';
+  order: 2;
+  flex: 0 0 0;
+  width: 0;
+  overflow: visible;
+  visibility: hidden;
+  font-size: 1.3em;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.kce[data-kce-skin="prose"] .kce-connector-btn {
+  font-size: max(0.72em, 10px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--kce-and);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.kce[data-kce-skin="prose"] .kce-connector[data-op="or"] .kce-connector-btn { color: var(--kce-or); }
+.kce[data-kce-skin="prose"] .kce-connector-btn:hover { background: var(--kce-hover); }
+
+/* --- the condition line --------------------------------------------- */
+
+.kce[data-kce-skin="prose"] .kce-condition {
+  gap: 5px;
+  padding: 2px 6px 2px 4px;
+  border-radius: 5px;
+  margin-left: -4px;
+}
+
+.kce[data-kce-skin="prose"] .kce-condition:hover { background: var(--kce-hover); }
+
+.kce[data-kce-skin="prose"] .kce-sel-label {
+  padding: 1px;
+  border-bottom: 1px dotted transparent;
+}
+
+.kce[data-kce-skin="prose"] .kce-sel:hover .kce-sel-label { border-bottom-color: currentColor; }
+
+.kce[data-kce-skin="prose"] .kce-sel:focus-within .kce-sel-label {
+  border-bottom: 1px solid var(--kce-accent);
+  background: var(--kce-hover);
+  border-radius: 3px 3px 0 0;
+}
+
+.kce[data-kce-skin="prose"] .kce-sel-field .kce-sel-label { font-weight: 650; color: var(--kce-field); }
+.kce[data-kce-skin="prose"] .kce-sel-operator .kce-sel-label,
+.kce[data-kce-skin="prose"] .kce-op-tail { color: var(--kce-op); font-style: italic; }
+.kce[data-kce-skin="prose"] .kce-sel-fieldvalue .kce-sel-label { font-weight: 650; color: var(--kce-field); }
+.kce[data-kce-skin="prose"] .kce-sel-fieldvalue .kce-sel-label::before { content: '['; opacity: 0.45; }
+.kce[data-kce-skin="prose"] .kce-sel-fieldvalue .kce-sel-label::after { content: ']'; opacity: 0.45; }
+
+.kce[data-kce-skin="prose"] .kce-sel-source { margin: 0 -2px; }
+.kce[data-kce-skin="prose"] .kce-sel-source .kce-sel-label { font-size: 0; padding: 0 3px; border-bottom-color: transparent !important; }
+.kce[data-kce-skin="prose"] .kce-sel-source .kce-sel-label::after {
+  content: '⌄';
+  display: block;
+  font-size: 11px;
+  line-height: 1;
+  margin-top: -3px;
+  color: var(--kce-text-muted);
+  opacity: 0.4;
+}
+.kce[data-kce-skin="prose"] .kce-condition:hover .kce-sel-source .kce-sel-label::after,
+.kce[data-kce-skin="prose"] .kce-sel-source:focus-within .kce-sel-label::after { opacity: 1; color: var(--kce-accent); }
+
+.kce[data-kce-skin="prose"] .kce-input:not(.kce-tag-input),
+.kce[data-kce-skin="prose"] .kce-sel-literal .kce-sel-label {
+  font-family: var(--kce-font-mono);
+  font-size: 0.86em;
+  color: var(--kce-value);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted transparent;
+  padding: 1px 2px;
+}
+
+.kce[data-kce-skin="prose"] .kce-input:hover { border-bottom-color: var(--kce-accent); }
+
+/* Free-text slots carry a standing underline: without one an empty value is
+   indistinguishable from a gap, and nobody knows to click it. */
+.kce[data-kce-skin="prose"] .kce-input:not(.kce-tag-input) {
+  border-bottom: 1px dashed var(--kce-rule);
+}
+
+.kce[data-kce-skin="prose"] .kce-adds { margin: 0 8px 0 5px; }
+.kce[data-kce-skin="prose"] .kce-empty-group + .kce-adds { margin-left: 8px; }
+.kce[data-kce-skin="prose"] .kce-input:focus {
+  outline: none;
+  border-bottom: 1px solid var(--kce-accent);
+  background: var(--kce-hover);
+  border-radius: 3px 3px 0 0;
+}
+
+.kce[data-kce-skin="prose"] .kce-input[type="date"] { field-sizing: content; }
+.kce[data-kce-skin="prose"] .kce-input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.28; margin-left: 2px; }
+.kce[data-kce-skin="prose"] .kce-condition:hover .kce-input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.7; }
+
+.kce[data-kce-skin="prose"] .kce-join { font-size: 0.78em; font-style: italic; color: var(--kce-text-muted); }
+
+.kce[data-kce-skin="prose"] .kce-tag {
+  font-family: var(--kce-font-mono);
+  font-size: 0.8em;
+  color: var(--kce-value);
+  background: var(--kce-hover);
+  border-radius: 3px;
+  padding: 1px 3px 1px 5px;
+}
+
+.kce[data-kce-skin="prose"] .kce-tag-input { font-family: var(--kce-font-mono); font-size: 0.8em; color: var(--kce-value); }
+
+.kce[data-kce-skin="prose"] .kce-condition .kce-remove { opacity: 0; width: 24px; height: 24px; margin: -2px 0; font-size: 1em; }
+
+/* Same trigger as the grip and arrows — the whole line — so pointing at the
+   AND after a row does not show two of its controls and hide the third. */
+.kce[data-kce-skin="prose"] .kce-line:is(:hover, :focus-within) .kce-condition .kce-remove { opacity: 1; }
+
+/* Inline, the × has moved to the strip after the AND / OR; the strip reveals
+   it, so it only needs the row's sizing. */
+.kce[data-kce-skin="prose"] .kce-adds > .kce-remove { width: 24px; height: 24px; margin: -2px 0; font-size: 1em; }
+
+/* --- the add rail at the foot of each group ------------------------- */
+
+.kce[data-kce-skin="prose"] .kce-tools-line {
+  min-height: 1.6em;
+  opacity: 0.35;
+  transition: opacity 0.12s ease;
+}
+
+.kce[data-kce-skin="prose"] .kce-tools-line:hover,
+.kce[data-kce-skin="prose"] .kce-tools-line:focus-within { opacity: 1; }
+
+/* A group's controls follow its opening line directly, separated by a single
+   wide space. Far enough not to read as part of the expression, close enough
+   that the pointer is already there. */
+.kce[data-kce-skin="prose"] .kce-tools-inline {
+  margin-left: 1.1em;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.kce[data-kce-skin="prose"] .kce-line:hover .kce-tools-inline,
+.kce[data-kce-skin="prose"] .kce-line:focus-within .kce-tools-inline { opacity: 1; }
+
+.kce[data-kce-skin="prose"] .kce-group-tools { gap: 2px; }
+
+.kce[data-kce-skin="prose"] .kce-group-tools .kce-btn {
+  border: 0;
+  background: transparent;
+  padding: 1px 5px;
+  font-size: 0.76em;
+  color: var(--kce-text-muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.kce[data-kce-skin="prose"] .kce-group-tools .kce-btn:hover { color: var(--kce-accent); }
+
+.kce[data-kce-skin="prose"] .kce-toggle-not {
+  text-decoration: none;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  font-size: 0.68em !important;
+}
+
+.kce[data-kce-skin="prose"] .kce-toggle-not.is-active { color: var(--kce-or); }
+
+/* ================================================================== *
+ * Dropdowns say so
+ *
+ * In the written-out skins a field, an operator or a choice reads as a word
+ * in the sentence — which is the point — but nothing said you could open it.
+ * Each select now carries a small down chevron after its label: drawn, so it
+ * does not depend on a font having the glyph; muted, so it does not compete
+ * with the words; and inside the select's own hit area, so clicking it opens
+ * the list. The value/field switch is a chevron already, and boxed draws its
+ * own.
+ * ================================================================== */
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel:not(.kce-sel-source)::after {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.36em;
+  height: 0.36em;
+  margin: 0 0.1em 0 0.42em;
+  border-right: 1.5px solid var(--kce-text-muted);
+  border-bottom: 1.5px solid var(--kce-text-muted);
+  transform: translateY(-0.12em) rotate(45deg);
+  pointer-events: none;
+}
+
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel:not(.kce-sel-source):is(:hover, :focus-within)::after {
+  border-color: var(--kce-accent);
+}
+
+/* A host's widget (decorateSelect) draws its own. */
+.kce:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel.kce-sel-host::after {
+  content: none;
+}
+
+/* ================================================================== *
+ * Room in the margin for the previews that draw there
+ *
+ * bar, region and marker paint to the left of the rows. A row with a drag grip
+ * brings its own room (the grip's slot), but a row without one — the only
+ * condition in a rule — starts flush at the tree's left edge, and in these
+ * three skins the tree has no left padding of its own. The tree also clips
+ * there (overflow-x), so the bar landed on the field name and the marker dot
+ * was not painted at all. Reported from KAStrack with a one-condition rule.
+ * blackboard and boxed pad their trees already.
+ * ================================================================== */
+
+.kce:is([data-kce-skin="prose"], [data-kce-skin="equation"], [data-kce-skin="ledger"]):is([data-kce-preview="bar"], [data-kce-preview="region"], [data-kce-preview="marker"]) .kce-tree,
+.kce[data-kce-skin="prose"][data-kce-guides="on"] .kce-tree {
+  /* The group guides draw here too: the rule's own line, when one of its
+     AND / OR is pointed at, runs down the left of depth 0. */
+  padding-left: var(--kce-preview-gutter, 14px);
+}
+
+/* ================================================================== *
+ * controls: 'always' — nothing waits for a hover
+ *
+ * The base stylesheet shows the grip, arrows and add buttons at rest when
+ * the root carries data-kce-controls="always" (the option, or a screen with
+ * no hover — applyControls() decides). These are the skin-level controls that
+ * hide behind a hover: the × on each row, a prose group's tools, the tree
+ * skins' group rail and the value/field switch. Same specificity as the rules
+ * they answer, plus the attribute, so they win.
+ * ================================================================== */
+
+.kce[data-kce-controls="always"]:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-condition .kce-remove,
+.kce[data-kce-controls="always"][data-kce-skin="prose"] .kce-condition .kce-remove,
+.kce[data-kce-controls="always"][data-kce-skin="prose"] .kce-line .kce-tools-inline,
+.kce[data-kce-controls="always"]:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"]) .kce-group > .kce-group-head { opacity: 1; }
+
+.kce[data-kce-controls="always"]:is([data-kce-skin="equation"], [data-kce-skin="blackboard"], [data-kce-skin="ledger"], [data-kce-skin="prose"]) .kce-sel-source .kce-sel-label::after { opacity: 1; }

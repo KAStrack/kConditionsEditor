@@ -24,10 +24,9 @@ notVCS
 **/*~
 CLAUDE.md
 
-# Generated. `npm run build` writes it, and `prepublishOnly` runs the build, so
-# the published npm package carries it — a git clone does not. Anchored, because
-# docs/dist/ (the minified copy the GitHub Pages site loads) IS committed.
-/dist/
+# dist/ is generated but committed (from 0.1.2), so a tag carries the built
+# files; tests/js/dist.test.js fails when it is stale. So is docs/dist/, the
+# minified copy the GitHub Pages site loads.
 *.zip
 
 # The browser checks write here: throwaway pages they serve, and screenshots for

@@ -5712,6 +5712,763 @@
       },
       "expectedText": "[Tags] includes all of [\"Red\", \"Green\"]",
       "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Tags</strong> <span class=\"kcd-op\">includes all of</span> <span class=\"kcd-list\"><span class=\"kcd-value\">Red</span><span class=\"kcd-sep\">, </span><span class=\"kcd-value\">Green</span></span></span>"
+    },
+    {
+      "name": "a {value} slot puts the operand inside the operator label",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "arrival",
+              "operator": "date_within_last_days",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 7
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "arrival",
+            "label": "Arrival"
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          }
+        ]
+      },
+      "expectedText": "[Arrival] is within the last 7 days",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Arrival</strong> <span class=\"kcd-op\">is within the last</span> <span class=\"kcd-value\">7</span> <span class=\"kcd-op\">days</span></span>"
+    },
+    {
+      "name": "every N-day operator places its number",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "arrival",
+              "operator": "date_within_next_days",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 3
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "arrival",
+              "operator": "date_more_than_days_ago",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 30
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "arrival",
+              "operator": "date_more_than_days_ahead",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "arrival",
+            "label": "Arrival"
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          }
+        ]
+      },
+      "expectedText": "([Arrival] is within the next 3 days AND [Arrival] is more than 30 days ago AND [Arrival] is more than 1 days from now)",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Arrival</strong> <span class=\"kcd-op\">is within the next</span> <span class=\"kcd-value\">3</span> <span class=\"kcd-op\">days</span> <span class=\"kcd-logic kcd-and\">AND</span> <strong class=\"kcd-field\">Arrival</strong> <span class=\"kcd-op\">is more than</span> <span class=\"kcd-value\">30</span> <span class=\"kcd-op\">days ago</span> <span class=\"kcd-logic kcd-and\">AND</span> <strong class=\"kcd-field\">Arrival</strong> <span class=\"kcd-op\">is more than</span> <span class=\"kcd-value\">1</span> <span class=\"kcd-op\">days from now</span><span class=\"kcd-paren\">)</span></span>"
+    },
+    {
+      "name": "a slot with no operand yet shows an ellipsis",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "arrival",
+              "operator": "date_within_last_days",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "arrival",
+            "label": "Arrival"
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          }
+        ]
+      },
+      "expectedText": "[Arrival] is within the last \u2026 days",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Arrival</strong> <span class=\"kcd-op\">is within the last \u2026 days</span></span>"
+    },
+    {
+      "name": "labels translate the words of the rule and the operators",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "or",
+          "children": [
+            {
+              "type": "condition",
+              "field": "state",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "FL"
+                }
+              ]
+            },
+            {
+              "type": "group",
+              "operator": "and",
+              "negate": true,
+              "children": [
+                {
+                  "type": "condition",
+                  "field": "score",
+                  "operator": "between",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": 1
+                    },
+                    {
+                      "source": "literal",
+                      "value": 5
+                    }
+                  ]
+                },
+                {
+                  "type": "condition",
+                  "field": "arrival",
+                  "operator": "date_within_last_days",
+                  "values": [
+                    {
+                      "source": "literal",
+                      "value": 14
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "arrival",
+            "label": "Arrival"
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          }
+        ],
+        "labels": {
+          "and": "OCH",
+          "or": "ELLER",
+          "not": "INTE",
+          "andJoin": "och",
+          "empty": "Alltid",
+          "operators": {
+            "eq": "\u00e4r lika med",
+            "between": "ligger mellan",
+            "date_within_last_days": "\u00e4r inom de senaste {value} dagarna"
+          }
+        }
+      },
+      "expectedText": "([State] \u00e4r lika med \"Florida\" ELLER INTE ([Score] ligger mellan 1 och 5 OCH [Arrival] \u00e4r inom de senaste 14 dagarna))",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">State</strong> <span class=\"kcd-op\">\u00e4r lika med</span> <span class=\"kcd-value\">Florida</span> <span class=\"kcd-logic kcd-or\">ELLER</span> <span class=\"kcd-not\">INTE</span> <span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Score</strong> <span class=\"kcd-op\">ligger mellan</span> <span class=\"kcd-value\">1</span><span class=\"kcd-join\"> och </span><span class=\"kcd-value\">5</span> <span class=\"kcd-logic kcd-and\">OCH</span> <strong class=\"kcd-field\">Arrival</strong> <span class=\"kcd-op\">\u00e4r inom de senaste</span> <span class=\"kcd-value\">14</span> <span class=\"kcd-op\">dagarna</span><span class=\"kcd-paren\">)</span><span class=\"kcd-paren\">)</span></span>"
+    },
+    {
+      "name": "a slot keeps the spacing written around it",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "arrival",
+              "operator": "date_within_last_days",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 7
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "arrival",
+            "label": "Arrival"
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          }
+        ],
+        "labels": {
+          "operators": {
+            "date_within_last_days": "\u5728\u8fc7\u53bb{value}\u5929\u5185"
+          }
+        }
+      },
+      "expectedText": "[Arrival] \u5728\u8fc7\u53bb7\u5929\u5185",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Arrival</strong> <span class=\"kcd-op\">\u5728\u8fc7\u53bb</span><span class=\"kcd-value\">7</span><span class=\"kcd-op\">\u5929\u5185</span></span>"
+    },
+    {
+      "name": "a slot at the start of a label",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "gte",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 5
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "arrival",
+            "label": "Arrival"
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          }
+        ],
+        "labels": {
+          "operators": {
+            "gte": "{value} or more"
+          }
+        }
+      },
+      "expectedText": "[Score] 5 or more",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Score</strong> <span class=\"kcd-value\">5</span> <span class=\"kcd-op\">or more</span></span>"
+    },
+    {
+      "name": "an operator a label map leaves out keeps its English label",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "gt",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "arrival",
+              "operator": "date_more_than_days_ago",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 9
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "arrival",
+            "label": "Arrival"
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          }
+        ],
+        "labels": {
+          "operators": {
+            "eq": "\u00e4r lika med"
+          }
+        }
+      },
+      "expectedText": "([Score] is greater than 2 AND [Arrival] is more than 9 days ago)",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Score</strong> <span class=\"kcd-op\">is greater than</span> <span class=\"kcd-value\">2</span> <span class=\"kcd-logic kcd-and\">AND</span> <strong class=\"kcd-field\">Arrival</strong> <span class=\"kcd-op\">is more than</span> <span class=\"kcd-value\">9</span> <span class=\"kcd-op\">days ago</span><span class=\"kcd-paren\">)</span></span>"
+    },
+    {
+      "name": "labels.empty is the empty text",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": []
+        }
+      },
+      "options": {
+        "labels": {
+          "and": "OCH",
+          "or": "ELLER",
+          "not": "INTE",
+          "andJoin": "och",
+          "empty": "Alltid",
+          "operators": {
+            "eq": "\u00e4r lika med",
+            "between": "ligger mellan",
+            "date_within_last_days": "\u00e4r inom de senaste {value} dagarna"
+          }
+        }
+      },
+      "expectedText": "Alltid",
+      "expectedHtml": "<span class=\"kcd\">Alltid</span>"
+    },
+    {
+      "name": "emptyText wins over labels.empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": []
+        }
+      },
+      "options": {
+        "labels": {
+          "and": "OCH",
+          "or": "ELLER",
+          "not": "INTE",
+          "andJoin": "och",
+          "empty": "Alltid",
+          "operators": {
+            "eq": "\u00e4r lika med",
+            "between": "ligger mellan",
+            "date_within_last_days": "\u00e4r inom de senaste {value} dagarna"
+          }
+        },
+        "emptyText": "No conditions"
+      },
+      "expectedText": "No conditions",
+      "expectedHtml": "<span class=\"kcd\">No conditions</span>"
+    },
+    {
+      "name": "translated words are escaped like everything else",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "or",
+          "children": [
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "gt",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "lt",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 9
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "arrival",
+            "label": "Arrival"
+          },
+          {
+            "name": "score",
+            "label": "Score"
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "choices": {
+              "FL": "Florida",
+              "TX": "Texas"
+            }
+          }
+        ],
+        "labels": {
+          "or": "<b>OR</b>",
+          "operators": {
+            "gt": "<img src=x onerror=alert(1)> {value}!"
+          }
+        }
+      },
+      "expectedText": "([Score] <img src=x onerror=alert(1)> 2! <b>OR</b> [Score] is less than 9)",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Score</strong> <span class=\"kcd-op\">&lt;img src=x onerror=alert(1)&gt;</span> <span class=\"kcd-value\">2</span><span class=\"kcd-op\">!</span> <span class=\"kcd-logic kcd-or\">&lt;b&gt;OR&lt;/b&gt;</span> <strong class=\"kcd-field\">Score</strong> <span class=\"kcd-op\">is less than</span> <span class=\"kcd-value\">9</span><span class=\"kcd-paren\">)</span></span>"
+    }
+  ],
+  "$validateComment": "Shared validateDocument() cases. Both SDKs must report the same problems in the same order, each with the same path, code, params and English message \u2014 the code and params are what a translated message is built from.",
+  "validateCases": [
+    {
+      "name": "every problem code, with its params",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 1
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "ghost",
+              "operator": "between",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 1
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "bogus",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 1
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "in_list",
+              "values": []
+            },
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "field"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "field",
+                  "field": "nope"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "elsewhere"
+                }
+              ]
+            },
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "eq",
+              "values": [
+                7
+              ]
+            },
+            {
+              "type": "widget"
+            },
+            "not a node",
+            {
+              "type": "group",
+              "operator": "xor",
+              "children": []
+            },
+            {
+              "type": "group",
+              "operator": "and"
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          "score"
+        ]
+      },
+      "expected": [
+        {
+          "path": "root.children[0]",
+          "code": "noField",
+          "params": {},
+          "message": "Condition has no field"
+        },
+        {
+          "path": "root.children[1]",
+          "code": "unknownField",
+          "params": {
+            "field": "ghost"
+          },
+          "message": "Unknown field \"ghost\""
+        },
+        {
+          "path": "root.children[1]",
+          "code": "arity",
+          "params": {
+            "operator": "between",
+            "expected": 2,
+            "actual": 1
+          },
+          "message": "Operator \"between\" expects 2 value(s), got 1"
+        },
+        {
+          "path": "root.children[2]",
+          "code": "unknownOperator",
+          "params": {
+            "operator": "bogus"
+          },
+          "message": "Unknown operator \"bogus\""
+        },
+        {
+          "path": "root.children[3]",
+          "code": "listArity",
+          "params": {
+            "operator": "in_list"
+          },
+          "message": "Operator \"in_list\" expects a single list value"
+        },
+        {
+          "path": "root.children[4].values[0]",
+          "code": "valueNoField",
+          "params": {},
+          "message": "Field value has no field name"
+        },
+        {
+          "path": "root.children[5].values[0]",
+          "code": "unknownField",
+          "params": {
+            "field": "nope"
+          },
+          "message": "Unknown field \"nope\""
+        },
+        {
+          "path": "root.children[6].values[0]",
+          "code": "valueSource",
+          "params": {},
+          "message": "Value source must be \"literal\" or \"field\""
+        },
+        {
+          "path": "root.children[7].values[0]",
+          "code": "valueNotObject",
+          "params": {},
+          "message": "Value must be an object"
+        },
+        {
+          "path": "root.children[8]",
+          "code": "nodeType",
+          "params": {
+            "type": "widget"
+          },
+          "message": "Unknown node type \"widget\""
+        },
+        {
+          "path": "root.children[9]",
+          "code": "notObject",
+          "params": {},
+          "message": "Node is not an object"
+        },
+        {
+          "path": "root.children[10]",
+          "code": "groupOperator",
+          "params": {},
+          "message": "Group operator must be \"and\" or \"or\""
+        },
+        {
+          "path": "root.children[11]",
+          "code": "groupChildren",
+          "params": {},
+          "message": "Group children must be an array"
+        }
+      ]
+    },
+    {
+      "name": "a valid document has no problems",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "score",
+              "operator": "between",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": 1
+                },
+                {
+                  "source": "literal",
+                  "value": 2
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          "score"
+        ]
+      },
+      "expected": []
     }
   ]
 }

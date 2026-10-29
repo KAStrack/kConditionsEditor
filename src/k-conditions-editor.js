@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.1.1
+ * kConditionsEditor 0.1.2
  * A zero-dependency conditions builder that takes over a <textarea>.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  *
@@ -18,10 +18,13 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (KConditions) {
   'use strict';
 
-  var VERSION = '0.1.1';
+  var VERSION = '0.1.2';
   var BUILTIN = KConditions.BUILTIN_OPERATORS;
   var GROUPS = KConditions.OPERATOR_GROUPS;
   var TYPE_GROUPS = KConditions.FIELD_TYPE_GROUPS;
+  var fillTemplate = KConditions.helpers.fillTemplate;
+  var splitOperatorLabel = KConditions.helpers.splitOperatorLabel;
+  var operatorLabelText = KConditions.helpers.operatorLabelText;
 
   var uid = 0;
   function nextId() { uid += 1; return 'n' + uid; }
@@ -70,7 +73,11 @@
 
     function refresh() {
       var opt = select.options[select.selectedIndex];
-      label.textContent = opt ? opt.textContent : '';
+      // An operator whose label has a {value} slot shows only the words before
+      // the operand here; the words after it follow the value (see
+      // renderCondition). The option itself keeps the whole label, for the list.
+      var shown = opt && opt.hasAttribute('data-kce-head') ? opt.getAttribute('data-kce-head') : (opt ? opt.textContent : '');
+      label.textContent = shown;
       wrap.setAttribute('data-empty', label.textContent === '' ? 'true' : 'false');
     }
 
@@ -116,6 +123,18 @@
     fit();
     return input;
   }
+
+  /* Every word the editor shows, says to a screen reader, or puts in a tooltip.
+     `{name}` is a placeholder, filled in where the label is used, so a
+     translation can put the value where its own word order wants it.
+     Three are maps rather than strings — `operators` (by operator name),
+     `groups` (the operator list's headings, by group) and `problems` (the
+     incomplete-rule messages, by problem code) — and merge key by key, so a
+     host can translate some of an inner map and leave the rest. */
+  var DEFAULT_GROUP_LABELS = { custom: 'Custom' };
+  Object.keys(GROUPS).forEach(function (g) { DEFAULT_GROUP_LABELS[g] = GROUPS[g].label; });
+
+  var LABEL_MAPS = ['operators', 'groups', 'problems'];
 
   var DEFAULT_LABELS = {
     edit: 'Edit Conditions',
@@ -168,8 +187,54 @@
     // The notice for a field whose content the editor could not read.
     preservedText: 'The existing contents of this field could not be read as a rule. ' +
       'Build the rule here; the original is shown for reference and the field keeps it until you change anything.',
-    preservedDismiss: 'Dismiss'
+    preservedDismiss: 'Dismiss',
+    // Accessible names: read out, never shown.
+    fieldSelect: 'Field',
+    operatorSelect: 'Operator',
+    valueSourceSelect: 'Value source',
+    compareFieldSelect: 'Compare with field',
+    valueInput: 'Value',
+    // The two values of `between`.
+    valueFrom: 'From',
+    valueTo: 'To',
+    listInput: 'Add a value',
+    removeValue: 'Remove {value}',
+    // The first entry of a list value's dropdown of choices.
+    listAdd: '+ add…',
+    // Tooltips. {operator} is the AND or OR label.
+    addToGroup: 'Add another condition to this group',
+    addNewGroup: 'Group this condition with a new one, joined by {operator}',
+    wrapGroup: 'Group everything in this set, then continue with {operator}',
+    switchGroup: 'Switch this group to {operator}',
+    undoTitle: 'Undo (Ctrl+Z)',
+    redoTitle: 'Redo (Ctrl+Shift+Z or Ctrl+Y)',
+    // A date typed into a text box (a field with input.type 'text').
+    datePlaceholder: 'YYYY-MM-DD',
+    // The debug panel's SQL tab, when k-conditions-sql.js is not loaded.
+    sqlMissing: 'Load k-conditions-sql.js to generate SQL.',
+    // Operator names, by operator: { eq: 'är lika med', … }. A label may hold
+    // a {value} slot for the operand: 'är inom de senaste {value} dagarna'.
+    // Empty here; an operator not named falls back to its own label.
+    operators: {},
+    // The headings in the operator list, by group.
+    groups: DEFAULT_GROUP_LABELS,
+    // The messages under an incomplete rule, by problem code; the
+    // placeholders are the problem's params.
+    problems: extend({}, KConditions.PROBLEM_MESSAGES)
   };
+
+  /**
+   * Every label key with its English, as a fresh copy — the list of what a
+   * translation has to cover, for a host building its own from a catalogue.
+   * `operators` is filled in here with each builtin operator's own label, so
+   * that list is complete too.
+   */
+  function defaultLabels() {
+    var out = extend({}, DEFAULT_LABELS);
+    LABEL_MAPS.forEach(function (key) { out[key] = extend({}, DEFAULT_LABELS[key]); });
+    Object.keys(BUILTIN).forEach(function (name) { out.operators[name] = BUILTIN[name].label; });
+    return out;
+  }
 
   var DEFAULTS = {
     fields: [],
@@ -235,6 +300,22 @@
     // the group it belongs to. Pointing at a group's AND / OR or a bracket
     // strengthens its line.
     groupGuides: true,
+    // Hand each <select> to the host once it is built, filled and on the page
+    // — to swap in a widget of its own, say. Called on every render, since a
+    // render rebuilds the rule. fn(select, { role, node, field, editor }),
+    // where role is 'field', 'operator', 'value', 'values' (a list of
+    // choices, built as <select multiple>), 'source' or 'fieldValue'. Return
+    // false to leave that select as the editor draws it; return a promise if
+    // the widget arrives later, and focus waits for it.
+    decorateSelect: null,
+    // Called for each decorated select before a render throws it away, and on
+    // destroy(): the place to tear down a widget, especially one that put
+    // anything outside the editor (a dropdown portalled to <body>).
+    releaseSelect: null,
+    // Put focus back on a decorated select after a render. Without it, the
+    // first focusable element in the select's shell — the widget — or the
+    // select itself if it still shows.
+    focusSelect: null,
     debug: false,
     onChange: null
   };
@@ -284,6 +365,49 @@
     return field;
   }
 
+  /**
+   * Fields as the field list shows them: those with no `group` first, then a
+   * heading per group, in the order each group first appears. `flat` is that
+   * order as one list.
+   */
+  function groupFields(fields, order) {
+    var loose = [];
+    var groups = [];
+    var byName = {};
+    fields.forEach(function (f) {
+      var g = typeof f.group === 'string' && f.group !== '' ? f.group : null;
+      if (g === null) { loose.push(f); return; }
+      if (!byName[g]) { byName[g] = { label: g, fields: [] }; groups.push(byName[g]); }
+      byName[g].fields.push(f);
+    });
+    // A shorter list (the fields one can compare with) keeps the groups in
+    // the order the whole field list has them, so they are where the eye
+    // learned to look.
+    if (order) {
+      var at = function (g) { var i = order.indexOf(g.label); return i === -1 ? order.length : i; };
+      groups.sort(function (x, y) { return at(x) - at(y); });
+    }
+    var flat = loose.slice();
+    groups.forEach(function (g) { flat.push.apply(flat, g.fields); });
+    return { loose: loose, groups: groups, flat: flat };
+  }
+
+  /** Options for a list of fields, grouped by `group` into <optgroup>s. */
+  function appendFieldOptions(select, fields, selected, order) {
+    var grouped = groupFields(fields, order);
+    var option = function (f) {
+      var o = el('option', null, { value: f.name, text: f.label || f.name });
+      if (f.name === selected) o.selected = true;
+      return o;
+    };
+    grouped.loose.forEach(function (f) { select.appendChild(option(f)); });
+    grouped.groups.forEach(function (g) {
+      var og = el('optgroup', null, { label: g.label });
+      g.fields.forEach(function (f) { og.appendChild(option(f)); });
+      select.appendChild(og);
+    });
+  }
+
   function Editor(target, options) {
     if (typeof target === 'string') target = document.querySelector(target);
     if (!target || target.tagName !== 'TEXTAREA') {
@@ -301,10 +425,20 @@
 
     this.textarea = target;
     this.options = extend({}, DEFAULTS, options || {});
-    this.labels = extend({}, DEFAULT_LABELS, this.options.labels || {});
+    var given = this.options.labels || {};
+    this.labels = extend({}, DEFAULT_LABELS, given);
+    // The maps merge a level down: translating one operator keeps the rest.
+    LABEL_MAPS.forEach(function (key) {
+      this.labels[key] = extend({}, DEFAULT_LABELS[key], given[key] && typeof given[key] === 'object' ? given[key] : null);
+    }, this);
     if (this.options.emptyText) this.labels.empty = this.options.emptyText;
 
     this.fields = (this.options.fields || []).map(normaliseField);
+    // The order the field list shows them in: ungrouped first, then each
+    // group where its first field is. A new condition takes the first.
+    var grouped = groupFields(this.fields);
+    this.fieldOrder = grouped.flat;
+    this.groupOrder = grouped.groups.map(function (g) { return g.label; });
     this.fieldIndex = {};
     var self = this;
     this.fields.forEach(function (f) { self.fieldIndex[f.name] = f; });
@@ -530,6 +664,25 @@
     return null;
   };
 
+  /** What an operator is called: labels.operators, else its own label, else its name. */
+  Editor.prototype.operatorLabel = function (name) {
+    var own = this.labels.operators[name];
+    if (typeof own === 'string' && own !== '') return own;
+    var meta = this.operatorMeta(name);
+    return (meta && meta.label) || name;
+  };
+
+  /** A heading in the operator list. */
+  Editor.prototype.groupLabel = function (group) {
+    var own = this.labels.groups[group];
+    return typeof own === 'string' && own !== '' ? own : group;
+  };
+
+  /** A label with its {placeholders} filled. */
+  Editor.prototype.text = function (key, vars) {
+    return fillTemplate(this.labels[key], vars);
+  };
+
   Editor.prototype.operatorsForField = function (field) {
     var names = [];
     var self = this;
@@ -643,7 +796,8 @@
     this.body.appendChild(this.footer);
 
     if (this.options.showJson) {
-      this.jsonBox = el('pre', 'kce-json');
+      // tabindex: a scrolling box has to be reachable by keyboard to be read.
+      this.jsonBox = el('pre', 'kce-json', { tabindex: '0' });
       var jsonWrap = el('details', 'kce-json-wrap');
       jsonWrap.appendChild(el('summary', null, { text: this.labels.jsonHeading }));
       jsonWrap.appendChild(this.jsonBox);
@@ -781,10 +935,10 @@
     this.historyWrap = wrap;
 
     this.undoButton = el('button', 'kce-btn kce-history-btn kce-undo', {
-      type: 'button', text: this.labels.undo, title: this.labels.undo + ' (Ctrl+Z)'
+      type: 'button', text: this.labels.undo, title: this.labels.undoTitle
     });
     this.redoButton = el('button', 'kce-btn kce-history-btn kce-redo', {
-      type: 'button', text: this.labels.redo, title: this.labels.redo + ' (Ctrl+Shift+Z or Ctrl+Y)'
+      type: 'button', text: this.labels.redo, title: this.labels.redoTitle
     });
 
     this.undoButton.addEventListener('click', function () { self.undo(); });
@@ -811,7 +965,7 @@
     this.sourcePanel = el('div', 'kce-devtools', { hidden: 'hidden' });
 
     this.sourceTabs = el('div', 'kce-devtools-tabs', { role: 'tablist' });
-    this.sourceBody = el('pre', 'kce-devtools-body');
+    this.sourceBody = el('pre', 'kce-devtools-body', { tabindex: '0' });
 
     var copy = el('button', 'kce-btn kce-devtools-copy', { type: 'button', text: this.labels.copy });
     copy.addEventListener('click', function () {
@@ -890,7 +1044,7 @@
         return;
       }
       if (!sql) {
-        this.sourceBody.textContent = 'Load k-conditions-sql.js to generate SQL.';
+        this.sourceBody.textContent = this.labels.sqlMissing;
         return;
       }
       var out = ['WHERE ' + sql.sql];
@@ -978,7 +1132,7 @@
     var self = this;
     var wrap = el('div', 'kce-preserved', { role: 'status' });
     wrap.appendChild(el('div', 'kce-preserved-text', { text: this.labels.preservedText }));
-    var source = el('pre', 'kce-preserved-source');
+    var source = el('pre', 'kce-preserved-source', { tabindex: '0' });
     source.textContent = this.preserved.text;
     wrap.appendChild(source);
     var dismiss = el('button', 'kce-btn kce-preserved-dismiss', { type: 'button', text: this.labels.preservedDismiss });
@@ -1982,11 +2136,207 @@
     }
   };
 
+  /* ------------------------------------------------------------------ *
+   * Selects a host can decorate
+   *
+   * A host may turn each <select> into a widget of its own (decorateSelect).
+   * Widgets of that kind keep the real select in the page, hidden, with its
+   * value in step, and fire `change` on it — so the editor goes on listening
+   * to the select and never needs to know what the widget is. Three things it
+   * does need to know: that the select's label span must not show beside the
+   * widget, that a render about to discard the widget should let the host tear
+   * it down (releaseSelect), and that focus, after a render, belongs to the
+   * widget standing in for the select that had it.
+   * ------------------------------------------------------------------ */
+
+  /**
+   * Listen for a select's change. The key of the select being changed is
+   * held while the handler runs, so a render it causes can put focus back
+   * on it even when the widget that made the change has focus somewhere the
+   * editor cannot see — a dropdown portalled to <body>.
+   */
+  Editor.prototype.onSelect = function (select, fn) {
+    var self = this;
+    select.addEventListener('change', function () {
+      var outer = self.changingSelect;
+      self.changingSelect = select.getAttribute('data-fk');
+      try { fn(); } finally { self.changingSelect = outer; }
+    });
+  };
+
+  /** A select in its width shell, recorded for decoration. */
+  Editor.prototype.selectFor = function (select, shellClass, role, node, field) {
+    var shell = selectShell(select, shellClass);
+    this.recordSelect(select, shell, role, node, field, null);
+    return shell;
+  };
+
+  Editor.prototype.recordSelect = function (select, shell, role, node, field, decline) {
+    if (typeof this.options.decorateSelect !== 'function') return;
+    (this.undecorated = this.undecorated || []).push({
+      select: select, shell: shell, role: role, node: node, field: field || null, decline: decline
+    });
+  };
+
+  /**
+   * Offer every select the render just drew to the host. Run once the tree is
+   * complete and in the page, so the host's widget can measure, and before the
+   * layout pass, so the layout measures the widget.
+   */
+  Editor.prototype.decorateSelects = function () {
+    var list = this.undecorated || [];
+    this.undecorated = [];
+    var hook = this.options.decorateSelect;
+    if (typeof hook !== 'function') return this;
+    var self = this;
+    this.decorated = this.decorated || [];
+    if (!this.shellObserver && typeof ResizeObserver === 'function') {
+      this.shellObserver = new ResizeObserver(function () {
+        if (!self.destroyed && self.onViewportResize) self.onViewportResize();
+      });
+    }
+    list.forEach(function (entry) {
+      var result;
+      try {
+        result = hook(entry.select, {
+          role: entry.role, node: stripIds(entry.node), field: entry.field, editor: self
+        });
+      } catch (e) {
+        if (typeof console !== 'undefined') console.error(e);
+        result = false;
+      }
+      if (result === false) {
+        if (entry.decline) entry.decline();
+        return;
+      }
+      // The widget shows the choice itself; the label span would show it
+      // again beside it.
+      entry.select.kceDecorated = true;
+      entry.shell.classList.add('kce-sel-host');
+      var label = entry.shell.querySelector(':scope > .kce-sel-label');
+      if (label) entry.shell.removeChild(label);
+      // A widget shows the whole operator label, operand slot and all, so the
+      // words that would follow the value would say it twice.
+      if (entry.role === 'operator') {
+        var row = entry.shell.parentNode;
+        var tail = row && row.querySelector(':scope > .kce-op-tail');
+        if (tail) row.removeChild(tail);
+      }
+      self.decorated.push(entry);
+      // A widget changes its row's width when it arrives — later, for one
+      // that is imported, whether or not the host said so with a promise —
+      // and again whenever what it shows changes (a multi-select's tags). The
+      // AND / OR alignment, the floats and the guides are measured, so each
+      // shell is watched and the layout re-run when it changes size.
+      if (self.shellObserver) self.shellObserver.observe(entry.shell);
+      if (result && typeof result.then === 'function') {
+        var settle = function () {
+          if (entry.select.kcePending === pending) entry.select.kcePending = null;
+          if (!self.destroyed && self.onViewportResize) self.onViewportResize();
+        };
+        var pending = result.then(settle, settle);
+        entry.select.kcePending = pending;
+      }
+    });
+    return this;
+  };
+
+  /** Let the host tear down every widget the next render is about to discard. */
+  Editor.prototype.releaseSelects = function () {
+    var list = this.decorated || [];
+    this.decorated = [];
+    this.undecorated = [];
+    if (this.shellObserver) this.shellObserver.disconnect();
+    var hook = this.options.releaseSelect;
+    if (typeof hook !== 'function') return this;
+    list.forEach(function (entry) {
+      try {
+        hook(entry.select, { role: entry.role, node: stripIds(entry.node), field: entry.field });
+      } catch (e) {
+        if (typeof console !== 'undefined') console.error(e);
+      }
+    });
+    return this;
+  };
+
+  /**
+   * Focus a decorated select — which, hidden behind its widget, cannot take
+   * focus itself: focusSelect if the host gave one; otherwise the select, if
+   * it is still showing; otherwise the first thing in its shell that takes
+   * focus, which is the widget (kselect's combobox, say). A widget still on
+   * its way is waited for, and then only given focus if nothing else has
+   * taken it meanwhile.
+   */
+  Editor.prototype.focusDecorated = function (select) {
+    var self = this;
+    var frames = 0;
+    var later = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
+    // Focus is lost if it went to the select itself (hidden now) or fell to
+    // the body when what it was on was taken away.
+    var lost = function () {
+      var active = document.activeElement;
+      return !active || active === document.body || (active === select && !select.getClientRects().length);
+    };
+    var go = function () {
+      if (self.destroyed || !self.tree.contains(select) || !lost()) return;
+      try {
+        if (typeof self.options.focusSelect === 'function') { self.options.focusSelect(select); return; }
+        var target = select;
+        if (!select.getClientRects().length && select.parentNode) {
+          var stand = Array.prototype.filter.call(
+            select.parentNode.querySelectorAll('button, input, textarea, [tabindex]'),
+            function (n) { return n !== select && n.tabIndex >= 0 && !n.disabled && n.getClientRects().length; }
+          )[0];
+          if (stand) target = stand;
+        }
+        target.focus({ preventScroll: true });
+      } catch (e) { /* focus is best effort */ }
+    };
+    // A host that did not return its widget's promise may still be building
+    // it: focus can land on the select just before the widget hides it. So
+    // look again for a few frames, and put it back while it is lost.
+    // Once it is on anything but the select or the body, it has arrived.
+    var watch = function () {
+      go();
+      var active = document.activeElement;
+      if (active && active !== document.body && active !== select) return;
+      if (++frames < 30 && !self.destroyed && self.tree.contains(select)) later(watch);
+    };
+    if (select.kcePending) select.kcePending.then(watch, watch);
+    else watch();
+  };
+
+  /**
+   * The focus key of whatever has focus: the control's own data-fk, or, for
+   * a host widget standing in for a select, that select's. A widget is found
+   * inside the select's shell (.kce-sel), or by a data-kce-for naming the
+   * key, anywhere in the tree.
+   */
+  Editor.prototype.focusKeyOf = function (active) {
+    if (!active || !this.tree || !this.tree.contains(active)) return null;
+    var key = active.getAttribute && active.getAttribute('data-fk');
+    if (key) return key;
+    for (var n = active; n && n !== this.tree; n = n.parentNode) {
+      if (n.nodeType !== 1) continue;
+      if (n.hasAttribute('data-kce-for')) return n.getAttribute('data-kce-for');
+      if (n.classList.contains('kce-sel')) {
+        var select = n.querySelector('select[data-fk]');
+        return select ? select.getAttribute('data-fk') : null;
+      }
+    }
+    return null;
+  };
+
   /** Remember which control has focus, and where the caret sits inside it. */
   Editor.prototype.captureFocus = function () {
     var active = document.activeElement;
-    if (!active || !this.tree.contains(active)) return null;
-    var key = active.getAttribute && active.getAttribute('data-fk');
+    var key = this.focusKeyOf(active);
+    // A select's change is re-rendering the rule while focus is somewhere the
+    // editor cannot see: a widget's list in <body>, or nowhere. The select
+    // that changed is where it belongs.
+    if (!key && this.changingSelect && (!active || active === document.body || !this.root.contains(active))) {
+      return { key: this.changingSelect, sel: null };
+    }
     if (!key) return null;
     var sel = null;
     try {
@@ -2001,6 +2351,7 @@
     if (!snap || !snap.key) return;
     var node = this.tree.querySelector('[data-fk="' + snap.key.replace(/"/g, '\\"') + '"]');
     if (!node || node.disabled) return;
+    if (node.kceDecorated) { this.focusDecorated(node); return; }
     try {
       node.focus({ preventScroll: true });
       if (snap.sel && node.setSelectionRange) node.setSelectionRange(snap.sel[0], snap.sel[1]);
@@ -2011,12 +2362,14 @@
     if (!this.open) return;
     var focus = this.focusOverride ? { key: this.focusOverride, sel: null } : this.captureFocus();
     this.assignPathIds(this.doc.root, 'r');
+    this.releaseSelects();
     this.tree.innerHTML = '';
     this.flowLines = null;
     this.flowSpans = null;
     this.flowTools = null;
     if (this.layout() === 'flow') this.renderFlow();
     else this.tree.appendChild(this.renderGroup(this.doc.root, null, 0));
+    this.decorateSelects();
     this.sync();
     this.restoreFocus(focus);
   };
@@ -2467,7 +2820,9 @@
     Array.prototype.forEach.call(conns, function (conn) {
       conn.style.marginLeft = '';
       var line = conn.parentNode;
+      // A field select the host has decorated has no label: its widget's edge.
       var above = line.querySelector(':scope > .kce-condition .kce-sel-field .kce-sel-label') ||
+        line.querySelector(':scope > .kce-condition .kce-sel-field') ||
         line.querySelector(':scope > .kce-paren-close');
       var btn = conn.querySelector('.kce-connector-btn');
       if (!above || !btn) return;
@@ -3012,7 +3367,7 @@
     var btn = el('button', 'kce-connector-btn', {
       type: 'button',
       text: this.labels[opName],
-      title: 'Switch this group to ' + this.labels[opName === 'and' ? 'or' : 'and'],
+      title: this.text('switchGroup', { operator: this.labels[opName === 'and' ? 'or' : 'and'] }),
       // Keyed by the child it follows: one group can print several connectors,
       // and focus has to come back to the one that was actually clicked.
       'data-fk': node.id + ':conn-' + (index || 0)
@@ -3209,8 +3564,8 @@
         type: 'button',
         text: self.labels[op === 'and' ? 'addAnd' : 'addOr'],
         title: op === groupOp
-          ? 'Add another condition to this group'
-          : 'Group this condition with a new one, joined by ' + self.labels[op],
+          ? self.labels.addToGroup
+          : self.text('addNewGroup', { operator: self.labels[op] }),
         'data-fk': group.id + ':add-' + op + '-' + index
       });
       btn.addEventListener('click', function () { self.addBeside(group, index, op); });
@@ -3228,8 +3583,11 @@
       var wrapBtn = el('button', 'kce-btn kce-add kce-add-wrap kce-add-' + other, {
         type: 'button',
         text: this.labels[other === 'and' ? 'wrapAnd' : 'wrapOr'],
-        title: 'Group everything here, then continue with ' + this.labels[other],
-        'aria-label': 'Group everything in this set, then continue with ' + this.labels[other],
+        // The visible "AND(…)" is the name, and the sentence is the
+        // description (a title is read after the name). An aria-label carrying
+        // the sentence replaced the visible text, so a translation of one but
+        // not the other broke label-in-name (WCAG 2.5.3).
+        title: this.text('wrapGroup', { operator: this.labels[other] }),
         'data-fk': group.id + ':wrap-' + other
       });
       wrapBtn.addEventListener('click', function () { self.wrapAndContinue(group, other); });
@@ -3241,7 +3599,7 @@
   };
 
   Editor.prototype.newCondition = function () {
-    var field = this.fields[0];
+    var field = this.fieldOrder[0];
     var cond = { id: nextId(), type: 'condition', field: field ? field.name : '', operator: '', values: [] };
     if (field) {
       var ops = this.operatorsForField(field);
@@ -3317,49 +3675,58 @@
     var grip = this.dragHandle(node, parent);
     if (grip) row.appendChild(grip);
 
-    /* field select */
-    var fieldSel = el('select', 'kce-select kce-field', { 'aria-label': 'Field', 'data-fk': node.id + ':field' });
-    if (!node.field) fieldSel.appendChild(el('option', null, { value: '', text: this.labels.chooseField }));
-    this.fields.forEach(function (f) {
-      var o = el('option', null, { value: f.name, text: f.label });
-      if (f.name === node.field) o.selected = true;
-      fieldSel.appendChild(o);
-    });
-    fieldSel.addEventListener('change', function () { self.setField(node, fieldSel.value); });
-    row.appendChild(selectShell(fieldSel, 'kce-sel-field'));
-
     var field = this.fieldIndex[node.field];
 
+    /* field select */
+    var fieldSel = el('select', 'kce-select kce-field', { 'aria-label': this.labels.fieldSelect, 'data-fk': node.id + ':field' });
+    if (!node.field) fieldSel.appendChild(el('option', null, { value: '', text: this.labels.chooseField }));
+    appendFieldOptions(fieldSel, this.fields, node.field, this.groupOrder);
+    this.onSelect(fieldSel, function () { self.setField(node, fieldSel.value); });
+    row.appendChild(this.selectFor(fieldSel, 'kce-sel-field', 'field', node, field));
+
     /* operator select */
-    var opSel = el('select', 'kce-select kce-operator', { 'aria-label': 'Operator', 'data-fk': node.id + ':op' });
+    var meta = this.operatorMeta(node.operator);
+    var arity = meta ? (meta.arity === undefined ? 1 : meta.arity) : 0;
+    var opSel = el('select', 'kce-select kce-operator', { 'aria-label': this.labels.operatorSelect, 'data-fk': node.id + ':op' });
     if (field) {
       var names = this.operatorsForField(field);
       var byGroup = {};
       var order = [];
       names.forEach(function (n) {
-        var meta = self.operatorMeta(n);
-        var g = meta.group || 'other';
+        var m = self.operatorMeta(n);
+        var g = m.group || 'other';
         if (!byGroup[g]) { byGroup[g] = []; order.push(g); }
-        byGroup[g].push({ name: n, meta: meta });
+        byGroup[g].push({ name: n, meta: m });
       });
       order.forEach(function (g) {
-        var groupLabel = (GROUPS[g] && GROUPS[g].label) || (g === 'custom' ? 'Custom' : g);
-        var og = el('optgroup', null, { label: groupLabel });
+        var og = el('optgroup', null, { label: self.groupLabel(g) });
         byGroup[g].forEach(function (entry) {
-          var o = el('option', null, { value: entry.name, text: entry.meta.label });
+          // In the list, a label with a {value} slot reads whole, with an
+          // ellipsis for the operand: "is within the last … days".
+          var label = self.operatorLabel(entry.name);
+          var hasOperand = (entry.meta.arity === undefined ? 1 : entry.meta.arity) !== 0;
+          var o = el('option', null, {
+            value: entry.name,
+            text: hasOperand ? operatorLabelText(label) : operatorLabelText(label, '').replace(/\s+/g, ' ')
+          });
           if (entry.name === node.operator) o.selected = true;
           og.appendChild(o);
         });
         opSel.appendChild(og);
       });
     }
-    opSel.addEventListener('change', function () { self.setOperator(node, opSel.value); });
-    row.appendChild(selectShell(opSel, 'kce-sel-operator'));
+    // On the row, the chosen operator's operand goes in its slot: the shell
+    // shows the words before it, and the words after it follow the value —
+    // "is within the last [7] days". describe() puts it in the same place.
+    var slot = meta && arity !== 0 ? splitOperatorLabel(this.operatorLabel(node.operator)) : null;
+    if (slot && opSel.selectedIndex !== -1) {
+      opSel.options[opSel.selectedIndex].setAttribute('data-kce-head', slot.head);
+    }
+    this.onSelect(opSel, function () { self.setOperator(node, opSel.value); });
+    row.appendChild(this.selectFor(opSel, 'kce-sel-operator', 'operator', node, field));
 
     /* values */
     var valuesBox = el('div', 'kce-values');
-    var meta = this.operatorMeta(node.operator);
-    var arity = meta ? (meta.arity === undefined ? 1 : meta.arity) : 0;
 
     if (meta && arity !== 0) {
       var count = arity === 'n' ? 1 : arity;
@@ -3369,6 +3736,11 @@
       }
     }
     row.appendChild(valuesBox);
+    if (slot && slot.tail) {
+      // Part of the operator, so it is drawn as the operator is, and a
+      // decorated operator select (which shows the whole label) drops it.
+      row.appendChild(el('span', 'kce-op-tail', { text: slot.tail, 'data-node': node.id }));
+    }
 
     if (this.options.allowConditionNegate) {
       var notWrap = el('label', 'kce-not kce-not-inline');
@@ -3419,50 +3791,50 @@
     if (!candidates.length && value.source !== 'field') allowField = false;
 
     if (allowField) {
-      var srcSel = el('select', 'kce-select kce-source', { 'aria-label': 'Value source', 'data-fk': slot + ':src' });
+      var srcSel = el('select', 'kce-select kce-source', { 'aria-label': this.labels.valueSourceSelect, 'data-fk': slot + ':src' });
       [['literal', this.labels.valueSourceLiteral], ['field', this.labels.valueSourceField]].forEach(function (pair) {
         var o = el('option', null, { value: pair[0], text: pair[1] });
         if (value.source === pair[0]) o.selected = true;
         srcSel.appendChild(o);
       });
-      srcSel.addEventListener('change', function () {
+      this.onSelect(srcSel, function () {
         self.setValueSource(node, index, srcSel.value, candidates[0] ? candidates[0].name : '');
       });
-      holder.appendChild(selectShell(srcSel, 'kce-sel-source'));
+      holder.appendChild(this.selectFor(srcSel, 'kce-sel-source', 'source', node, field));
     }
 
     if (value.source === 'field') {
-      var fSel = el('select', 'kce-select kce-field-value', { 'aria-label': 'Compare with field', 'data-fk': slot + ':fieldval' });
+      var fSel = el('select', 'kce-select kce-field-value', { 'aria-label': this.labels.compareFieldSelect, 'data-fk': slot + ':fieldval' });
       var listed = candidates.slice();
       // The document may point at a field the current rules would not offer.
       // Show it anyway — an empty selector beside a live reference would read
-      // as though the rule compared against nothing.
+      // as though the rule compared against nothing. It has no group, so it
+      // leads the list.
       if (value.field && !listed.some(function (f) { return f.name === value.field; })) {
-        listed.unshift(this.fieldIndex[value.field] || { name: value.field, label: value.field });
+        var known = this.fieldIndex[value.field];
+        listed.unshift({ name: value.field, label: known ? known.label : value.field });
       }
-      listed.forEach(function (f) {
-        var o = el('option', null, { value: f.name, text: f.label || f.name });
-        if (f.name === value.field) o.selected = true;
-        fSel.appendChild(o);
-      });
-      fSel.addEventListener('change', function () {
+      appendFieldOptions(fSel, listed, value.field, this.groupOrder);
+      this.onSelect(fSel, function () {
         value.field = fSel.value;
         self.commitValue();
       });
-      holder.appendChild(selectShell(fSel, 'kce-sel-fieldvalue'));
+      holder.appendChild(this.selectFor(fSel, 'kce-sel-fieldvalue', 'fieldValue', node, field));
       return holder;
     }
 
-    holder.appendChild(this.renderLiteralInput(value, field, meta, slot));
+    // `between` has two values; each is named for which it is.
+    var name = meta.arity === 2 ? this.labels[index === 0 ? 'valueFrom' : 'valueTo'] : this.labels.valueInput;
+    holder.appendChild(this.renderLiteralInput(value, field, meta, slot, name, node));
     return holder;
   };
 
-  Editor.prototype.renderLiteralInput = function (value, field, meta, slot) {
+  Editor.prototype.renderLiteralInput = function (value, field, meta, slot, name, node) {
     var self = this;
     var kind = meta.valueKind || 'text';
 
     if (meta.arity === 'n' || kind === 'list') {
-      return this.renderListInput(value, field, meta, slot);
+      return this.renderListInput(value, field, meta, slot, node);
     }
 
     var choices = meta.kind === 'values' && meta.values
@@ -3477,7 +3849,7 @@
     var fromChoices = meta.valueFromChoices !== false;
 
     if (fromChoices && choices && choices.length && (kind === 'choice' || (field && field.type === 'enum'))) {
-      var sel = el('select', 'kce-select kce-literal', { 'data-fk': slot + ':lit' });
+      var sel = el('select', 'kce-select kce-literal', { 'aria-label': name, 'data-fk': slot + ':lit' });
       choices.forEach(function (c) {
         var o = el('option', null, { value: String(c.value), text: c.label });
         if (String(c.value) === String(value.value)) o.selected = true;
@@ -3486,8 +3858,8 @@
       if (value.value === '' || value.value === undefined) {
         value.value = choices[0].value;
       }
-      sel.addEventListener('change', function () { self.setValue(value, sel.value); });
-      return selectShell(sel, 'kce-sel-literal');
+      this.onSelect(sel, function () { self.setValue(value, sel.value); });
+      return this.selectFor(sel, 'kce-sel-literal', 'value', node, field);
     }
 
     var type = 'text';
@@ -3497,7 +3869,8 @@
     var input = el('input', 'kce-input kce-literal', {
       type: type,
       value: value.value === null || value.value === undefined ? '' : String(value.value),
-      placeholder: (field && field.placeholder) || (kind === 'date' ? 'YYYY-MM-DD' : ''),
+      placeholder: (field && field.placeholder) || (kind === 'date' ? this.labels.datePlaceholder : ''),
+      'aria-label': name,
       'data-fk': slot + ':lit'
     });
     if (field && field.input) {
@@ -3521,14 +3894,75 @@
     return input;
   };
 
-  Editor.prototype.renderListInput = function (value, field, meta, slot) {
+  Editor.prototype.renderListInput = function (value, field, meta, slot, node) {
     var self = this;
-    var box = el('div', 'kce-taglist');
     if (!Array.isArray(value.value)) {
       value.value = value.value === '' || value.value === undefined || value.value === null
         ? []
         : KConditions.helpers.toList(value.value);
     }
+
+    var choices = (meta.kind === 'values' && meta.values)
+      ? KConditions.normaliseChoices(meta.values)
+      : (field && field.choices ? field.choices : null);
+    var labelOf = {};
+    (choices || []).forEach(function (c) { labelOf[String(c.value)] = c.label; });
+    // A chip shows what the list of choices calls the value — "Week 2", not
+    // "w2" — as describe() does. A value with no choice shows as it is.
+    var shown = function (v) {
+      return Object.prototype.hasOwnProperty.call(labelOf, String(v)) ? labelOf[String(v)] : String(v);
+    };
+
+    // With a host widget, a list of choices is one <select multiple>: the
+    // widget's own tags, search and checkboxes are the better control, and
+    // the editor's chips would only repeat them. Without one — or if the
+    // host declines it — the chips below.
+    if (choices && choices.length && typeof this.options.decorateSelect === 'function') {
+      var multi = el('select', 'kce-select kce-tag-select', {
+        multiple: 'multiple', 'aria-label': this.labels.listInput, 'data-fk': slot + ':tag'
+      });
+      var listedValues = {};
+      choices.forEach(function (c) {
+        var o = el('option', null, { value: String(c.value), text: c.label });
+        listedValues[String(c.value)] = true;
+        if (value.value.some(function (v) { return String(v) === String(c.value); })) o.selected = true;
+        multi.appendChild(o);
+      });
+      // A value the document holds but the choices do not still shows, chosen,
+      // rather than being dropped the first time anything else is picked.
+      value.value.forEach(function (v) {
+        if (listedValues[String(v)]) return;
+        var o = el('option', null, { value: String(v), text: String(v) });
+        o.selected = true;
+        multi.appendChild(o);
+      });
+      this.onSelect(multi, function () {
+        var picked = Array.prototype.filter.call(multi.options, function (o) { return o.selected; })
+          .map(function (o) { return o.value; });
+        // Keep the order things were added in: what stays keeps its place,
+        // and anything new goes on the end.
+        var kept = value.value.filter(function (v) { return picked.indexOf(String(v)) !== -1; });
+        picked.forEach(function (v) {
+          if (!kept.some(function (k) { return String(k) === v; })) kept.push(v);
+        });
+        value.value = kept;
+        self.commitValue();
+      });
+      var wrap = el('span', 'kce-sel kce-sel-values');
+      wrap.appendChild(multi);
+      this.recordSelect(multi, wrap, 'values', node, field, function () {
+        wrap.parentNode.replaceChild(self.renderChips(value, choices, shown, slot), wrap);
+      });
+      return wrap;
+    }
+
+    return this.renderChips(value, choices, shown, slot);
+  };
+
+  /** The editor's own list control: a chip per value, and a way to add one. */
+  Editor.prototype.renderChips = function (value, choices, shown, slot) {
+    var self = this;
+    var box = el('div', 'kce-taglist');
 
     function redraw() {
       box.innerHTML = '';
@@ -3541,8 +3975,10 @@
       }
       value.value.forEach(function (v, i) {
         var tag = el('span', 'kce-tag');
-        tag.appendChild(el('span', null, { text: String(v) }));
-        var x = el('button', 'kce-tag-x', { type: 'button', html: '&times;', 'aria-label': 'Remove ' + v });
+        tag.appendChild(el('span', null, { text: shown(v) }));
+        var x = el('button', 'kce-tag-x', {
+          type: 'button', html: '&times;', 'aria-label': self.text('removeValue', { value: shown(v) })
+        });
         x.addEventListener('click', function () {
           value.value.splice(i, 1);
           redraw();
@@ -3554,14 +3990,10 @@
       box.appendChild(input);
     }
 
-    var choices = (meta.kind === 'values' && meta.values)
-      ? KConditions.normaliseChoices(meta.values)
-      : (field && field.choices ? field.choices : null);
-
     var input;
     if (choices && choices.length) {
-      input = el('select', 'kce-input kce-tag-input', { 'data-fk': slot + ':tag' });
-      input.appendChild(el('option', null, { value: '', text: '+ add…' }));
+      input = el('select', 'kce-input kce-tag-input', { 'aria-label': this.labels.listInput, 'data-fk': slot + ':tag' });
+      input.appendChild(el('option', null, { value: '', text: this.labels.listAdd }));
       choices.forEach(function (c) {
         input.appendChild(el('option', null, { value: String(c.value), text: c.label }));
       });
@@ -3574,7 +4006,9 @@
         input.value = '';
       });
     } else {
-      input = autosize(el('input', 'kce-input kce-tag-input', { type: 'text', placeholder: this.labels.listHintEmpty, 'data-fk': slot + ':tag' }), 12, 28);
+      input = autosize(el('input', 'kce-input kce-tag-input', {
+        type: 'text', placeholder: this.labels.listHintEmpty, 'aria-label': this.labels.listInput, 'data-fk': slot + ':tag'
+      }), 12, 28);
       // Each chip is a discrete act, so each is its own history entry — unlike
       // the free-text field, where a run of keystrokes is one.
       input.addEventListener('keydown', function (e) {
@@ -3704,7 +4138,10 @@
     return {
       fields: this.fields,
       operators: this.customOperators,
-      emptyText: this.labels.empty
+      emptyText: this.labels.empty,
+      // The same words as the rule on screen: AND / OR / NOT, the "and" of
+      // `between`, and labels.operators.
+      labels: this.labels
     };
   };
 
@@ -3806,8 +4243,12 @@
     if (problems.length) {
       var list = el('ul', 'kce-problems');
       list.appendChild(el('li', 'kce-problems-title', { text: this.labels.invalid }));
+      var self = this;
       problems.slice(0, 6).forEach(function (p) {
-        list.appendChild(el('li', null, { text: p.message }));
+        var template = p.code ? self.labels.problems[p.code] : null;
+        list.appendChild(el('li', null, {
+          text: typeof template === 'string' && template !== '' ? fillTemplate(template, p.params) : p.message
+        }));
       });
       this.messages.appendChild(list);
     }
@@ -3880,6 +4321,7 @@
     if (this.onPointerAnywhere) document.removeEventListener('pointerdown', this.onPointerAnywhere, true);
     if (this.onKeyAnywhere) document.removeEventListener('keydown', this.onKeyAnywhere);
     if (this.clearOutside) document.removeEventListener('click', this.clearOutside, true);
+    this.releaseSelects();
     if (this.root && this.root.parentNode) this.root.parentNode.removeChild(this.root);
     (this.hideTargets || [this.textarea]).forEach(function (el) {
       el.classList.remove('kce-concealed');
@@ -3927,6 +4369,7 @@
     attachAll: attachAll,
     get: get,
     detach: detach,
+    defaultLabels: defaultLabels,
     evaluator: KConditions
   };
 }));

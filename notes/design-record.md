@@ -5,7 +5,7 @@ per-version notes beside this file carry the detail; `CHANGELOG.md` is the
 user-facing version of the same story. Kept in the repository from 0.0.22 so it
 travels with the code.*
 
-Last updated: 2026-10-19 (version 0.1.1)
+Last updated: 2026-10-29 (version 0.1.2)
 
 ## What this is
 
@@ -875,9 +875,42 @@ number compared as text — now agree, and the shared fixtures pin each one.
 `CHANGELOG.md` has the detail. They landed before 0.1.0 was published, so the
 first tag is 0.1.1 and 0.1.0 was never tagged.
 
+## v0.1.2 — a translated, widget-styled, axe-checked host
+
+For HDC's Applications Review page: every string translated, every select a
+kselect, axe-clean in light and dark, vendored from a tag. Detail in
+`0.1.2-translated-hosts.md`.
+
+- **Everything through `labels`**, including the operator names, their group
+  headings and the incomplete-rule messages (three maps, merged key by key),
+  with `{placeholders}` instead of English concatenated round a value. A
+  browser check marks every label and fails on any text that bypassed them.
+- **`describe()` takes the same `labels` object**, in both SDKs, so the
+  summary and the editor cannot be in different languages.
+- **`{value}` in an operator label places the operand** — on the row and in
+  `describe()`. The N-day date labels use it in English too.
+- **Field `group`s** become optgroups, ungrouped first, groups in first-seen
+  order (the compare-with list keeps the field list's order).
+- **`decorateSelect` / `releaseSelect` / `focusSelect`.** Called on every
+  render, because every render makes new selects; release before discard,
+  because a widget's portalled dropdown outlives the tree. Focus resolves
+  through the select's shell and waits for (or retries until) the widget.
+- **`validateDocument()` problems carry `code` and `params`**, pinned in both
+  SDKs by new shared fixtures.
+- **axe over every skin, theme, control mode and state**, zero violations. It
+  found seven contrast failures in the defaults and three keyboard-unreachable
+  scrolling panels; all fixed. The light muted grey is now `#5f6875`.
+- **`dist/` committed** with its `LICENSE`, guarded by a byte-for-byte test.
+
 ## Open items / not yet done
 
 - Python, Ruby, Go SDKs (deferred; the fixtures are the contract for a port).
+- A decorated operator select gives up its `{value}` slot (the widget shows
+  the whole label). Declining `'operator'` keeps it.
+- Labels have no plural forms: "is more than 1 days from now". A `{value}`
+  template cannot choose a word by the number; an ICU-style plural would.
+- Screen readers do not hear the brackets (`.kce-paren` is `aria-hidden`), so
+  a nested rule's structure reaches them only through the order of the rows.
 - No async operator support — synchronous by design.
 - SQL is a best-effort translation, not row-identical to the evaluator.
 - **Sibling order is presentational**: `evalGroup` has no short-circuiting, so

@@ -6,6 +6,7 @@ namespace Kastrack\ConditionsEditor;
 
 use Kastrack\ConditionsEditor\Exception\ConditionException;
 use Kastrack\ConditionsEditor\Exception\UnresolvedOperatorException;
+use Kastrack\ConditionsEditor\Support\Labels;
 use Kastrack\ConditionsEditor\Support\Policy;
 use Kastrack\ConditionsEditor\Support\Values;
 use Throwable;
@@ -32,13 +33,34 @@ use Throwable;
 final class Evaluator
 {
     public const SPEC_VERSION = '1.0';
-    public const VERSION = '0.1.1';
+    public const VERSION = '0.1.2';
 
     /** @var array<string, mixed> */
     private array $options;
 
     /** @var array<string, callable> */
     private array $registry = [];
+
+    /**
+     * The English for each problem validateDocument() can report, keyed by its
+     * `code`. `{name}` is filled from the problem's `params`. The same keys and
+     * placeholders as the JavaScript SDK's PROBLEM_MESSAGES and the editor's
+     * `labels.problems`.
+     */
+    public const PROBLEM_MESSAGES = [
+        'notObject' => 'Node is not an object',
+        'groupOperator' => 'Group operator must be "and" or "or"',
+        'groupChildren' => 'Group children must be an array',
+        'nodeType' => 'Unknown node type "{type}"',
+        'noField' => 'Condition has no field',
+        'unknownField' => 'Unknown field "{field}"',
+        'unknownOperator' => 'Unknown operator "{operator}"',
+        'listArity' => 'Operator "{operator}" expects a single list value',
+        'arity' => 'Operator "{operator}" expects {expected} value(s), got {actual}',
+        'valueNotObject' => 'Value must be an object',
+        'valueNoField' => 'Field value has no field name',
+        'valueSource' => 'Value source must be "literal" or "field"',
+    ];
 
     /** @var array<string, mixed> */
     private const DEFAULTS = [
@@ -521,7 +543,7 @@ final class Evaluator
      *
      * @param array<string, mixed>|string|null $document
      * @param array{fields?: array<int, string|array<string, mixed>>, operators?: array<string, mixed>} $options
-     * @return array<int, array{path: string, message: string}>
+     * @return array<int, array{path: string, code: string, params: array<string, mixed>, message: string}>
      */
     public static function validateDocument(array|string|null $document, array $options = []): array
     {
@@ -548,19 +570,31 @@ final class Evaluator
             return is_array($builtin) ? $builtin : null;
         };
 
-        $walk = function (mixed $node, string $path) use (&$walk, &$problems, $fieldNames, $meta): void {
+        // Each problem carries a `code` and the `params` its message was built
+        // from, as well as the English `message`, so a caller can say the same
+        // thing in another language.
+        $report = static function (string $path, string $code, array $params = []) use (&$problems): void {
+            $problems[] = [
+                'path' => $path,
+                'code' => $code,
+                'params' => $params,
+                'message' => Labels::fillTemplate(self::PROBLEM_MESSAGES[$code], $params),
+            ];
+        };
+
+        $walk = function (mixed $node, string $path) use (&$walk, $report, $fieldNames, $meta): void {
             if (!is_array($node)) {
-                $problems[] = ['path' => $path, 'message' => 'Node is not an object'];
+                $report($path, 'notObject');
 
                 return;
             }
             $type = $node['type'] ?? null;
             if ($type === 'group') {
                 if (!in_array($node['operator'] ?? null, ['and', 'or'], true)) {
-                    $problems[] = ['path' => $path, 'message' => 'Group operator must be "and" or "or"'];
+                    $report($path, 'groupOperator');
                 }
                 if (!is_array($node['children'] ?? null)) {
-                    $problems[] = ['path' => $path, 'message' => 'Group children must be an array'];
+                    $report($path, 'groupChildren');
 
                     return;
                 }
@@ -571,21 +605,21 @@ final class Evaluator
                 return;
             }
             if ($type !== 'condition') {
-                $problems[] = ['path' => $path, 'message' => sprintf('Unknown node type "%s"', (string) $type)];
+                $report($path, 'nodeType', ['type' => $type === null ? 'undefined' : (string) $type]);
 
                 return;
             }
             $field = $node['field'] ?? null;
             if (!$field) {
-                $problems[] = ['path' => $path, 'message' => 'Condition has no field'];
+                $report($path, 'noField');
             } elseif ($fieldNames !== null && !in_array($field, $fieldNames, true)) {
-                $problems[] = ['path' => $path, 'message' => sprintf('Unknown field "%s"', (string) $field)];
+                $report($path, 'unknownField', ['field' => (string) $field]);
             }
 
             $opName = (string) ($node['operator'] ?? '');
             $m = $meta($opName);
             if ($m === null) {
-                $problems[] = ['path' => $path, 'message' => sprintf('Unknown operator "%s"', $opName)];
+                $report($path, 'unknownOperator', ['operator' => $opName]);
 
                 return;
             }
@@ -593,27 +627,27 @@ final class Evaluator
             $values = is_array($node['values'] ?? null) ? $node['values'] : [];
             if ($arity === 'n') {
                 if (count($values) !== 1) {
-                    $problems[] = ['path' => $path, 'message' => sprintf('Operator "%s" expects a single list value', $opName)];
+                    $report($path, 'listArity', ['operator' => $opName]);
                 }
             } elseif (count($values) !== (int) $arity) {
-                $problems[] = ['path' => $path, 'message' => sprintf('Operator "%s" expects %d value(s), got %d', $opName, (int) $arity, count($values))];
+                $report($path, 'arity', ['operator' => $opName, 'expected' => (int) $arity, 'actual' => count($values)]);
             }
             foreach ($values as $i => $v) {
                 $vPath = $path . '.values[' . $i . ']';
                 if (!is_array($v)) {
-                    $problems[] = ['path' => $vPath, 'message' => 'Value must be an object'];
+                    $report($vPath, 'valueNotObject');
 
                     continue;
                 }
                 $source = $v['source'] ?? null;
                 if ($source === 'field') {
                     if (empty($v['field'])) {
-                        $problems[] = ['path' => $vPath, 'message' => 'Field value has no field name'];
+                        $report($vPath, 'valueNoField');
                     } elseif ($fieldNames !== null && !in_array($v['field'], $fieldNames, true)) {
-                        $problems[] = ['path' => $vPath, 'message' => sprintf('Unknown field "%s"', (string) $v['field'])];
+                        $report($vPath, 'unknownField', ['field' => (string) $v['field']]);
                     }
                 } elseif ($source !== 'literal') {
-                    $problems[] = ['path' => $vPath, 'message' => 'Value source must be "literal" or "field"'];
+                    $report($vPath, 'valueSource');
                 }
             }
         };
@@ -658,8 +692,8 @@ final class Evaluator
             'op' => static fn (string $s): string => $s,
             'value' => static fn (string $s, bool $quoted): string => $quoted ? '"' . $s . '"' : $s,
             'list' => static fn (array $parts): string => '[' . implode(', ', $parts) . ']',
-            'logic' => static fn (string $s): string => $s,
-            'not' => static fn (): string => 'NOT',
+            'logic' => static fn (string $s, string $op): string => $s,
+            'not' => static fn (string $s): string => $s,
             'open' => static fn (): string => '(',
             'close' => static fn (): string => ')',
             'join' => static fn (string $s): string => $s,
@@ -681,9 +715,11 @@ final class Evaluator
             'value' => static fn (string $s, bool $quoted): string => '<span class="kcd-value">' . $esc($s) . '</span>',
             'list' => static fn (array $parts): string =>
                 '<span class="kcd-list">' . implode('<span class="kcd-sep">, </span>', $parts) . '</span>',
-            'logic' => static fn (string $s): string =>
-                '<span class="kcd-logic kcd-' . ($s === 'OR' ? 'or' : 'and') . '">' . $esc($s) . '</span>',
-            'not' => static fn (): string => '<span class="kcd-not">NOT</span>',
+            // The class is the operator, not the word: a translated "OR" still
+            // wants the OR colour.
+            'logic' => static fn (string $s, string $op): string =>
+                '<span class="kcd-logic kcd-' . ($op === 'or' ? 'or' : 'and') . '">' . $esc($s) . '</span>',
+            'not' => static fn (string $s): string => '<span class="kcd-not">' . $esc($s) . '</span>',
             'open' => static fn (): string => '<span class="kcd-paren">(</span>',
             'close' => static fn (): string => '<span class="kcd-paren">)</span>',
             'join' => static fn (string $s): string => '<span class="kcd-join">' . $esc($s) . '</span>',
@@ -702,6 +738,17 @@ final class Evaluator
     private static function describeWith(array|string|null $document, array $options, array $f): string
     {
         $doc = self::normaliseDocument($document);
+        // The editor's own `labels` object can be passed as it is: the words of
+        // the rule (AND, OR, NOT, the "and" of `between`, the empty text) and
+        // the operator names in `labels.operators`. Anything missing is English.
+        $labels = is_array($options['labels'] ?? null) ? $options['labels'] : [];
+        $opNames = is_array($labels['operators'] ?? null) ? $labels['operators'] : [];
+        $words = [
+            'and' => (string) Labels::labelOr($labels, 'and', 'AND'),
+            'or' => (string) Labels::labelOr($labels, 'or', 'OR'),
+            'not' => (string) Labels::labelOr($labels, 'not', 'NOT'),
+            'join' => (string) Labels::labelOr($labels, 'andJoin', 'and'),
+        ];
         $labelFor = [];
         $choiceLabels = [];
         foreach (($options['fields'] ?? []) as $field) {
@@ -723,7 +770,11 @@ final class Evaluator
         }
         $extra = $options['operators'] ?? [];
 
-        $opLabel = static function (string $name) use ($doc, $extra): string {
+        $opLabel = static function (string $name) use ($doc, $extra, $opNames): string {
+            $own = Labels::labelOr($opNames, $name, null);
+            if ($own !== null) {
+                return $own;
+            }
             $m = $extra[$name] ?? $doc['operators'][$name] ?? Operators::meta()[$name] ?? null;
 
             return is_array($m) && isset($m['label']) ? (string) $m['label'] : $name;
@@ -783,7 +834,7 @@ final class Evaluator
             return $scalar($val, $fieldName, $useChoices);
         };
 
-        $node = function (mixed $n) use (&$node, $f, $opLabel, $arityOf, $fieldLabel, $valueText, $usesChoices): string {
+        $node = function (mixed $n) use (&$node, $f, $words, $opLabel, $arityOf, $fieldLabel, $valueText, $usesChoices): string {
             if (!is_array($n)) {
                 return '';
             }
@@ -798,35 +849,53 @@ final class Evaluator
                 if (!$parts) {
                     return '';
                 }
-                $joined = implode(' ' . $f['logic'](($n['operator'] ?? 'and') === 'or' ? 'OR' : 'AND') . ' ', $parts);
+                $op = ($n['operator'] ?? 'and') === 'or' ? 'or' : 'and';
+                $joined = implode(' ' . $f['logic']($words[$op], $op) . ' ', $parts);
                 $wrapped = count($parts) > 1 ? $f['open']() . $joined . $f['close']() : $joined;
 
                 return !empty($n['negate'])
-                    ? $f['not']() . ' ' . (count($parts) > 1 ? $wrapped : $f['open']() . $wrapped . $f['close']())
+                    ? $f['not']($words['not']) . ' ' . (count($parts) > 1 ? $wrapped : $f['open']() . $wrapped . $f['close']())
                     : $wrapped;
             }
             $opName = (string) ($n['operator'] ?? '');
             $fieldName = (string) ($n['field'] ?? '');
-            $text = $f['field']($fieldLabel($fieldName)) . ' ' . $f['op']($opLabel($opName));
             $values = is_array($n['values'] ?? null) ? $n['values'] : [];
             $useChoices = $usesChoices($opName);
+            $operands = '';
             if ($arityOf($opName) === 2 && count($values) === 2) {
-                $text .= ' ' . $valueText($values[0], $fieldName, $useChoices)
-                    . $f['join'](' and ') . $valueText($values[1], $fieldName, $useChoices);
+                $operands = $valueText($values[0], $fieldName, $useChoices)
+                    . $f['join'](' ' . $words['join'] . ' ') . $valueText($values[1], $fieldName, $useChoices);
             } elseif ($values) {
                 $rendered = [];
                 foreach ($values as $v) {
                     $rendered[] = $valueText($v, $fieldName, $useChoices);
                 }
-                $text .= ' ' . implode($f['join'](', '), $rendered);
+                $operands = implode($f['join'](', '), $rendered);
+            }
+            // An operator label with a {value} slot has its operand put there —
+            // "is within the last 7 days" — and the words either side of it are
+            // both the operator's. Without one, the operand follows the label.
+            $label = $opLabel($opName);
+            $slot = Labels::splitOperatorLabel($label);
+            $text = $f['field']($fieldLabel($fieldName)) . ' ';
+            if ($slot === null) {
+                $text .= $f['op']($label) . ($operands !== '' ? ' ' . $operands : '');
+            } elseif ($operands === '') {
+                $text .= $f['op'](Labels::operatorLabelText($label));
+            } else {
+                $text .= ($slot['head'] !== '' ? $f['op']($slot['head']) . $slot['before'] : '') . $operands
+                    . ($slot['tail'] !== '' ? $slot['after'] . $f['op']($slot['tail']) : '');
             }
 
-            return !empty($n['negate']) ? $f['not']() . ' ' . $f['open']() . $text . $f['close']() : $text;
+            return !empty($n['negate']) ? $f['not']($words['not']) . ' ' . $f['open']() . $text . $f['close']() : $text;
         };
 
         $out = $node($doc['root']);
         if ($out === '') {
-            return $f['document']($f['escape']((string) ($options['emptyText'] ?? 'Always')));
+            $empty = $options['emptyText'] ?? null;
+            $empty = is_string($empty) && $empty !== '' ? $empty : (string) Labels::labelOr($labels, 'empty', 'Always');
+
+            return $f['document']($f['escape']($empty));
         }
 
         return $f['document']($out);

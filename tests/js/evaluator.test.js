@@ -180,3 +180,35 @@ test('trace records every evaluated node when enabled', () => {
   assert.strictEqual(details.trace[0].type, 'condition');
   assert.strictEqual(details.trace[1].type, 'group');
 });
+
+test('fillTemplate fills named placeholders and leaves unknown ones as written', () => {
+  const { fillTemplate } = K.helpers;
+  assert.strictEqual(fillTemplate('Remove {value}', { value: 'Florida' }), 'Remove Florida');
+  assert.strictEqual(fillTemplate('{a} {b} {a}', { a: 1, b: 0 }), '1 0 1');
+  assert.strictEqual(fillTemplate('Ta bort {value}', {}), 'Ta bort {value}');
+  assert.strictEqual(fillTemplate('{value}', { value: null }), '{value}');
+});
+
+test('splitOperatorLabel splits at the first {value}, keeping the spacing', () => {
+  const { splitOperatorLabel, operatorLabelText } = K.helpers;
+  assert.strictEqual(splitOperatorLabel('is between'), null);
+  assert.deepStrictEqual(splitOperatorLabel('is within the last {value} days'),
+    { head: 'is within the last', before: ' ', after: ' ', tail: 'days' });
+  assert.deepStrictEqual(splitOperatorLabel('在过去{value}天内'), { head: '在过去', before: '', after: '', tail: '天内' });
+  assert.deepStrictEqual(splitOperatorLabel('{value} or more {value}'), { head: '', before: '', after: ' ', tail: 'or more ' });
+  assert.strictEqual(operatorLabelText('is within the last {value} days'), 'is within the last … days');
+  assert.strictEqual(operatorLabelText('is set'), 'is set');
+});
+
+test('every builtin operator label is a string, and only the N-day ones carry a slot', () => {
+  const slotted = Object.keys(K.BUILTIN_OPERATORS).filter((n) => K.BUILTIN_OPERATORS[n].label.indexOf('{value}') !== -1);
+  assert.deepStrictEqual(slotted.sort(), ['date_more_than_days_ago', 'date_more_than_days_ahead',
+    'date_within_last_days', 'date_within_next_days']);
+});
+
+test('validateDocument problems carry a code, params and the English message', () => {
+  const problems = K.validateDocument(doc([cond('ghost', 'eq', [lit(1)])]), { fields: ['state'] });
+  assert.deepStrictEqual(problems, [{ path: 'root.children[0]', code: 'unknownField', params: { field: 'ghost' },
+    message: 'Unknown field "ghost"' }]);
+  assert.strictEqual(K.PROBLEM_MESSAGES.unknownField, 'Unknown field "{field}"');
+});

@@ -11,8 +11,9 @@
 const { chromium } = require('playwright');
 const { scratch: SCRATCH } = require('./harness.js');
 
-// dist/ is generated, not committed, so a fresh clone has nothing to check yet.
-// Say that plainly rather than failing with a stack trace about a missing file.
+// dist/ is committed from 0.1.2, but a working copy can still lack it (it was
+// deleted, or this is an older checkout). Say that plainly rather than failing
+// with a stack trace about a missing file.
 const DIST = require('path').resolve(__dirname, '..', '..', 'dist');
 if (!require('fs').existsSync(require('path').join(DIST, 'k-conditions.min.js'))) {
   console.log('FAIL dist/ is missing — run `npm run build` first');

@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 /*
  * Build the dist/ directory: a minified copy of every source file, plus two
- * combined bundles so a page can load one CSS and one JS file.
+ * combined bundles so a page can load one CSS and one JS file, and the
+ * LICENSE, so dist/ can be vendored as it stands.
  *
  *   node build.js
  *
- * The sources stay the deliverable — dist/ is generated and git-ignored; the
- * npm package carries it (prepublishOnly builds), so installing needs no build
- * step.
+ * The sources stay the deliverable, but dist/ is committed too (from 0.1.2):
+ * a tagged release then carries the built files, so a host can vendor them
+ * from the tag — or load them from a CDN that serves the tag — without a
+ * build of its own. tests/js/dist.test.js fails when dist/ is not what this
+ * script makes from src/ now, so a commit cannot carry a stale build.
  *
  * The minified files are also copied to docs/dist/, which the GitHub Pages site
  * in docs/ loads, and the JSON Schema to docs/schema/, where its $id points.
@@ -123,20 +126,13 @@ function minifyCss(code) {
   return out.styles + '\n';
 }
 
-const rows = [];
-function write(name, text, source) {
-  fs.writeFileSync(path.join(DIST, name), text);
-  rows.push({
-    name: name,
-    bytes: Buffer.byteLength(text),
-    gz: gzip(text),
-    from: source ? Buffer.byteLength(source) : null
-  });
-}
-
-(async function main() {
-  fs.rmSync(DIST, { recursive: true, force: true });
-  fs.mkdirSync(DIST, { recursive: true });
+/**
+ * Everything dist/ holds, as [{ name, text, source }], without writing it —
+ * so a test can compare it with what is on disk.
+ */
+async function render() {
+  const rows = [];
+  const write = (name, text, source) => rows.push({ name: name, text: text, source: source || null });
 
   /* --- one minified file per source ------------------------------------- */
   for (const name of JS_FILES) {
@@ -167,6 +163,17 @@ function write(name, text, source) {
   write('k-conditions.min.css',
     banner('base stylesheet and every skin') + minifyCss(cssSource), cssSource);
 
+  // The licence travels with the files, so dist/ can be vendored on its own.
+  write('LICENSE', fs.readFileSync(path.join(ROOT, 'LICENSE'), 'utf8'));
+  return rows;
+}
+
+async function main() {
+  const rows = await render();
+  fs.rmSync(DIST, { recursive: true, force: true });
+  fs.mkdirSync(DIST, { recursive: true });
+  rows.forEach((r) => fs.writeFileSync(path.join(DIST, r.name), r.text));
+
   /* --- the site's copy ------------------------------------------------- */
   // Only the minified files: the pages load those, as a real install would.
   fs.rmSync(SITE_DIST, { recursive: true, force: true });
@@ -186,12 +193,20 @@ function write(name, text, source) {
   console.log('\nkConditionsEditor ' + VERSION + ' → dist/\n');
   console.log('  ' + pad('file', 30) + pad('size', 11) + pad('gzipped', 11) + 'vs source');
   console.log('  ' + '-'.repeat(62));
-  rows.forEach((r) => {
-    const saved = r.from ? (100 - (r.bytes / r.from) * 100).toFixed(0) + '% smaller' : '';
-    console.log('  ' + pad(r.name, 30) + pad(kb(r.bytes), 11) + pad(kb(r.gz), 11) + saved);
+  rows.filter((r) => r.name !== 'LICENSE').forEach((r) => {
+    const bytes = Buffer.byteLength(r.text);
+    const from = r.source ? Buffer.byteLength(r.source) : null;
+    const saved = from ? (100 - (bytes / from) * 100).toFixed(0) + '% smaller' : '';
+    console.log('  ' + pad(r.name, 30) + pad(kb(bytes), 11) + pad(kb(gzip(r.text)), 11) + saved);
   });
   console.log('\n  minified files and the schema copied to docs/ for the GitHub Pages site\n');
-}()).catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+}
+
+module.exports = { render, DIST, SITE_DIST };
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

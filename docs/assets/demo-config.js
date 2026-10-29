@@ -97,7 +97,7 @@ window.DEMO_DATA = {
 
 window.DEMO_STARTER = {
   version: '1.0',
-  generator: 'kConditionsEditor/0.1.1',
+  generator: 'kConditionsEditor/0.1.2',
   operators: {
     is_gulf_state: window.DEMO_OPERATORS.is_gulf_state
   },

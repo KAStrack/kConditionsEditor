@@ -1,5 +1,5 @@
 /*!
- * kConditions Evaluator 0.1.1
+ * kConditions Evaluator 0.1.2
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -14,7 +14,7 @@
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.1.1';
+  var LIB_VERSION = '0.1.2';
 
   /* ------------------------------------------------------------------ *
    * Errors
@@ -378,22 +378,22 @@
       if (d === null) return false;
       return startOfUtcDay(d) === startOfUtcDay(c.now);
     }),
-    date_within_last_days: op('date', 'is within the last N days', 1, 'number', function (v, a, c) {
+    date_within_last_days: op('date', 'is within the last {value} days', 1, 'number', function (v, a, c) {
       var d = toDate(v), n = toNumber(a[0]);
       if (d === null || n === null) return false;
       return d >= c.now - n * DAY_MS && d <= c.now;
     }),
-    date_within_next_days: op('date', 'is within the next N days', 1, 'number', function (v, a, c) {
+    date_within_next_days: op('date', 'is within the next {value} days', 1, 'number', function (v, a, c) {
       var d = toDate(v), n = toNumber(a[0]);
       if (d === null || n === null) return false;
       return d >= c.now && d <= c.now + n * DAY_MS;
     }),
-    date_more_than_days_ago: op('date', 'is more than N days ago', 1, 'number', function (v, a, c) {
+    date_more_than_days_ago: op('date', 'is more than {value} days ago', 1, 'number', function (v, a, c) {
       var d = toDate(v), n = toNumber(a[0]);
       if (d === null || n === null) return false;
       return d < c.now - n * DAY_MS;
     }),
-    date_more_than_days_ahead: op('date', 'is more than N days from now', 1, 'number', function (v, a, c) {
+    date_more_than_days_ahead: op('date', 'is more than {value} days from now', 1, 'number', function (v, a, c) {
       var d = toDate(v), n = toNumber(a[0]);
       if (d === null || n === null) return false;
       return d > c.now + n * DAY_MS;
@@ -802,65 +802,152 @@
     return meta.arity;
   }
 
+  /**
+   * The English for each problem validateDocument() can report, keyed by its
+   * `code`. `{name}` is filled from the problem's `params`. The editor's
+   * `labels.problems` takes the same keys and placeholders.
+   */
+  var PROBLEM_MESSAGES = {
+    notObject: 'Node is not an object',
+    groupOperator: 'Group operator must be "and" or "or"',
+    groupChildren: 'Group children must be an array',
+    nodeType: 'Unknown node type "{type}"',
+    noField: 'Condition has no field',
+    unknownField: 'Unknown field "{field}"',
+    unknownOperator: 'Unknown operator "{operator}"',
+    listArity: 'Operator "{operator}" expects a single list value',
+    arity: 'Operator "{operator}" expects {expected} value(s), got {actual}',
+    valueNotObject: 'Value must be an object',
+    valueNoField: 'Field value has no field name',
+    valueSource: 'Value source must be "literal" or "field"'
+  };
+
   function validateDocument(document, options) {
     options = options || {};
     var doc = normaliseDocument(document);
     var problems = [];
     var fieldNames = options.fields ? options.fields.map(function (f) { return typeof f === 'string' ? f : f.name; }) : null;
 
+    // Each problem carries a `code` and the `params` its message was built
+    // from, as well as the English `message`, so a caller can say the same
+    // thing in another language. The editor does, through labels.problems.
+    function report(path, code, params) {
+      params = params || {};
+      problems.push({ path: path, code: code, params: params, message: fillTemplate(PROBLEM_MESSAGES[code], params) });
+    }
+
     (function walk(node, path) {
       if (!node || typeof node !== 'object') {
-        problems.push({ path: path, message: 'Node is not an object' });
+        report(path, 'notObject');
         return;
       }
       if (node.type === 'group') {
-        if (['and', 'or'].indexOf(node.operator) === -1) {
-          problems.push({ path: path, message: 'Group operator must be "and" or "or"' });
-        }
+        if (['and', 'or'].indexOf(node.operator) === -1) report(path, 'groupOperator');
         if (!Array.isArray(node.children)) {
-          problems.push({ path: path, message: 'Group children must be an array' });
+          report(path, 'groupChildren');
           return;
         }
         node.children.forEach(function (child, i) { walk(child, path + '.children[' + i + ']'); });
         return;
       }
       if (node.type !== 'condition') {
-        problems.push({ path: path, message: 'Unknown node type "' + node.type + '"' });
+        report(path, 'nodeType', { type: String(node.type) });
         return;
       }
-      if (!node.field) problems.push({ path: path, message: 'Condition has no field' });
+      if (!node.field) report(path, 'noField');
       else if (fieldNames && fieldNames.indexOf(node.field) === -1) {
-        problems.push({ path: path, message: 'Unknown field "' + node.field + '"' });
+        report(path, 'unknownField', { field: String(node.field) });
       }
       var meta = operatorMeta(doc, node.operator, options.operators);
       if (!meta) {
-        problems.push({ path: path, message: 'Unknown operator "' + node.operator + '"' });
+        report(path, 'unknownOperator', { operator: String(node.operator) });
         return;
       }
       var arity = expectedArity(meta);
       var values = node.values || [];
       if (arity === 'n') {
-        if (values.length !== 1) problems.push({ path: path, message: 'Operator "' + node.operator + '" expects a single list value' });
+        if (values.length !== 1) report(path, 'listArity', { operator: node.operator });
       } else if (values.length !== arity) {
-        problems.push({ path: path, message: 'Operator "' + node.operator + '" expects ' + arity + ' value(s), got ' + values.length });
+        report(path, 'arity', { operator: node.operator, expected: arity, actual: values.length });
       }
       values.forEach(function (v, i) {
+        var at = path + '.values[' + i + ']';
         if (!v || typeof v !== 'object') {
-          problems.push({ path: path + '.values[' + i + ']', message: 'Value must be an object' });
+          report(at, 'valueNotObject');
           return;
         }
         if (v.source === 'field') {
-          if (!v.field) problems.push({ path: path + '.values[' + i + ']', message: 'Field value has no field name' });
+          if (!v.field) report(at, 'valueNoField');
           else if (fieldNames && fieldNames.indexOf(v.field) === -1) {
-            problems.push({ path: path + '.values[' + i + ']', message: 'Unknown field "' + v.field + '"' });
+            report(at, 'unknownField', { field: String(v.field) });
           }
         } else if (v.source !== 'literal') {
-          problems.push({ path: path + '.values[' + i + ']', message: 'Value source must be "literal" or "field"' });
+          report(at, 'valueSource');
         }
       });
     }(doc.root, 'root'));
 
     return problems;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Label templates
+   *
+   * A label may carry placeholders — `{name}` — so a translation can put a
+   * value where its own word order wants it: 'Remove {value}' in English,
+   * 'Ta bort {value}' in Swedish, '删除{value}' in Chinese. Concatenating
+   * English around a value would fix the order for every language.
+   * ------------------------------------------------------------------ */
+
+  /** Fill `{name}` placeholders from `vars`; one with no value is left as written. */
+  function fillTemplate(template, vars) {
+    vars = vars || {};
+    return String(template === null || template === undefined ? '' : template)
+      .replace(/\{([A-Za-z][A-Za-z0-9]*)\}/g, function (m, key) {
+        return Object.prototype.hasOwnProperty.call(vars, key) && vars[key] !== null && vars[key] !== undefined
+          ? String(vars[key]) : m;
+      });
+  }
+
+  var VALUE_SLOT = '{value}';
+
+  /**
+   * Split an operator label at its `{value}` slot, or null when it has none.
+   *
+   * 'is within the last {value} days' reads "is within the last 7 days" once
+   * the operand is in place; 'är inom de senaste {value} dagarna' does the
+   * same in Swedish. describe() and the editor both read this, so the
+   * summary and the row put the operand in the same place. The whitespace on
+   * either side of the slot is kept as written: '在过去{value}天内' wants none.
+   * A second `{value}` means nothing and is dropped.
+   */
+  function splitOperatorLabel(label) {
+    var text = String(label === null || label === undefined ? '' : label);
+    var at = text.indexOf(VALUE_SLOT);
+    if (at === -1) return null;
+    var head = text.slice(0, at);
+    var tail = text.slice(at + VALUE_SLOT.length).split(VALUE_SLOT).join('');
+    var h = head.replace(/\s+$/, '');
+    var t = tail.replace(/^\s+/, '');
+    return {
+      head: h,
+      before: head.slice(h.length),
+      after: tail.slice(0, tail.length - t.length),
+      tail: t
+    };
+  }
+
+  /** An operator label as a whole, with an ellipsis where the operand goes. */
+  function operatorLabelText(label, gap) {
+    var slot = splitOperatorLabel(label);
+    if (!slot) return String(label);
+    return (slot.head + slot.before + (gap === undefined ? '…' : gap) + slot.after + slot.tail).trim();
+  }
+
+  /** A non-empty string from a labels map, or the fallback. */
+  function labelOr(map, key, fallback) {
+    var v = map && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
+    return typeof v === 'string' && v !== '' ? v : fallback;
   }
 
   /* ------------------------------------------------------------------ *
@@ -882,7 +969,7 @@
     value: function (s, quoted) { return quoted ? '"' + s + '"' : s; },
     list: function (parts) { return '[' + parts.join(', ') + ']'; },
     logic: function (s) { return s; },
-    not: function () { return 'NOT'; },
+    not: function (s) { return s; },
     open: function () { return '('; },
     close: function () { return ')'; },
     join: function (s) { return s; },
@@ -912,10 +999,12 @@
     list: function (parts) {
       return '<span class="kcd-list">' + parts.join('<span class="kcd-sep">, </span>') + '</span>';
     },
-    logic: function (s) {
-      return '<span class="kcd-logic kcd-' + (s === 'OR' ? 'or' : 'and') + '">' + escapeHtml(s) + '</span>';
+    // The class is the operator, not the word: a translated "OR" still wants
+    // the OR colour.
+    logic: function (s, op) {
+      return '<span class="kcd-logic kcd-' + (op === 'or' ? 'or' : 'and') + '">' + escapeHtml(s) + '</span>';
     },
-    not: function () { return '<span class="kcd-not">NOT</span>'; },
+    not: function (s) { return '<span class="kcd-not">' + escapeHtml(s) + '</span>'; },
     open: function () { return '<span class="kcd-paren">(</span>'; },
     close: function () { return '<span class="kcd-paren">)</span>'; },
     join: function (s) { return '<span class="kcd-join">' + escapeHtml(s) + '</span>'; },
@@ -925,6 +1014,17 @@
   function describeWith(document, options, f) {
     options = options || {};
     var doc = normaliseDocument(document);
+    // The editor's own `labels` object can be passed as it is: the words of
+    // the rule (AND, OR, NOT, the "and" of `between`, the empty text) and the
+    // operator names in `labels.operators`. Anything missing is English.
+    var labels = options.labels || {};
+    var opNames = labels.operators || {};
+    var words = {
+      and: labelOr(labels, 'and', 'AND'),
+      or: labelOr(labels, 'or', 'OR'),
+      not: labelOr(labels, 'not', 'NOT'),
+      join: labelOr(labels, 'andJoin', 'and')
+    };
     var labelFor = {};
     var choiceLabels = {};
     (options.fields || []).forEach(function (field) {
@@ -968,6 +1068,8 @@
     }
 
     function opLabel(name) {
+      var own = labelOr(opNames, name, null);
+      if (own !== null) return own;
       var m = operatorMeta(doc, name, options.operators);
       return (m && m.label) || name;
     }
@@ -977,34 +1079,47 @@
       if (n.type === 'group') {
         var parts = (n.children || []).map(node).filter(Boolean);
         if (!parts.length) return '';
-        var joined = parts.join(' ' + f.logic(n.operator === 'or' ? 'OR' : 'AND') + ' ');
+        var op = n.operator === 'or' ? 'or' : 'and';
+        var joined = parts.join(' ' + f.logic(words[op], op) + ' ');
         var wrapped = parts.length > 1 ? f.open() + joined + f.close() : joined;
         return n.negate
-          ? f.not() + ' ' + (parts.length > 1 ? wrapped : f.open() + wrapped + f.close())
+          ? f.not(words.not) + ' ' + (parts.length > 1 ? wrapped : f.open() + wrapped + f.close())
           : wrapped;
       }
       var meta = operatorMeta(doc, n.operator, options.operators);
       var arity = expectedArity(meta);
-      var text = f.field(fieldLabel(n.field)) + ' ' + f.op(opLabel(n.operator));
       var values = n.values || [];
       // A substring or a pattern is not one of the field's choices, so it must
       // not be swapped for a choice label: `contains "FL"` is looking for the
       // letters F and L, and rendering it as `contains "Florida"` misreads the
       // rule. Only operators that compare against a whole value get the label.
       var useChoices = !meta || meta.valueFromChoices !== false;
+      var operands = '';
       if (arity === 2 && values.length === 2) {
-        text += ' ' + valueText(values[0], n.field, useChoices) +
-          f.join(' and ') + valueText(values[1], n.field, useChoices);
+        operands = valueText(values[0], n.field, useChoices) +
+          f.join(' ' + words.join + ' ') + valueText(values[1], n.field, useChoices);
       } else if (values.length) {
-        text += ' ' + values.map(function (v) { return valueText(v, n.field, useChoices); })
+        operands = values.map(function (v) { return valueText(v, n.field, useChoices); })
           .join(f.join(', '));
       }
-      return n.negate ? f.not() + ' ' + f.open() + text + f.close() : text;
+      // An operator label with a {value} slot has its operand put there —
+      // "is within the last 7 days" — and the words either side of it are
+      // both the operator's. Without one, the operand follows the label.
+      var label = opLabel(n.operator);
+      var slot = splitOperatorLabel(label);
+      var text = f.field(fieldLabel(n.field)) + ' ';
+      if (!slot) text += f.op(label) + (operands ? ' ' + operands : '');
+      else if (!operands) text += f.op(operatorLabelText(label));
+      else {
+        text += (slot.head ? f.op(slot.head) + slot.before : '') + operands +
+          (slot.tail ? slot.after + f.op(slot.tail) : '');
+      }
+      return n.negate ? f.not(words.not) + ' ' + f.open() + text + f.close() : text;
     }
 
     var out = node(doc.root);
     if (!out) {
-      var empty = options.emptyText || 'Always';
+      var empty = options.emptyText || labelOr(labels, 'empty', 'Always');
       return f.document(f === HTML_FORMAT ? escapeHtml(empty) : empty);
     }
     return f.document(out);
@@ -1059,6 +1174,7 @@
     describeHtml: describeHtml,
     escapeHtml: escapeHtml,
     validateDocument: validateDocument,
+    PROBLEM_MESSAGES: PROBLEM_MESSAGES,
     createDocument: createDocument,
     isEmptyDocument: isEmptyDocument,
     normaliseDocument: normaliseDocument,
@@ -1068,7 +1184,9 @@
       getPath: getPath, toNumber: toNumber, toDate: toDate, toBool: toBool,
       normaliseChoices: normaliseChoices, choiceValues: choiceValues, asString: asString,
       toList: toList, isEmptyValue: isEmptyValue, looseEquals: looseEquals,
-      startOfUtcDay: startOfUtcDay, resolvePolicy: resolvePolicy
+      startOfUtcDay: startOfUtcDay, resolvePolicy: resolvePolicy,
+      fillTemplate: fillTemplate, splitOperatorLabel: splitOperatorLabel,
+      operatorLabelText: operatorLabelText
     }
   };
 }));

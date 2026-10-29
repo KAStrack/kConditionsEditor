@@ -92,3 +92,14 @@ test('shared describe fixtures', async (t) => {
     });
   }
 });
+
+test('shared validate fixtures', async (t) => {
+  for (const testCase of fixtures.validateCases) {
+    await t.test(testCase.name, () => {
+      // The whole problem, not just the message: the code and params are what
+      // a translated message is built from, so they are the contract too.
+      assert.deepStrictEqual(KConditions.validateDocument(testCase.document, testCase.options || {}),
+        testCase.expected);
+    });
+  }
+});
