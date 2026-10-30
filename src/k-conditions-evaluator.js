@@ -1,5 +1,5 @@
 /*!
- * kConditions Evaluator 0.1.4
+ * kConditions Evaluator 0.1.5
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -14,7 +14,7 @@
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.1.4';
+  var LIB_VERSION = '0.1.5';
 
   /* ------------------------------------------------------------------ *
    * Errors

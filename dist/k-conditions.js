@@ -1,4 +1,4 @@
-/*! kConditionsEditor 0.1.4 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
+/*! kConditionsEditor 0.1.5 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -17,7 +17,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions Evaluator 0.1.4
+ * kConditions Evaluator 0.1.5
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -32,7 +32,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.1.4';
+  var LIB_VERSION = '0.1.5';
 
   /* ------------------------------------------------------------------ *
    * Errors
@@ -1218,7 +1218,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions SQL 0.1.4
+ * kConditions SQL 0.1.5
  * Translates a kConditions document into a self-contained SQL boolean
  * expression — the part that goes after WHERE in a SELECT.
  *
@@ -1245,7 +1245,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (K) {
   'use strict';
 
-  var VERSION = '0.1.4';
+  var VERSION = '0.1.5';
   var DAY_MS = 86400000;
 
   /* ------------------------------------------------------------------ *
@@ -1746,7 +1746,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditionsEditor 0.1.4
+ * kConditionsEditor 0.1.5
  * A zero-dependency conditions builder that takes over a <textarea>.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  *
@@ -1765,7 +1765,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (KConditions) {
   'use strict';
 
-  var VERSION = '0.1.4';
+  var VERSION = '0.1.5';
   var BUILTIN = KConditions.BUILTIN_OPERATORS;
   var GROUPS = KConditions.OPERATOR_GROUPS;
   var TYPE_GROUPS = KConditions.FIELD_TYPE_GROUPS;
@@ -1820,6 +1820,16 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       }
     }
     return node;
+  }
+
+  /**
+   * The text a select's shell shows as its name: the label span, or the
+   * value of the editor's own kSelect. Null for a host's widget, which the
+   * editor neither shrinks nor reads.
+   */
+  function nameLabelOf(shell) {
+    return shell.querySelector(':scope > .kce-sel-label') ||
+      (shell.classList.contains('kce-sel-ks') ? shell.querySelector('.ks-single-value') : null);
   }
 
   /**
@@ -4150,9 +4160,21 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     // and again whenever what it shows changes (a multi-select's tags). The
     // AND / OR alignment, the floats and the guides are measured, so each
     // shell is watched and the layout re-run when it changes size.
+    //
+    // Only a change the layout did not make itself counts. The pass sets
+    // min-widths on these shells, so it changes their size, and a pass that
+    // re-ran on its own writes would only need to be off by a fraction of a
+    // pixel to run every frame for ever (it was, in 0.1.4). The sizes the
+    // last pass left (noteShellSizes) are skipped.
     if (!this.shellObserver && typeof ResizeObserver === 'function') {
-      this.shellObserver = new ResizeObserver(function () {
-        if (!self.destroyed && self.onViewportResize) self.onViewportResize();
+      this.shellObserver = new ResizeObserver(function (entries) {
+        if (self.destroyed || !self.onViewportResize) return;
+        var moved = entries.some(function (e) {
+          var was = e.target.kceFitSize;
+          var now = e.target.getBoundingClientRect();
+          return !was || Math.abs(now.width - was.width) > 0.5 || Math.abs(now.height - was.height) > 0.5;
+        });
+        if (moved) self.onViewportResize();
       });
     }
     if (this.shellObserver) this.shellObserver.observe(entry.shell);
@@ -4259,7 +4281,10 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       }
     }
     var self = this;
-    select.addEventListener('kselect:open', function () { self.raiseKselectLayer(); });
+    select.addEventListener('kselect:open', function () {
+      self.raiseKselectLayer();
+      self.fitKselectList(entry.shell);
+    });
     try {
       k.init(select, extend(base, extra || {}));
     } catch (e) {
@@ -4313,6 +4338,63 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     } catch (e) { /* not in a document that can show it; it still works in place */ }
     return this;
   };
+
+  /**
+   * An open list is as wide as its longest option needs, up to 36em (the
+   * stylesheet's max-width), and its options wrap past that: field names
+   * here are often whole questions told apart only at the end, and a list
+   * cutting each at the same "…" cannot be chosen from. kSelect makes its
+   * list the width of the control it opens from — a word, here — and keeps
+   * it on screen by that width, so both are seen to here.
+   *
+   * The width is measured once, with nothing filtered, and kept, so the list
+   * does not change width under a search. It is set after kSelect has placed
+   * the list and scrolled to the current choice, so that scroll is kept, and
+   * a list opening upwards keeps its foot on the control.
+   */
+  Editor.prototype.fitKselectList = function (shell) {
+    var control = shell.querySelector('.ks-control');
+    var listbox = control && document.getElementById(control.getAttribute('aria-controls') || '');
+    var list = listbox && listbox.closest('.ks-dropdown');
+    // On a phone kSelect opens a sheet instead, which is the screen's width.
+    if (!list || !list.offsetWidth) return this;
+    if (!list.kceWidth) {
+      var before = list.getBoundingClientRect();
+      var chosen = listbox.querySelector('.ks-option-focused') || listbox.querySelector('[aria-selected="true"]');
+      var offset = chosen ? chosen.offsetTop - listbox.scrollTop : 0;
+      var width = list.style.width;
+      list.style.width = 'max-content';
+      // A list that scrolls also holds its scrollbar, which max-content
+      // leaves out.
+      var natural = list.getBoundingClientRect().width + (listbox.offsetWidth - listbox.clientWidth);
+      list.style.width = width;
+      list.kceWidth = Math.ceil(natural) + 'px';
+      list.style.minWidth = 'min(' + list.kceWidth + ', calc(100vw - 16px))';
+      if (chosen) listbox.scrollTop = chosen.offsetTop - offset;
+      if (list.classList.contains('ks-dropup')) {
+        var foot = before.bottom - list.getBoundingClientRect().bottom;
+        if (foot) list.style.top = ((parseFloat(list.style.top) || 0) + foot) + 'px';
+      }
+    }
+    keepListOnScreen(list);
+    // kSelect places the list again as the page scrolls or resizes, from
+    // its control's width; put it back on screen each time.
+    if (!list.kceWatch && typeof MutationObserver === 'function') {
+      list.kceWatch = new MutationObserver(function () { keepListOnScreen(list); });
+      list.kceWatch.observe(list, { attributes: true, attributeFilter: ['style'] });
+    }
+    return this;
+  };
+
+  /** Move a list left until its right edge is on screen, never past the left edge. */
+  function keepListOnScreen(list) {
+    if (!list.offsetWidth) return;
+    var gutter = 8;
+    var r = list.getBoundingClientRect();
+    var shift = Math.min(0, document.documentElement.clientWidth - gutter - r.right);
+    shift = Math.max(shift, Math.min(0, gutter - r.left));
+    if (shift) list.style.left = ((parseFloat(list.style.left) || 0) + shift) + 'px';
+  }
 
   Editor.prototype.syncKselectLayer = function () {
     var layer = this.ksLayer;
@@ -5039,27 +5121,45 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
    * And a row that still cannot fit is given the width it needs, so the line
    * overflows and the tree scrolls sideways, instead of the row's own content
    * spilling out of its box and over the AND / OR beside it.
+   *
+   * Every minimum this sets is cleared before anything is measured. A shell
+   * still holding the last pass's min-width measures as that width, so its
+   * "chevron" allowance (shell minus label) would include the last result,
+   * and each pass would add a fraction of a pixel to the one before — which,
+   * with a watched widget in the row, ran a pass a frame for ever (0.1.4).
+   * Clear, then read, then write: a pass never reads its own result, and the
+   * page lays out once rather than once per shell. Each name is read at its
+   * natural width (held from shrinking while it is read): squeezed, a shell
+   * can be narrower than its own chevron, and the allowance comes out short.
    */
   Editor.prototype.fitRows = function () {
     if (!this.open || !this.tree) return this;
     var rows = this.tree.querySelectorAll('.kce-condition');
+    var names = [];
     Array.prototype.forEach.call(rows, function (row) {
       row.style.minWidth = '';
       for (var c = row.firstElementChild; c; c = c.nextElementSibling) {
         if (!/(^|\s)kce-sel(\s|$)/.test(c.className)) continue;
         // The editor's own kSelect ellipsis its value as the label does, so
         // it gives up width the same way, to the same floor.
-        var label = c.querySelector(':scope > .kce-sel-label') ||
-          (c.classList.contains('kce-sel-ks') ? c.querySelector('.ks-single-value') : null);
+        var label = nameLabelOf(c);
         if (!label) continue;
-        var floor = 2.5 * (parseFloat(window.getComputedStyle(c).fontSize) || 14);
-        var cs = window.getComputedStyle(label);
-        var natural = label.scrollWidth + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
-        // The floor is the label's; the shell also holds a chevron, which
-        // never shrinks, so its width goes on top.
-        var extra = Math.max(0, c.getBoundingClientRect().width - label.getBoundingClientRect().width);
-        c.style.minWidth = Math.ceil(Math.min(natural, floor) + extra) + 'px';
+        c.style.minWidth = '';
+        c.style.flex = 'none';
+        names.push({ shell: c, label: label });
       }
+    });
+    names.forEach(function (n) {
+      var floor = 2.5 * (parseFloat(window.getComputedStyle(n.shell).fontSize) || 14);
+      var natural = n.label.getBoundingClientRect().width;
+      // The floor is the label's; the shell also holds a chevron, which
+      // never shrinks, so its width goes on top.
+      var extra = Math.max(0, n.shell.getBoundingClientRect().width - natural);
+      n.minWidth = Math.ceil(Math.min(natural, floor) + extra) + 'px';
+    });
+    names.forEach(function (n) {
+      n.shell.style.flex = '';
+      n.shell.style.minWidth = n.minWidth;
     });
     Array.prototype.forEach.call(rows, function (row) {
       // scrollWidth excludes the border, minWidth includes it (border-box).
@@ -5302,6 +5402,55 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     if (this.tree) this.positionAdds();
     this.positionGuides();
     this.placeTidyNote();
+    this.markClippedNames();
+    this.noteShellSizes();
+    return this;
+  };
+
+  /**
+   * A name cut short with "…" — a field that is a whole question, told from
+   * its neighbours only at the end — shows itself whole on hover. On the
+   * shell, not the control: a screen reader already hears the whole name as
+   * the control's value (the "…" is only painted), and a title on the control
+   * would read it out a second time as its description. Only a clipped name
+   * gets one; a tooltip repeating what is in full view is noise.
+   */
+  Editor.prototype.markClippedNames = function () {
+    if (!this.open || !this.tree) return this;
+    Array.prototype.forEach.call(this.tree.querySelectorAll('.kce-condition .kce-sel:not(.kce-sel-source)'), function (shell) {
+      var label = nameLabelOf(shell);
+      var text = label && isClipped(label) ? label.textContent.trim() : '';
+      if (text) {
+        if (shell.getAttribute('title') !== text) shell.setAttribute('title', text);
+      } else if (shell.hasAttribute('title')) {
+        shell.removeAttribute('title');
+      }
+    });
+    return this;
+  };
+
+  /**
+   * Whether an element's text is wider than its box. Measured with a range,
+   * which reports the text's own width, fractions and all: scrollWidth and
+   * clientWidth are rounded, and called "is" cut by a pixel it is not.
+   */
+  function isClipped(node) {
+    if (!node.firstChild || typeof document.createRange !== 'function') return false;
+    var range = document.createRange();
+    range.selectNodeContents(node);
+    var cs = window.getComputedStyle(node);
+    var room = node.getBoundingClientRect().width -
+      (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) -
+      (parseFloat(cs.borderLeftWidth) || 0) - (parseFloat(cs.borderRightWidth) || 0);
+    return range.getBoundingClientRect().width > room + 0.5;
+  }
+
+  /** What the layout left each watched shell at, so the watch can tell its own work from a change. */
+  Editor.prototype.noteShellSizes = function () {
+    (this.decorated || []).forEach(function (entry) {
+      var r = entry.shell.getBoundingClientRect();
+      entry.shell.kceFitSize = { width: r.width, height: r.height };
+    });
     return this;
   };
 

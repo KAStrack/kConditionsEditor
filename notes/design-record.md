@@ -5,7 +5,7 @@ per-version notes beside this file carry the detail; `CHANGELOG.md` is the
 user-facing version of the same story. Kept in the repository from 0.0.22 so it
 travels with the code.*
 
-Last updated: 2026-10-29 (version 0.1.4)
+Last updated: 2026-10-29 (version 0.1.5)
 
 ## What this is
 
@@ -916,6 +916,16 @@ theme, above a modal dialog. Detail in `0.1.3-kselect.md`.
 kSelect 1.11.1 made its open list a clean listbox (the fix found by 0.1.3's
 accessibility check, made upstream). The pin, its SRI hashes and the vendored
 fixture move to it, and the check's kSelect exemption is removed.
+
+## v0.1.5 — rows that settle, names that can be read
+
+HDC on its first day: a row beside a kSelect re-ran its layout every frame
+(`fitRows()` read its own last result; the 0.1.2 widget watch took the change
+for the widget's), and an 80-field list of whole questions cut every option
+at the same "…". `fitRows()` now clears, measures at natural width, then
+writes; the watch skips sizes the layout left; the open list is as wide as
+its options up to 36em and wraps past that; a clipped name has a tooltip.
+Detail in `0.1.5-long-names.md`.
 
 ## Open items / not yet done
 

@@ -1,6 +1,6 @@
 # kConditions Document Specification
 
-Version `1.0` — emitted by kConditionsEditor 0.1.4
+Version `1.0` — emitted by kConditionsEditor 0.1.5
 
 A **condition document** is a JSON object describing a boolean expression over a
 set of named fields. It is produced by the editor and consumed by any SDK.
@@ -8,7 +8,7 @@ set of named fields. It is produced by the editor and consumed by any SDK.
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.1.4",
+  "generator": "kConditionsEditor/0.1.5",
   "operators": {},
   "root": {
     "type": "group",

@@ -4,6 +4,57 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] — 2026-10-29
+
+From HDC's first day on 0.1.4: about 80 fields, many of them whole
+questions, with the built-in kSelect and the host's text at 16px.
+
+### Fixed
+
+- **A row beside a kSelect never settled.** Its names grew or shrank a pixel
+  a frame, for ever — the operator widening, the field narrowing to a stub
+  within seconds. `fitRows()`, which gives each name a readable floor, read
+  the floor it had set on the last pass as part of the name's width, so each
+  pass added a fraction of a pixel to the one before; and the watch on a
+  widget's size (0.1.2, for widgets that arrive late) took that change for
+  the widget's own and ran the layout again. It showed when a name was
+  shorter than the floor (about 2.5em): "is yes" at 16px, "is" at any size.
+  Two fixes, each enough on its own:
+  - `fitRows()` clears what it set, then measures, then writes, so a pass
+    never reads its own result. It measures each name at its natural width:
+    squeezed, a name could measure narrower than its own chevron, and was
+    cut a letter short ("i." for "is").
+  - The widget watch ignores sizes the layout itself left. A widget that
+    changes size by itself still re-runs it.
+- **The built-in kSelect's text was 0.9375rem whatever the editor's was**, so
+  with a host's `--kce-font-size` the field read smaller than the operator
+  beside it, and the open list smaller than the rule. It follows
+  `--kce-font-size` now, closed and open.
+
+### Changed
+
+- **Long names can be read in the open list.** It cut every option at the
+  same "…", so `"Do you have skills… in any of the following areas: Cooking"`
+  and `"…: Baking"` looked the same until chosen. Now the list is as wide as
+  its longest option up to 36em (it was the width of the word it opened
+  from, at least 14em, at most 28em), and an option longer than that wraps.
+  The width is measured once as it opens, so a search does not narrow the
+  list under the pointer; the scroll to the current choice is kept, and a
+  list opening upwards keeps its foot on its control.
+- **An open list stays on screen.** kSelect places a list at its control's
+  left and keeps it on screen by the control's width, so a list wider than
+  its control, opened near the right of the window, ran off it. The editor
+  moves it back, as it opens and each time kSelect places it again.
+- **A name cut with "…" shows itself whole on hover** — field, operator or
+  value, native or kSelect — as a tooltip on the select's shell, only while
+  it is cut. Not on the control: a screen reader already hears the whole
+  name as its value (the "…" is only painted), and a title there would read
+  it a second time.
+
+A host that worked round these can drop its patches: a `fitRows` override
+that clears the minimums first, and CSS that wraps `.ks-option-text` or
+widens `.kce-ks-layer .ks-dropdown`.
+
 ## [0.1.4] — 2026-10-29
 
 ### Changed

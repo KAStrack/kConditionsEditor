@@ -1,6 +1,6 @@
-/*! kConditionsEditor 0.1.4 — base stylesheet and every skin | MIT | https://github.com/KAStrack/kConditionsEditor */
+/*! kConditionsEditor 0.1.5 — base stylesheet and every skin | MIT | https://github.com/KAStrack/kConditionsEditor */
 /*!
- * kConditionsEditor 0.1.4 — base stylesheet + the "boxed" skin
+ * kConditionsEditor 0.1.5 — base stylesheet + the "boxed" skin
  *
  * Every colour and metric is a CSS custom property, so the whole editor can be
  * restyled by overriding the --kce-* variables on .kce or any ancestor.
@@ -424,7 +424,9 @@ textarea.kce-hidden-textarea {
 .kce-ks-layer,
 .kce .kce-sel-ks {
   --ks-font-family: inherit;
-  --ks-font-size: 0.9375rem;
+  /* The editor's size, a host's --kce-font-size included: 1em of the row
+     the control sits in, and of the layer (a .kce) a list opens in. */
+  --ks-font-size: 1em;
   --ks-line-height: 1.45;
   --ks-color-bg: var(--kce-bg);
   --ks-color-border: var(--kce-border-strong);
@@ -454,14 +456,24 @@ textarea.kce-hidden-textarea {
 }
 
 /* The list opens from a word, not from a box, so it is not as narrow as the
-   word: wide enough to read a field name in, and a card of its own rather
-   than the bottom half of a box. */
+   word: as wide as its longest option, up to 36em (fitKselectList measures
+   it), and a card of its own rather than the bottom half of a box. */
 .kce-ks-layer .ks-dropdown {
   min-width: 14em;
-  max-width: min(28em, calc(100vw - 16px));
+  max-width: min(36em, calc(100vw - 16px));
   margin-top: 3px;
   border-top: 1.5px solid var(--ks-color-border-focus);
   border-radius: var(--ks-radius-dropdown);
+}
+
+/* Past that, an option wraps rather than ending in "…": a field that is a
+   whole question ("…: Cooking", "…: Baking") is told from its neighbours
+   only at the end. Group names too. */
+.kce-ks-layer .ks-option-text,
+.kce-ks-layer .ks-group-label {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
 }
 
 /* A widget beside the select is sized by what it shows, not by a host rule
@@ -1774,7 +1786,7 @@ textarea.kce-hidden-textarea {
 .kcd-sep, .kcd-join { color: var(--kcd-op); }
 
 /*!
- * kConditionsEditor 0.1.4 — alternative skins
+ * kConditionsEditor 0.1.5 — alternative skins
  *
  * Load after k-conditions-editor.css and pick one with the `skin` option:
  *

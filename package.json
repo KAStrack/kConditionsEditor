@@ -1,6 +1,6 @@
 {
   "name": "@kastrack/conditions-editor",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A zero-dependency conditions builder that takes over a <textarea>, plus evaluator SDKs that turn the JSON it writes into a boolean.",
   "keywords": [
     "conditions",

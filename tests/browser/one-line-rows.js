@@ -143,8 +143,13 @@ function install(FIELDS) {
   const withKselect = await open(null, 'one-line-rows-kselect.html');
 
   // prose twice: AND / OR below each row (the default), and inline. Then
-  // prose, inline prose and boxed again with the editor's own kSelect.
-  for (const entry of ['prose', 'prose-inline', 'equation', 'boxed', 'ks:prose', 'ks:prose-inline', 'ks:boxed']) {
+  // prose, inline prose and boxed again with the editor's own kSelect —
+  // which run as one-line-rows-kselect.js, a script of their own, so each
+  // half stays inside the runner's time per script.
+  const KSELECT_ONLY = process.env.KCE_ONE_LINE === 'kselect';
+  const ENTRIES = ['prose', 'prose-inline', 'equation', 'boxed', 'ks:prose', 'ks:prose-inline', 'ks:boxed']
+    .filter((e) => (e.indexOf('ks:') === 0) === KSELECT_ONLY);
+  for (const entry of ENTRIES) {
     const ks = entry.indexOf('ks:') === 0;
     const variant = entry.replace('ks:', '');
     const p = ks ? withKselect : plain;
@@ -185,6 +190,13 @@ function install(FIELDS) {
         }
       }
     }
+  }
+
+  if (KSELECT_ONLY) {
+    finish(errs);
+    await b.close();
+    site.close();
+    return;
   }
 
   // Hover mode, prose: the add buttons float. Shown on hover where the pointer

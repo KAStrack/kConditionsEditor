@@ -81,7 +81,7 @@ stylesheet is required for every skin except `boxed`, and
 carries the built files for that version. To vendor a release, take `dist/` from the
 tag (it holds the `LICENSE`) and record the version, which is also in each file's
 banner — or load it from a CDN that serves tags, such as
-`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.4/dist/k-conditions.min.js`.
+`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.5/dist/k-conditions.min.js`.
 The npm package carries the same files. The sources stay the deliverable: edit `src/`,
 then rebuild; `npm test` fails if `dist/` is not what the build makes from `src/`.
 
@@ -155,7 +155,7 @@ if (K.evaluate(document, submission, { environment: 'server' })) {
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.1.4",
+  "generator": "kConditionsEditor/0.1.5",
   "operators": {},
   "root": {
     "type": "group",
@@ -1118,7 +1118,8 @@ The editor is built for narrow hosts as well as wide pages. **A row is one
 line**: its arrows, × and the AND / OR after it never drop below it. When the
 line is short the row gives up width — its value first, down to a floor
 (enough to type in, or to read a date in), then the field and operator names,
-which ellipsis but keep a readable few letters. A value of fixed size
+which ellipsis but keep a readable few letters; a name cut short shows itself whole on
+hover (a screen reader hears it whole anyway). A value of fixed size
 (`between`, a date range) shrinks to stay on its line; only an "is one of" tag
 list wraps, inside its own box, with the field, operator and controls on its
 first line. If a row still cannot fit, the line scrolls sideways rather than
@@ -1321,9 +1322,12 @@ select from the same author — the editor uses it **by itself, with no configur
   headings.
 - **It reads as the sentence.** In prose and the equation skins the closed kSelect is drawn
   as the word it replaces — the field name bold, a value in the value's type, a dotted
-  underline on hover — and gives up width the same way, ellipsis and all. Opening it gives
-  kSelect's searchable list, in the editor's colours and dark mode, at least 14em wide; its
-  search box lies over the word, so nothing on the row moves. Boxed keeps kSelect's box, at
+  underline on hover — at the editor's own size (`--kce-font-size`), and gives up width the
+  same way, ellipsis and all. Opening it gives kSelect's searchable list, in the editor's
+  colours and dark mode, as wide as its longest option up to 36em (at least 14em, and kept
+  on screen); past that an option **wraps** rather than ending in "…", so fields named
+  `"{question}: {item}"` can be told apart by their end. Its search box lies over the word,
+  so nothing on the row moves. Boxed keeps kSelect's box, at
   boxed's own size. A host theme that gives every `.ks-control` a form-control box does not
   reach these.
 - **Its words are yours:** `labels.search`, `labels.noResults`, `labels.selectedCount`
@@ -1423,8 +1427,10 @@ SPEC.md                       the document specification
 
 ## Status
 
-**0.1.4** — kSelect, built in (0.1.3): detected and used for the long lists with no
-configuration, loadable from the CDN, drawn as the sentence; now on kSelect 1.11.1, whose
+**0.1.5** — rows settle (0.1.4's layout could re-run itself every frame beside a kSelect),
+and long field names can be read: the open list wraps them, the closed field shows its
+whole name on hover. kSelect, built in (0.1.3): detected and used for the long lists with
+no configuration, loadable from the CDN, drawn as the sentence; on kSelect 1.11.1, whose
 open list is axe-clean. 0.1.2 made every string
 translatable, added a hook for a host's own select widget and field groups, made every skin
 axe-clean, and committed `dist/` so each tag carries its build. The document

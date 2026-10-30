@@ -14,7 +14,7 @@
 
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.1.4</span></a>
+    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.1.5</span></a>
     <nav class="site-nav">
       <a href="./">Home</a>
       <a href="demo.html">Playground</a>
@@ -118,7 +118,7 @@ import '@kastrack/conditions-editor/editor.css';</code></pre>
       is committed: every tag carries the built files for that version. To vendor a
       release, take <code>dist/</code> from the tag and record the version (it is also in
       each file's banner), or load it from a CDN that serves tags —
-      <code>https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.4/dist/k-conditions.min.js</code>.
+      <code>https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.5/dist/k-conditions.min.js</code>.
       The npm package carries the same files. The sources remain the deliverable: edit
       <code>src/</code>, then rebuild; <code>npm test</code> fails while <code>dist/</code>
       is not what the build makes from <code>src/</code>.
@@ -655,7 +655,8 @@ State is equal to Florida   AND (
       <strong>A row is one line</strong>: its arrows, × and the AND / OR after it
       never drop below it. When the line is short the row gives up width — its
       value first, down to a floor, then the field and operator names, which
-      ellipsis but keep a readable few letters. <code>between</code> and date
+      ellipsis but keep a readable few letters; a name cut short shows itself whole on
+      hover. <code>between</code> and date
       ranges shrink to stay on their line; only an "is one of" tag list wraps,
       inside its box, with everything else on its first line. A row that still
       cannot fit makes the line scroll sideways rather than overlap.
@@ -941,8 +942,13 @@ KConditions.describe(document, { fields, labels });</code></pre>
       <li><strong>A search box</strong> opens with any list of more than 8 entries; field
         <code>group</code>s are its headings.</li>
       <li><strong>It reads as the sentence:</strong> in prose and the equation skins the
-        closed kSelect is drawn as the word it replaces, and its list opens in the editor's
-        colours and dark mode, above a modal dialog too. Boxed keeps kSelect's box.</li>
+        closed kSelect is drawn as the word it replaces, at the editor's
+        <code>--kce-font-size</code>, and its list opens in the editor's colours and dark
+        mode, above a modal dialog too. Boxed keeps kSelect's box.</li>
+      <li><strong>Long names wrap</strong> in the open list rather than ending in "…": it is
+        as wide as its longest option up to 36em, kept on screen, and an option longer than
+        that takes a second line — so <code>"{question}: {item}"</code> fields are told
+        apart by their end.</li>
       <li><strong>Its words</strong> are <code>labels.search</code>,
         <code>labels.noResults</code>, <code>labels.selectedCount</code>,
         <code>labels.close</code> and <code>labels.removeValue</code>.</li>
@@ -1629,7 +1635,7 @@ editor.describeHtml();  // string of HTML</code></pre>
 
 <footer class="site-footer">
   <div class="wrap">
-    kConditionsEditor 0.1.4 — MIT licensed.
+    kConditionsEditor 0.1.5 — MIT licensed.
     <a href="https://github.com/KAStrack/kConditionsEditor">Source on GitHub</a>.
   </div>
 </footer>
