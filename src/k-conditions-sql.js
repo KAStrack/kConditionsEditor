@@ -1,5 +1,5 @@
 /*!
- * kConditions SQL 0.1.5
+ * kConditions SQL 0.1.6
  * Translates a kConditions document into a self-contained SQL boolean
  * expression — the part that goes after WHERE in a SELECT.
  *
@@ -26,7 +26,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (K) {
   'use strict';
 
-  var VERSION = '0.1.5';
+  var VERSION = '0.1.6';
   var DAY_MS = 86400000;
 
   /* ------------------------------------------------------------------ *
@@ -67,6 +67,54 @@
   DIALECTS.postgresql = DIALECTS.postgres;
   DIALECTS.mssql = DIALECTS.sqlserver;
   DIALECTS.ansi = DIALECTS.standard;
+
+  /* ------------------------------------------------------------------ *
+   * JSON-stored list fields (`storage: 'json'`)
+   *
+   * The column is text holding a JSON array of strings. Two things make
+   * that awkward in SQL, and both are handled here rather than left to the
+   * host:
+   *
+   * - Empty is spelled many ways (NULL, '', [], null, [""], ["[]"], [null],
+   *   "[]", "", "[\"\"]"), and no dialect can decode twice, so the
+   *   spellings are listed.
+   *   The text is compared through a cast, which also reads a native JSON
+   *   column: none of the spellings has a comma, so the server's own
+   *   normalised text of one is the same characters.
+   * - The JSON functions raise an error on text that is not JSON — and ''
+   *   is one of the empty spellings — which fails the whole query. Each test
+   *   sits in a CASE that checks validity first, the one construct the
+   *   servers evaluate in order, and is 0 when the text is not JSON.
+   *
+   * Nothing here can be NULL, so a NOT in front of it never drops a row.
+   * Dialects without a tested translation are not in this table; there the
+   * unsupported-operator policy applies rather than SQL that might be wrong.
+   * ------------------------------------------------------------------ */
+
+  // Read from the evaluator, which holds the one list both SDKs pin.
+  var JSON_EMPTY_FORMS = K.helpers.JSON_EMPTY_FORMS;
+
+  var JSON_DIALECTS = {
+    mysql: {
+      text: function (col) { return 'CAST(' + col + ' AS CHAR)'; },
+      valid: function (col) { return 'JSON_VALID(' + col + ')'; },
+      // The element as a JSON string, then as a SQL string: '"O''Brien"'.
+      holds: function (col, value, b) {
+        return 'JSON_CONTAINS(' + col + ', ' + b.literal(JSON.stringify(K.helpers.asString(value))) + ')';
+      }
+    },
+    sqlite: {
+      text: function (col) { return 'CAST(' + col + ' AS TEXT)'; },
+      valid: function (col) { return 'json_valid(' + col + ')'; },
+      // json_each walks an array's elements, a bare string as itself, and an
+      // object's members — which JSON_CONTAINS does not, so an object's keys
+      // (text, where an element's are numbers) are left out.
+      holds: function (col, value, b) {
+        return 'EXISTS (SELECT 1 FROM json_each(' + col + ") WHERE json_each.type = 'text'" +
+          " AND typeof(json_each.key) <> 'text' AND json_each.value = " + b.literal(K.helpers.asString(value)) + ')';
+      }
+    }
+  };
 
   /* ------------------------------------------------------------------ *
    * Builder
@@ -118,6 +166,9 @@
       self.columnFor[f.name] = f.column || f.sql || f.name;
       if (f.type) self.typeFor[f.name] = f.type;
     });
+    // Read through the evaluator's own helper, so a field the evaluator
+    // decodes as JSON is the same field the SQL treats as JSON.
+    this.storageFor = K.helpers.storageMap(this.o.fields);
     if (this.o.columns) {
       Object.keys(this.o.columns).forEach(function (k) { self.columnFor[k] = self.o.columns[k]; });
     }
@@ -375,6 +426,18 @@
 
     if (manifest) {
       if (manifest.sql) return this.template(manifest.sql, node, col);
+      if (manifest.kind === 'callback') {
+        throw unresolved('callback operators have no SQL equivalent; give the operator an "sql" template');
+      }
+    } else if (!K.BUILTIN_OPERATORS[op]) {
+      throw unresolved('unknown operator');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this.storageFor, node.field)) {
+      return this.jsonList(node, manifest, col);
+    }
+
+    if (manifest) {
       if (manifest.kind === 'values') {
         var list = K.choiceValues(manifest.values);
         var arity = manifest.arity === undefined ? 0 : manifest.arity;
@@ -384,11 +447,6 @@
           list.map(function (x) { return self.literal(x); }).join(', ') + ')';
         return manifest.match === 'not_in' ? orNull(expr) : expr;
       }
-      if (manifest.kind === 'callback') {
-        throw unresolved('callback operators have no SQL equivalent; give the operator an "sql" template');
-      }
-    } else if (!K.BUILTIN_OPERATORS[op]) {
-      throw unresolved('unknown operator');
     }
 
     /* --- builtins ---------------------------------------------------- */
@@ -427,8 +485,10 @@
       case 'includes_all':
         // A multi-valued column has no portable storage shape (a CSV string, a
         // JSON array, a junction table), so there is nothing dialect-neutral to
-        // emit. A custom operator with an `sql` template says how YOUR schema
-        // stores it; otherwise the unresolved-operator policy applies.
+        // emit. A field with `storage: 'json'` says which shape it is, and is
+        // handled by jsonList() above; otherwise a custom operator with an
+        // `sql` template says how YOUR schema stores it, or the
+        // unresolved-operator policy applies.
         throw unresolved('operator "' + op + '" has no SQL translation: a multi-valued column has no portable shape; use a custom operator with an "sql" template');
 
       case 'date_eq': {
@@ -477,6 +537,46 @@
       default:
         throw unresolved('operator "' + op + '" has no SQL translation');
     }
+  };
+
+  /**
+   * A condition on a field with `storage: 'json'`. The list and existence
+   * operators are translated for the dialects in JSON_DIALECTS; anything else
+   * — `eq` or `contains` against JSON text, a dialect with no tested
+   * translation — is unsupported, so the policy decides, not a guess.
+   */
+  Builder.prototype.jsonList = function (node, manifest, col) {
+    var self = this;
+    var op = node.operator;
+    var j = JSON_DIALECTS[this.dialectName];
+    if (manifest) {
+      throw unsupported('a custom operator on a JSON-stored field needs an "sql" template');
+    }
+    if (K.helpers.JSON_LIST_OPERATORS.indexOf(op) === -1) {
+      throw unsupported('"' + op + '" has no SQL translation for a JSON-stored field');
+    }
+    if (!j) throw unsupported(this.dialectName + ' has no translation for a JSON-stored field');
+
+    var forms = JSON_EMPTY_FORMS.map(function (f) { return "'" + self.d.escape(f) + "'"; }).join(', ');
+    // `is set` is `is not empty` here, as in the evaluators: a list column
+    // clears to [] on one save path and to NULL on another.
+    if (op === 'is_empty' || op === 'is_not_set') {
+      return '(' + col + ' IS NULL OR ' + j.text(col) + ' IN (' + forms + '))';
+    }
+    if (op === 'is_not_empty' || op === 'is_set') {
+      return '(' + col + ' IS NOT NULL AND ' + j.text(col) + ' NOT IN (' + forms + '))';
+    }
+
+    var first = (node.values || [])[0];
+    if (first && first.source === 'field') {
+      throw unsupported('a JSON-stored field is not compared with another column');
+    }
+    // The operands exactly as the evaluators read them: nothing chosen never
+    // matches.
+    var want = K.helpers.jsonListOperands((first || {}).value);
+    if (!want.length) return '1 = 0';
+    var tests = want.map(function (w) { return j.holds(col, w, self); });
+    return 'CASE WHEN ' + j.valid(col) + ' THEN ' + tests.join(op === 'includes_any' ? ' OR ' : ' AND ') + ' ELSE 0 END';
   };
 
   /**

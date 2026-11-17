@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.1.5
+ * kConditionsEditor 0.1.6
  * A zero-dependency conditions builder that takes over a <textarea>.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  *
@@ -18,7 +18,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (KConditions) {
   'use strict';
 
-  var VERSION = '0.1.5';
+  var VERSION = '0.1.6';
   var BUILTIN = KConditions.BUILTIN_OPERATORS;
   var GROUPS = KConditions.OPERATOR_GROUPS;
   var TYPE_GROUPS = KConditions.FIELD_TYPE_GROUPS;
@@ -405,7 +405,10 @@
     // Choices may be scalars, {value,label} objects, or an associative map
     // ({ FL: 'Florida' }); they are normalised to [{value,label}] once, here.
     if (field.choices) field.choices = KConditions.normaliseChoices(field.choices);
-    field.type = field.type || (field.choices && field.choices.length ? 'enum' : 'text');
+    // A field stored as a JSON array is a list whatever else it says, unless
+    // the host types it itself.
+    field.type = field.type || (KConditions.helpers.fieldStorage(field) ? 'list'
+      : (field.choices && field.choices.length ? 'enum' : 'text'));
     field.values = field.values || ['literal', 'field'];
     // The SQL builder needs a column name; default it to the field name.
     if (!field.column) field.column = field.name;
@@ -767,6 +770,13 @@
     }
     if (Array.isArray(field.excludeOperators)) {
       names = names.filter(function (n) { return field.excludeOperators.indexOf(n) === -1; });
+    }
+    // On a JSON-stored field "is set" means "is not empty" (a list column
+    // clears to [] on one save path and NULL on another), so offering both
+    // would be two names for one question. A host that lists them in
+    // `operators` still gets them; a rule that already uses one keeps it.
+    if (KConditions.helpers.fieldStorage(field) && !(Array.isArray(field.operators) && field.operators.length)) {
+      names = names.filter(function (n) { return n !== 'is_set' && n !== 'is_not_set'; });
     }
     return names.filter(function (n) { return !!self.operatorMeta(n); });
   };
@@ -4174,7 +4184,13 @@
     /* field select */
     var fieldSel = el('select', 'kce-select kce-field', { 'aria-label': this.labels.fieldSelect, 'data-fk': node.id + ':field' });
     if (!node.field) fieldSel.appendChild(el('option', null, { value: '', text: this.labels.chooseField }));
-    appendFieldOptions(fieldSel, this.fields, node.field, this.groupOrder);
+    // A saved rule may name a field the host no longer lists. Show it, as the
+    // compare-with list does: a selector showing the first field beside a
+    // rule about another would misreport the rule, and the first change
+    // anywhere would quietly rewrite it.
+    var listedFields = this.fields;
+    if (node.field && !field) listedFields = [{ name: node.field, label: node.field }].concat(this.fields);
+    appendFieldOptions(fieldSel, listedFields, node.field, this.groupOrder);
     this.onSelect(fieldSel, function () { self.setField(node, fieldSel.value); });
     row.appendChild(this.selectFor(fieldSel, 'kce-sel-field', 'field', node, field));
 
@@ -4182,12 +4198,20 @@
     var meta = this.operatorMeta(node.operator);
     var arity = meta ? (meta.arity === undefined ? 1 : meta.arity) : 0;
     var opSel = el('select', 'kce-select kce-operator', { 'aria-label': this.labels.operatorSelect, 'data-fk': node.id + ':op' });
-    if (field) {
-      var names = this.operatorsForField(field);
+    var names = field ? this.operatorsForField(field) : [];
+    // The same for an operator the field no longer offers — a rule saved
+    // when the field was `text`, now `list`. It is listed, chosen, under its
+    // own heading, so the row says what the rule does and the rule keeps
+    // doing it until someone picks another operator; then it is gone from
+    // the list, like any choice the field does not offer.
+    if (node.operator && names.indexOf(node.operator) === -1) names = names.concat([node.operator]);
+    if (names.length) {
       var byGroup = {};
       var order = [];
+      var unknown = [];
       names.forEach(function (n) {
         var m = self.operatorMeta(n);
+        if (!m) { unknown.push(n); return; }
         var g = m.group || 'other';
         if (!byGroup[g]) { byGroup[g] = []; order.push(g); }
         byGroup[g].push({ name: n, meta: m });
@@ -4207,6 +4231,13 @@
           og.appendChild(o);
         });
         opSel.appendChild(og);
+      });
+      // An operator this page has no definition for at all: its name, as the
+      // rule holds it, with no heading to file it under.
+      unknown.forEach(function (n) {
+        var o = el('option', null, { value: n, text: n });
+        if (n === node.operator) o.selected = true;
+        opSel.appendChild(o);
       });
     }
     // On the row, the chosen operator's operand goes in its slot: the shell

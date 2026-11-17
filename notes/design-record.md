@@ -5,7 +5,7 @@ per-version notes beside this file carry the detail; `CHANGELOG.md` is the
 user-facing version of the same story. Kept in the repository from 0.0.22 so it
 travels with the code.*
 
-Last updated: 2026-10-29 (version 0.1.5)
+Last updated: 2026-11-17 (version 0.1.6)
 
 ## What this is
 
@@ -927,6 +927,22 @@ writes; the watch skips sizes the layout left; the open list is as wide as
 its options up to 36em and wraps past that; a clipped name has a tooltip.
 Detail in `0.1.5-long-names.md`.
 
+## v0.1.6 — a list stored as a JSON array
+
+KAStrack's multi-user fields are JSON arrays of IDs in a text column, with
+empty spelled `[]`, NULL, `''`, `["[]"]` and more depending on the save path.
+Declared `text`, `is not empty` was `<> ''`, which `[]` passes; and the list
+operators had no SQL at all. A field option, `storage: 'json'`, read through
+one helper per SDK (`fieldStorage()` / `readJsonList()`, PHP
+`Support\JsonStorage`) by the evaluators, the SQL builders and the editor.
+The evaluators gained a `fields` option to hear it. Every decision bends
+toward the evaluators and the SQL picking the same rows, checked against a
+real MySQL 8.4 and SQLite: a twice-saved value is decoded again only to see
+whether it is empty, text that is not JSON includes nothing, `is set` means
+`is not empty`. The editor also shows a saved operator or field the host no
+longer offers, rather than painting the first option over it. Detail in
+`0.1.6-json-storage.md`.
+
 ## Open items / not yet done
 
 - Python, Ruby, Go SDKs (deferred; the fixtures are the contract for a port).
@@ -938,6 +954,11 @@ Detail in `0.1.5-long-names.md`.
   a nested rule's structure reaches them only through the order of the rows.
 - No async operator support — synchronous by design.
 - SQL is a best-effort translation, not row-identical to the evaluator.
+- `storage: 'json'` has SQL for MySQL / MariaDB and SQLite only. PostgreSQL
+  (`::jsonb ?|` behind `IS JSON`, PG 16+) was not translated because it could
+  not be tested here. The SQL lists the spellings of empty, so `[ ]` and
+  `["", ""]` are empty to the evaluators but not to it; MySQL's `JSON_CONTAINS`
+  looks into nested arrays, the evaluators do not.
 - **Sibling order is presentational**: `evalGroup` has no short-circuiting, so
   neither the result nor which callbacks run depends on it. If short-circuiting
   is ever added, reordering becomes semantic and needs documenting as such.

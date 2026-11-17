@@ -1,6 +1,6 @@
 # kConditions Document Specification
 
-Version `1.0` — emitted by kConditionsEditor 0.1.5
+Version `1.0` — emitted by kConditionsEditor 0.1.6
 
 A **condition document** is a JSON object describing a boolean expression over a
 set of named fields. It is produced by the editor and consumed by any SDK.
@@ -8,7 +8,7 @@ set of named fields. It is produced by the editor and consumed by any SDK.
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.1.5",
+  "generator": "kConditionsEditor/0.1.6",
   "operators": {},
   "root": {
     "type": "group",
@@ -158,11 +158,11 @@ is false, not "always". Case folding follows the evaluator's `caseInsensitive`
 option.
 
 A host exposes such a field as `type: 'list'`, which offers the `list` and
-`existence` groups by default. The SQL builders emit nothing for these two
-operators: a multi-valued column has no portable storage shape (a CSV string, a
-JSON array, a junction table), so they are translated only through a custom
-operator with an `sql` template that knows the host's schema; otherwise the
-unresolved-operator policy applies.
+`existence` groups by default. A multi-valued column has no portable storage
+shape (a CSV string, a JSON array, a junction table), so the SQL builders
+translate these two operators only when the field says which shape it is —
+`storage: 'json'`, §7 — or through a custom operator with an `sql` template
+that knows the host's schema; otherwise the unresolved-operator policy applies.
 
 ### Date — group `date`
 
@@ -437,3 +437,108 @@ evaluate($document, $data, $options, function ($document, $data, $options, $resu
     return new RuleOutcome($result, $details['skipped']);
 });
 ```
+
+---
+
+## 7. Field definitions
+
+A host describes its fields once, as a list of definitions, and hands the same
+list to the editor (`fields`), the evaluators (`fields`), the SQL builders
+(`fields`), `describe()` (`fields`) and `validateDocument()` (`fields`). Field
+definitions are host configuration, not part of the document: nothing from them
+is copied into it, so a document stays the same rule whichever schema it is run
+against. Each SDK reads only the keys it needs:
+
+| Key       | Read by                     | Meaning                                                        |
+|-----------|-----------------------------|----------------------------------------------------------------|
+| `name`    | all                         | The key a condition's `field` names; dot paths supported       |
+| `label`   | `describe()`, the editor    | Shown for the field; defaults to `name`                        |
+| `choices` | `describe()`, the editor    | The field's value set (§3.1's three forms); labels values      |
+| `type`    | the editor, the SQL builders | `text`, `number`, `date`, `boolean`, `enum`, `list`           |
+| `column`  | the SQL builders            | The SQL column; defaults to `name`                             |
+| `storage` | the evaluators, the SQL builders, the editor | How the value is stored (§7.1)                 |
+
+A field with no definition behaves as it always has. So does a field whose
+definition has no `storage`, or a `storage` an SDK does not know.
+
+### 7.1 `storage: 'json'` — a list stored as a JSON array
+
+The field's value is a list kept as JSON array text — `["3184","3152"]`, and `[]`
+for none — the shape a multi-select usually takes in a text column. The value is
+compared case-insensitively (`'JSON'` works). It describes the column, so it
+belongs next to `column`, and is meant for `type: 'list'` fields; a definition with
+`storage: 'json'` and no `type` is a list.
+
+**Reading the value.** A value may arrive as the stored text or already decoded
+(an array). It is read as follows, in every SDK:
+
+1. `null`, absent, or `""` — **empty**.
+2. Text is decoded as JSON. Text that is not JSON at all is **something that names
+   nothing**: not empty, and it includes no value.
+3. The decoded value:
+   - `null` or `""` — **empty**;
+   - an array — a list of its elements;
+   - a string — a list of that one string, unless the string is itself an empty
+     list saved a second time (`"[]"`, `"[\"\"]"`), which is **empty**;
+   - anything else (a number, a boolean, an object) — not empty, includes no value.
+4. An element is **empty** when it is `null`, `""`, or a string or array that is
+   itself an empty list (the `"[]"` of `["[]"]`). A list whose elements are all
+   empty is empty. Of the rest, the **string** elements are the list's values;
+   a number element (`3184`) is not the value `"3184"`.
+
+A value saved twice is decoded the second time only to see whether it is empty;
+its contents are not read from it. No SQL dialect can decode twice, and a rule must
+pick the same rows in SQL as in an evaluator — for the same reason, text that is
+not JSON includes nothing, which is what the SQL says about it.
+
+**The operators.** With the value read that way:
+
+| Operator                     | True when                                              |
+|------------------------------|--------------------------------------------------------|
+| `is_empty`, `is_not_set`     | the value is empty                                     |
+| `is_not_empty`, `is_set`     | the value is not empty                                 |
+| `includes_any`               | at least one operand is among the list's values        |
+| `includes_all`               | every operand is among the list's values               |
+
+`is_set` and `is_not_set` mean `is_not_empty` and `is_empty` here: a list column
+clears to `[]` on one save path and to `NULL` on another, so "set but empty" is
+nothing a person could ask about, and "is not set" must not miss the `[]` rows.
+The editor offers only the `is_empty` / `is_not_empty` pair for such a field
+unless the field's `operators` lists the others.
+
+Operands are compared with the values as strings (`3184` matches `"3184"`), folded
+by the evaluator's `caseInsensitive` option. An operand that is itself empty (`""`,
+`"[]"`) is dropped, and with none left the condition is false — nothing chosen
+never matches, as in §2. Any other operator, a registered callback or a custom
+operator is handed the decoded value, as it would be handed an array passed in
+directly.
+
+**SQL.** The column is text, so the SQL builders list the spellings of empty and
+keep the JSON functions off text that is not JSON (they raise an error on it, `""`
+included, which fails the whole query). Every expression is 0 or 1, never `NULL`,
+so a `NOT` in front of it never drops a row. MySQL / MariaDB:
+
+| Operator                 | SQL                                                                                                   |
+|--------------------------|-------------------------------------------------------------------------------------------------------|
+| `is_empty`, `is_not_set` | `(col IS NULL OR CAST(col AS CHAR) IN (<empty forms>))`                                               |
+| `is_not_empty`, `is_set` | `(col IS NOT NULL AND CAST(col AS CHAR) NOT IN (<empty forms>))`                                      |
+| `includes_any` A, B      | `CASE WHEN JSON_VALID(col) THEN JSON_CONTAINS(col, '"A"') OR JSON_CONTAINS(col, '"B"') ELSE 0 END`    |
+| `includes_all` A, B      | the same, joined with `AND`                                                                           |
+
+`<empty forms>` is `'', '[]', '["[]"]', '[""]', '[null]', 'null', '"[]"', '""',
+'"[\"\"]"'`, escaped for the dialect. Each operand is JSON-encoded as a string and
+then quoted as SQL (`'"O''Brien"'`), or bound as a parameter. The cast reads a native
+`JSON` column too: none of the forms has a comma, so the server's own normalised text
+of one is the same characters. SQLite uses the same shape with `CAST(col AS TEXT)`,
+`json_valid(col)` and, for each operand, `EXISTS (SELECT 1 FROM json_each(col) WHERE
+json_each.type = 'text' AND typeof(json_each.key) <> 'text' AND json_each.value = 'A')`.
+Other dialects have no tested translation, and any other operator on such a field
+(`eq`, `contains` against JSON text) has no faithful one; both fall to the
+unsupported-operator policy. A custom operator with an `sql` template is used as
+written.
+
+Where the SQL and the evaluators can differ: spellings of empty outside the list
+(`[ ]`, `["", ""]`) are empty to the evaluators and not to the SQL, and MySQL's
+`JSON_CONTAINS` looks inside nested arrays (`[["3184"]]`), which the evaluators and
+SQLite do not. No save path is known to write either.
+

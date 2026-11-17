@@ -4,6 +4,121 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] — 2026-11-17
+
+For KAStrack's multi-value fields — a users field such as "Assigned To" — whose
+column holds a JSON array of IDs. The document format is unchanged (spec `1.0`),
+and a field without the new option behaves exactly as before.
+
+### Added
+
+- **`storage: 'json'` on a field definition: a list kept as a JSON array.**
+  `["3184","3152"]`, and `[]` for none, in a text column — the shape a
+  multi-select usually takes. Until now no part of the library knew it: declared
+  `text`, *is not empty* was `col <> ''`, which `[]` passes, so a rule "colour
+  unassigned cards, except where Assigned To is not empty" excepted every card;
+  declared `list`, the SQL builders still ignored the type for *is empty*, and
+  emitted nothing at all for *includes any of* / *includes all of*. Now one
+  option, next to `column`, is read by every part, each through one helper:
+  - **Every spelling of empty is empty**: `NULL`, `''`, `[]`, `null`, `[""]`,
+    `["[]"]`, `[null]`, and `"[]"`, `""`, `"[\"\"]"` (the same saved twice).
+    Text that is not JSON at all is not empty but includes no value.
+  - **The evaluators** (JS and PHP) take a new **`fields`** option — the same
+    list the editor takes — and decode such a field, stored text or an array
+    already decoded, before any operator sees it. *Includes any / all of* compare
+    the list's string elements with the operands as strings.
+  - **The SQL builders** emit, for MySQL / MariaDB:
+    `(col IS NULL OR CAST(col AS CHAR) IN (…every spelling of empty…))` for
+    *is empty*, the `IS NOT NULL AND … NOT IN` twin for *is not empty*, and
+    `CASE WHEN JSON_VALID(col) THEN JSON_CONTAINS(col, '"3184"') OR … ELSE 0 END`
+    for *includes any of* (`AND` for *all of*). The `CASE` keeps `JSON_CONTAINS`
+    off text that is not JSON — it fails the whole query on `''` — and nothing
+    can be `NULL`, so `NOT (… includes any of Ben)` keeps the unassigned rows.
+    Values are JSON-encoded, then SQL-quoted (`'"O''Brien"'`), or bound. SQLite
+    gets the same shape with `json_valid()` / `json_each()`. Other dialects, and
+    `eq` / `contains` and the rest on JSON text, fall to `unsupportedPolicy`
+    rather than SQL that might be wrong. All of it was run against MySQL 8.4 (a
+    `TEXT` and a native `JSON` column) and SQLite, row by row against the
+    evaluator; README and SPEC §7 list the two spellings where they still differ.
+  - **The editor** offers *includes any of*, *includes all of*, *is empty* and
+    *is not empty*, the values picked by label and stored as IDs; `type` defaults
+    to `list` when `storage` is given. *Is set* / *is not set* mean *is not empty*
+    / *is empty* on such a field — a list column clears to `[]` on one save path
+    and NULL on another — so they are no longer offered beside them unless a
+    field's `operators` names them.
+  - **`describe()`** names the choices: `[Assigned To] includes any of ["Ben Holness"]`.
+
+  SPEC.md gains §7, *Field definitions*, setting out which keys each SDK reads
+  and the exact reading; 83 evaluation, 21 SQL and 3 describe fixtures hold both
+  SDKs to it.
+
+### Fixed
+
+- **A saved rule whose operator the field no longer offers showed the wrong
+  operator.** The operator list was built from the field's current operators
+  alone, so a rule saved with `contains` on a field now typed `list` painted
+  *includes any of* — the first option — while the rule still held `contains`
+  and its text. Now the saved operator is listed, chosen, under its own heading,
+  and goes once another is picked. A rule naming a field the host no longer
+  lists did the same with the first field; it now shows the field's name. The
+  compare-with list already worked this way.
+
+### Coming from 0.0.34
+
+What a host on 0.0.34 will notice, release by release, and what to change.
+Nothing in the document format has changed since; saved rules load and evaluate
+as before except where noted.
+
+**To change:**
+
+- **Multi-value fields** (this release): send
+  `type: 'list', storage: 'json', column: '--ID_FOR_<field>', choices: { id: name, … }`,
+  and pass the same field list to the PHP `evaluate()` / `Evaluator` as `fields`
+  wherever these fields are evaluated (`toSql()` already takes it, for `column`).
+  Rules saved with *is not empty* on these fields keep working and become
+  correct. A rule saved with a text operator on one (`contains`, `is equal to`,
+  …) loads and shows as it is, but the SQL builder now refuses it — under the
+  default `unsupportedPolicy: 'error'` that is an exception, so re-edit such
+  rules or set the policy (`'skip'` leaves the condition to code). Those rules
+  compared display names, which the ID column does not hold, so none of them
+  would have matched as written anyway.
+- **kSelect** (0.1.3): `kselect: 'auto'` is the default, so **if the page loads
+  kSelect, the editor's long lists become kSelect widgets by themselves** — the
+  field list, the compare-with list, a value from a field's choices, and a list
+  of choices (so the new multi-value fields pick people through kSelect's tags).
+  Pass `kselect: false` to keep native selects.
+- **Dates with a time and no zone** (0.1.1), e.g. `2026-10-19 22:00`, are read as
+  that wall time in UTC by both SDKs. The JS SDK read them in the browser's zone
+  and PHP in the server's default zone, so a rule comparing them can change result
+  by the zone offset.
+
+**Behaviour and look you will see, nothing to change:**
+
+- Brackets that do nothing are taken out after every change and when a rule is
+  loaded (0.0.35); pointing at a control that would remove brackets marks them,
+  and a "Removed unneeded brackets · Undo" note follows the click (0.0.36). A rule
+  evaluates exactly as before.
+- New operators *includes any of* / *includes all of* and the `list` field type
+  (0.1.0).
+- The N-day date operators read with the number in place — `describe()` gives
+  `is within the last 7 days`, not `is within the last N days 7` (0.1.2). Anything
+  matching on the old sentence needs the new one.
+- The light theme's muted grey is a shade darker (`#5f6875`), for contrast; chips
+  in a list of choices show the label, not the stored value (0.1.2).
+- `theme: 'dark'` darkens the prose and ledger skins on a machine in light mode
+  (0.0.37); long names wrap in an open kSelect list and show whole on hover, and
+  rows beside a kSelect no longer creep (0.1.5).
+- Smaller fixes for a host that hit them: a no-break space round a value is
+  trimmed by PHP as by JS, a year below 100 is taken as written, and a number
+  compared as text is never written with an exponent (0.1.1).
+
+**New, if wanted:** every string through `labels`, operator names and headings
+included (0.1.2; new keys since 0.0.34 are listed in 0.1.2, 0.1.3 and 0.0.36's
+`bracketsRemoved`), a field `group` for headings in the field list,
+`decorateSelect` for a host's own select widget, and `validateDocument()`
+problems carrying a `code` and `params` (0.1.2). From 0.1.2 `dist/` is in the
+repository, so a release can be vendored from its tag.
+
 ## [0.1.5] — 2026-10-29
 
 From HDC's first day on 0.1.4: about 80 fields, many of them whole

@@ -1349,6 +1349,3313 @@
       "expected": false
     },
     {
+      "name": "storage json \u2014 NULL is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": null
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 NULL is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": null
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT (NULL is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": null
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 NULL includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": null
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": ""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '' is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": ""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT ('' is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": ""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '' includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": ""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[]' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[]' is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT ('[]' is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[]' includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[\"[]\"]' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"[]\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[\"[]\"]' is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"[]\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT ('[\"[]\"]' is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"[]\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[\"[]\"]' includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"[]\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[\"\"]' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[\"\"]' is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT ('[\"\"]' is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[\"\"]' includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[null]' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[null]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[null]' is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[null]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT ('[null]' is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[null]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[null]' includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[null]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 'null' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "null"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 'null' is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "null"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT ('null' is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "null"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 'null' includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "null"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '\"[]\"' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '\"[]\"' is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT ('\"[]\"' is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '\"[]\"' includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '\"\"' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '\"\"' is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT ('\"\"' is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '\"\"' includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '\"[\\\"\\\"]\"' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[\\\"\\\"]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '\"[\\\"\\\"]\"' is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[\\\"\\\"]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT ('\"[\\\"\\\"]\"' is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[\\\"\\\"]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '\"[\\\"\\\"]\"' includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[\\\"\\\"]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 decoded [] is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": []
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 decoded [] is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": []
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT (decoded [] is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": []
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 decoded [] includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": []
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 decoded [\"\"] is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": [
+          ""
+        ]
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 decoded [\"\"] is not 'is not empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": [
+          ""
+        ]
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT (decoded [\"\"] is not empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": [
+          ""
+        ]
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 decoded [\"\"] includes nothing, so NOT includes any holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": [
+          ""
+        ]
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 a field absent from the data is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {},
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 is not set is is empty: '[]' is not set",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 is set is is not empty: '[]' is not set",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 is set: '[\"3184\"]'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 '[\"3184\"]' is not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 includes any: stored text",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\",\"3152\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 includes any: decoded list",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3152"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": [
+          "3184",
+          "3152"
+        ]
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 includes any: no overlap",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "9999"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\",\"3152\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT includes any: no overlap",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "9999"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 NOT includes any: overlap",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 includes all: every operand held",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184",
+                    "3152"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3152\",\"3184\",\"1\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 includes all: one operand missing",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184",
+                    "3152"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT includes all: one operand missing",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_all",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184",
+                    "3152"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 includes any: nothing chosen never matches",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 includes all: nothing chosen never matches",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 includes any: blank and \"[]\" operands are dropped",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "",
+                    "[]"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"[]\",\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 includes any: a number operand matches the string element",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    3184
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 includes any: a number element is not the string \"3184\"",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[3184]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 a number element still makes the list not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[3184]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 a bare JSON string is a list of one",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"3184\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 a list saved twice is not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[\\\"3184\\\"]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 a list saved twice: its contents are not read (no SQL can)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[\\\"3184\\\"]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 empty elements are skipped",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"\", \"[]\", null, \"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 case-sensitive by default",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "ben"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"Ben\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 caseInsensitive folds elements and operands",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "ben"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"Ben\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ],
+        "caseInsensitive": true
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 non-JSON text is not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "claude claudesson (claude)"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 non-JSON text is not 'is empty'",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "claude claudesson (claude)"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 non-JSON text includes nothing, even itself",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "claude claudesson (claude)"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "claude claudesson (claude)"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "storage json \u2014 NOT includes any on non-JSON text holds",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "claude claudesson (claude)"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "claude claudesson (claude)"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 a JSON object is not a list: not empty, includes nothing",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "{\"a\":\"3184\"}"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "no storage option \u2014 '[]' is a non-empty string, as before",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "type": "list"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "no storage option \u2014 no fields given: '[]' is a non-empty string, as before",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {},
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 another field's storage does not apply",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Tags",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Tags": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 option value is case-insensitive",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "type": "list",
+            "storage": "JSON"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "storage json \u2014 an unknown storage value is ignored",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "type": "list",
+            "storage": "csv"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
       "name": "a comma-separated field value is a list",
       "document": {
         "version": "1.0",
@@ -4354,6 +7661,838 @@
         ]
       },
       "expectThrows": true
+    },
+    {
+      "name": "storage json, mysql \u2014 is_empty lists every spelling of empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NULL OR CAST(`--ID_FOR_Assigned To` AS CHAR) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+    },
+    {
+      "name": "storage json, mysql \u2014 is_not_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(`--ID_FOR_Assigned To` AS CHAR) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+    },
+    {
+      "name": "storage json, mysql \u2014 is_not_set is is_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NULL OR CAST(`--ID_FOR_Assigned To` AS CHAR) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+    },
+    {
+      "name": "storage json, mysql \u2014 is_set is is_not_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(`--ID_FOR_Assigned To` AS CHAR) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+    },
+    {
+      "name": "storage json, mysql \u2014 NOT is_not_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "NOT ((`--ID_FOR_Assigned To` IS NOT NULL AND CAST(`--ID_FOR_Assigned To` AS CHAR) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"')))"
+    },
+    {
+      "name": "storage json, mysql \u2014 includes_any: JSON_CONTAINS behind JSON_VALID",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184",
+                    "3152"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"3184\"') OR JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"3152\"') ELSE 0 END"
+    },
+    {
+      "name": "storage json, mysql \u2014 includes_all joins with AND",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184",
+                    "3152"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"3184\"') AND JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"3152\"') ELSE 0 END"
+    },
+    {
+      "name": "storage json, mysql \u2014 NOT includes_any can never be NULL, so it keeps empty rows",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "NOT (CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"3184\"') ELSE 0 END)"
+    },
+    {
+      "name": "storage json, mysql \u2014 each value JSON-encoded, then SQL-quoted",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "O'Brien",
+                    "a\\b",
+                    "say \"hi\"",
+                    "Zo\u00eb",
+                    "x/y",
+                    3184
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"O''Brien\"') OR JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"a\\\\\\\\b\"') OR JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"say \\\\\"hi\\\\\"\"') OR JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"Zo\u00eb\"') OR JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"x/y\"') OR JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"3184\"') ELSE 0 END"
+    },
+    {
+      "name": "storage json, mysql \u2014 a CSV operand is split as in the evaluators",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "3184, 3152"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"3184\"') OR JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"3152\"') ELSE 0 END"
+    },
+    {
+      "name": "storage json, mysql \u2014 nothing chosen never matches",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "1 = 0"
+    },
+    {
+      "name": "storage json, mysql \u2014 blank and \"[]\" operands are dropped",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "",
+                    "[]"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "1 = 0"
+    },
+    {
+      "name": "storage json, mysql \u2014 parameters bind the JSON-encoded value",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "O'Brien"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ],
+        "parameters": true
+      },
+      "expectedSql": "CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, ?) ELSE 0 END",
+      "expectedParams": [
+        "\"O'Brien\""
+      ]
+    },
+    {
+      "name": "storage json, mysql \u2014 eq has no translation for JSON text and errors by default",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "3184"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectThrows": true
+    },
+    {
+      "name": "storage json, mysql \u2014 contains has no translation for JSON text; the unsupported policy applies",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "31"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ],
+        "unsupportedPolicy": "skip"
+      },
+      "expectedSql": "1 = 1",
+      "expectSkipped": [
+        "contains"
+      ]
+    },
+    {
+      "name": "storage json, mysql \u2014 a custom operator's sql template still wins",
+      "document": {
+        "version": "1.0",
+        "operators": {
+          "has_owner": {
+            "kind": "callback",
+            "arity": 0,
+            "sql": "{field} <> '[]'"
+          }
+        },
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "has_owner",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "`--ID_FOR_Assigned To` <> '[]'"
+    },
+    {
+      "name": "storage json, postgres \u2014 no tested translation: errors by default",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectThrows": true
+    },
+    {
+      "name": "storage json, standard \u2014 no tested translation: the unsupported policy applies",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "standard",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ],
+        "unsupportedPolicy": "false"
+      },
+      "expectedSql": "1 = 0"
+    },
+    {
+      "name": "storage json, sqlite \u2014 is_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "sqlite",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "(\"--ID_FOR_Assigned To\" IS NULL OR CAST(\"--ID_FOR_Assigned To\" AS TEXT) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\"\\\"]\"'))"
+    },
+    {
+      "name": "storage json, sqlite \u2014 includes_any walks the array's string elements",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184",
+                    "O'Brien"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "sqlite",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedSql": "CASE WHEN json_valid(\"--ID_FOR_Assigned To\") THEN EXISTS (SELECT 1 FROM json_each(\"--ID_FOR_Assigned To\") WHERE json_each.type = 'text' AND typeof(json_each.key) <> 'text' AND json_each.value = '3184') OR EXISTS (SELECT 1 FROM json_each(\"--ID_FOR_Assigned To\") WHERE json_each.type = 'text' AND typeof(json_each.key) <> 'text' AND json_each.value = 'O''Brien') ELSE 0 END"
+    },
+    {
+      "name": "no storage option \u2014 is_not_empty on a list field is unchanged",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "column": "--ID_FOR_Assigned To",
+            "type": "list"
+          }
+        ]
+      },
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NOT NULL AND `--ID_FOR_Assigned To` <> '')"
     }
   ],
   "$describeComment": "Shared describe() / describeHtml() cases. Both SDKs must produce these strings byte for byte \u2014 the HTML ones also pin the escaping, which is the whole safety story for describeHtml.",
@@ -5712,6 +9851,128 @@
       },
       "expectedText": "[Tags] includes all of [\"Red\", \"Green\"]",
       "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Tags</strong> <span class=\"kcd-op\">includes all of</span> <span class=\"kcd-list\"><span class=\"kcd-value\">Red</span><span class=\"kcd-sep\">, </span><span class=\"kcd-value\">Green</span></span></span>"
+    },
+    {
+      "name": "storage json \u2014 includes any of names the people, not their IDs",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184",
+                    "3152"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedText": "[Assigned To] includes any of [\"Ben Holness\", \"claude claudesson (claude)\"]",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Assigned To</strong> <span class=\"kcd-op\">includes any of</span> <span class=\"kcd-list\"><span class=\"kcd-value\">Ben Holness</span><span class=\"kcd-sep\">, </span><span class=\"kcd-value\">claude claudesson (claude)</span></span></span>"
+    },
+    {
+      "name": "storage json \u2014 an ID with no choice shows as stored",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_all",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184",
+                    "9999"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedText": "[Assigned To] includes all of [\"Ben Holness\", \"9999\"]",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Assigned To</strong> <span class=\"kcd-op\">includes all of</span> <span class=\"kcd-list\"><span class=\"kcd-value\">Ben Holness</span><span class=\"kcd-sep\">, </span><span class=\"kcd-value\">9999</span></span></span>"
+    },
+    {
+      "name": "storage json \u2014 is not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "choices": {
+              "3184": "Ben Holness",
+              "3152": "claude claudesson (claude)"
+            }
+          }
+        ]
+      },
+      "expectedText": "NOT ([Assigned To] is not empty)",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-not\">NOT</span> <span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Assigned To</strong> <span class=\"kcd-op\">is not empty</span><span class=\"kcd-paren\">)</span></span>"
     },
     {
       "name": "a {value} slot puts the operand inside the operator label",

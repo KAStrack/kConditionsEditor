@@ -14,7 +14,7 @@
 
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.1.5</span></a>
+    <a class="brand" href="./">k<span>Conditions</span>Editor<span class="brand-version">0.1.6</span></a>
     <nav class="site-nav">
       <a href="./">Home</a>
       <a href="demo.html">Playground</a>
@@ -118,7 +118,7 @@ import '@kastrack/conditions-editor/editor.css';</code></pre>
       is committed: every tag carries the built files for that version. To vendor a
       release, take <code>dist/</code> from the tag and record the version (it is also in
       each file's banner), or load it from a CDN that serves tags —
-      <code>https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.5/dist/k-conditions.min.js</code>.
+      <code>https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.6/dist/k-conditions.min.js</code>.
       The npm package carries the same files. The sources remain the deliverable: edit
       <code>src/</code>, then rebuild; <code>npm test</code> fails while <code>dist/</code>
       is not what the build makes from <code>src/</code>.
@@ -685,7 +685,8 @@ State is equal to Florida   AND (
   type: 'date',                // text | number | date | boolean | enum | list
   group: 'Application',        // a heading in the field list (optional)
   column: 'c.date_of_birth',   // SQL column name; defaults to name
-  choices: [...],              // for enum fields; strings or {value, label}
+  storage: 'json',             // a list kept as a JSON array — see below
+  choices: [...],              // enum and list fields; strings or {value, label}
   operators: [...],            // explicit operator list, overrides the type default
   operatorGroups: [...],       // or pick whole groups: ['date', 'existence']
   excludeOperators: [...],     // remove specific operators from whatever was chosen
@@ -708,8 +709,53 @@ State is equal to Florida   AND (
       With no <code>operators</code> the field gets the groups its <code>type</code>
       implies: text → equality, alphanumeric, existence; number → equality, arithmetic,
       existence; date → date, existence; boolean → boolean, existence; enum → equality,
-      alphanumeric, existence. Entries in <code>operators</code> may be a bare operator
-      name or <code>"group:date"</code> to pull in a whole group.
+      alphanumeric, existence; list → list, existence (less <em>is set</em> and <em>is
+      not set</em> when the list is stored as JSON). Entries in <code>operators</code> may
+      be a bare operator name or <code>"group:date"</code> to pull in a whole group.
+    </p>
+
+    <h3 id="storage-json">A list stored as a JSON array</h3>
+    <p>
+      A multi-select is often kept in a text column as a JSON array of IDs —
+      <code>["3184","3152"]</code>, and <code>[]</code> for none. <code>storage: 'json'</code>
+      says so, and every part of the library reads it that way: the editor offers
+      <em>includes any of</em>, <em>includes all of</em>, <em>is empty</em> and <em>is not
+      empty</em>, with the values picked by label and stored as IDs (<code>type</code>
+      defaults to <code>list</code>); <code>describe()</code> names the choices; the
+      evaluators decode the value when given the same <code>fields</code>; and the SQL
+      builders emit SQL for that shape (<a href="#sql-json">below</a>).
+    </p>
+    <pre><code>{
+  name: 'Assigned To', label: 'Assigned To',
+  type: 'list', storage: 'json',
+  column: '--ID_FOR_Assigned To',
+  choices: { 3184: 'Ben Holness', 3152: 'claude claudesson (claude)' }
+}
+
+KConditions.evaluate(document, row, { fields });       // JavaScript
+evaluate($document, $row, ['fields' =&gt; $fields]);    // PHP</code></pre>
+    <p>
+      Every spelling of empty a column collects from its save paths is empty —
+      <code>NULL</code>, <code>''</code>, <code>[]</code>, <code>null</code>,
+      <code>[""]</code>, <code>["[]"]</code>, <code>[null]</code>, and <code>"[]"</code>,
+      <code>""</code>, <code>"[\"\"]"</code> (the same saved twice). Text that is not JSON
+      is not empty but includes no value, which is what the SQL says too, so a rule picks
+      the same rows in SQL as in an evaluator. <em>Is set</em> means <em>is not empty</em>
+      and <em>is not set</em> means <em>is empty</em>: a list column clears to
+      <code>[]</code> on one save path and to <code>NULL</code> on another. The exact
+      reading is in
+      <a href="https://github.com/KAStrack/kConditionsEditor/blob/main/SPEC.md#7-field-definitions">SPEC.md §7</a>.
+      A field without <code>storage</code> behaves exactly as before.
+    </p>
+
+    <h3>A saved rule the fields no longer fit</h3>
+    <p>
+      A rule saved before a field changed still loads as what it is. An operator the
+      field no longer offers — <code>contains</code> on a field that is now a list — is
+      shown, chosen, under its own heading, and kept until someone picks another; a field
+      the host no longer lists is shown by its name. Loading never changes the rule. The
+      SQL builders apply <code>unsupportedPolicy</code> to an operator they cannot
+      translate for the field.
     </p>
 
     <h3>Choices</h3>
@@ -1100,7 +1146,7 @@ $rows  = $db-&gt;query("SELECT * FROM contacts c WHERE $where");</code></pre>
       <thead><tr><th>Option</th><th>Default</th><th>Notes</th></tr></thead>
       <tbody>
         <tr><td><code>dialect</code></td><td><code>"standard"</code></td><td><code>mysql</code> (or <code>mariadb</code>), <code>postgres</code>, <code>sqlite</code>, <code>sqlserver</code>, <code>standard</code>.</td></tr>
-        <tr><td><code>fields</code></td><td><code>null</code></td><td>Supplies <code>column</code> and <code>type</code> per field. Optional — without it every field name is used as its own column.</td></tr>
+        <tr><td><code>fields</code></td><td><code>null</code></td><td>Supplies <code>column</code>, <code>type</code> and <code>storage</code> per field. Optional — without it every field name is used as its own column.</td></tr>
         <tr><td><code>columns</code></td><td><code>null</code></td><td>Or map field name to column directly.</td></tr>
         <tr><td><code>parameters</code></td><td><code>false</code></td><td>Emit placeholders; the values come back in <code>params</code>.</td></tr>
         <tr><td><code>placeholderStyle</code></td><td>per dialect</td><td><code>question</code> (<code>?</code>), <code>numbered</code> (<code>$1</code>), <code>named</code> (<code>@p1</code>).</td></tr>
@@ -1111,6 +1157,33 @@ $rows  = $db-&gt;query("SELECT * FROM contacts c WHERE $where");</code></pre>
         <tr><td><code>unsupportedPolicy</code></td><td><code>"error"</code></td><td>What to do when the dialect cannot express an operator.</td></tr>
       </tbody>
     </table>
+
+    <h3 id="sql-json">List fields stored as JSON</h3>
+    <p>
+      A field with <code>storage: 'json'</code> gets SQL for that shape. MySQL / MariaDB,
+      with <code>col</code> for the quoted column:
+    </p>
+    <table>
+      <thead><tr><th>Operator</th><th>SQL</th></tr></thead>
+      <tbody>
+        <tr><td><code>is_empty</code>, <code>is_not_set</code></td><td><code>(col IS NULL OR CAST(col AS CHAR) IN (…))</code></td></tr>
+        <tr><td><code>is_not_empty</code>, <code>is_set</code></td><td><code>(col IS NOT NULL AND CAST(col AS CHAR) NOT IN (…))</code></td></tr>
+        <tr><td><code>includes_any</code> A, B</td><td><code>CASE WHEN JSON_VALID(col) THEN JSON_CONTAINS(col, '"A"') OR JSON_CONTAINS(col, '"B"') ELSE 0 END</code></td></tr>
+        <tr><td><code>includes_all</code> A, B</td><td>the same, joined with <code>AND</code></td></tr>
+      </tbody>
+    </table>
+    <p>
+      <code>…</code> is every spelling of empty. <code>JSON_CONTAINS</code> runs only inside
+      <code>CASE WHEN JSON_VALID(…)</code>, because it fails the whole query on text that
+      is not JSON (<code>''</code> included) and MySQL does not promise to short-circuit an
+      <code>AND</code>. Nothing can be <code>NULL</code>, so a <code>NOT</code> in front keeps
+      the empty rows. Values are JSON-encoded, then SQL-quoted
+      (<code>'"O''Brien"'</code>), or bound with <code>parameters: true</code>. The cast
+      reads a native <code>JSON</code> column too. An empty operand list never matches.
+      SQLite gets the same shape with <code>json_valid()</code> and <code>json_each()</code>;
+      other dialects, and operators such as <code>eq</code> or <code>contains</code> on JSON
+      text, fall to <code>unsupportedPolicy</code> rather than SQL that might be wrong.
+    </p>
 
     <h3>It is a translation, not the evaluator</h3>
     <p>
@@ -1302,7 +1375,7 @@ $rows  = $db-&gt;query("SELECT * FROM contacts c WHERE $where");</code></pre>
         <tr><td>arithmetic</td><td><code>between</code>, <code>not_between</code></td><td>2</td></tr>
         <tr><td>alphanumeric</td><td><code>contains</code>, <code>not_contains</code>, <code>starts_with</code>, <code>ends_with</code>, <code>regex</code>, <code>not_regex</code></td><td>1</td></tr>
         <tr><td>alphanumeric</td><td><code>in_list</code>, <code>not_in_list</code></td><td>list</td></tr>
-        <tr><td>list</td><td><code>includes_any</code>, <code>includes_all</code></td><td>list (the field's own value is a list; no SQL)</td></tr>
+        <tr><td>list</td><td><code>includes_any</code>, <code>includes_all</code></td><td>list (the field's own value is a list; SQL for <a href="#sql-json">a list stored as JSON</a>, or through an <code>sql</code> template)</td></tr>
         <tr><td>date</td><td><code>date_eq</code>, <code>date_before</code>, <code>date_after</code></td><td>1</td></tr>
         <tr><td>date</td><td><code>date_between</code></td><td>2</td></tr>
         <tr><td>date</td><td><code>date_is_today</code></td><td>0</td></tr>
@@ -1416,6 +1489,7 @@ const details = evaluator.evaluateDetailed(document, data);
         <tr><td><code>callbacks</code></td><td><code>null</code></td><td>Map of operator name to function, same as <code>registerOperator</code>.</td></tr>
         <tr><td><code>allowManifestCallbacks</code></td><td><code>false</code></td><td>See <a href="#security">Security</a>.</td></tr>
         <tr><td><code>callbackAllowList</code></td><td><code>null</code></td><td>Restrict manifest dispatch to these operator names.</td></tr>
+        <tr><td><code>fields</code></td><td><code>null</code></td><td>The same field definitions the editor takes. Only <code>storage</code> is read: a field with <code>storage: 'json'</code> is decoded before any operator sees it. See <a href="#storage-json">A list stored as a JSON array</a>.</td></tr>
         <tr><td><code>trace</code></td><td><code>false</code></td><td>Record per-node results in the detailed output.</td></tr>
       </tbody>
     </table>
@@ -1635,7 +1709,7 @@ editor.describeHtml();  // string of HTML</code></pre>
 
 <footer class="site-footer">
   <div class="wrap">
-    kConditionsEditor 0.1.5 — MIT licensed.
+    kConditionsEditor 0.1.6 — MIT licensed.
     <a href="https://github.com/KAStrack/kConditionsEditor">Source on GitHub</a>.
   </div>
 </footer>

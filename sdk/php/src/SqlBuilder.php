@@ -7,6 +7,7 @@ namespace Kastrack\ConditionsEditor;
 use Kastrack\ConditionsEditor\Exception\ConditionException;
 use Kastrack\ConditionsEditor\Exception\NoSqlTranslationException;
 use Kastrack\ConditionsEditor\Exception\UnsupportedInSqlException;
+use Kastrack\ConditionsEditor\Support\JsonStorage;
 use Kastrack\ConditionsEditor\Support\Policy;
 use Kastrack\ConditionsEditor\Support\Values;
 
@@ -25,7 +26,7 @@ use Kastrack\ConditionsEditor\Support\Values;
  */
 final class SqlBuilder
 {
-    public const VERSION = '0.1.5';
+    public const VERSION = '0.1.6';
 
     private const DAY_MS = 86400000;
 
@@ -79,6 +80,9 @@ final class SqlBuilder
     /** @var array<string, string> */
     private array $typeFor = [];
 
+    /** @var array<string, string> field name => storage, for the fields that declare one */
+    private array $storageFor = [];
+
     /** @var array<int, mixed> */
     private array $params = [];
 
@@ -122,6 +126,9 @@ final class SqlBuilder
         foreach ((array) ($this->o['columns'] ?? []) as $k => $v) {
             $this->columnFor[(string) $k] = (string) $v;
         }
+        // Read through the evaluator's own helper, so a field the evaluator
+        // decodes as JSON is the same field the SQL treats as JSON.
+        $this->storageFor = JsonStorage::map($this->o['fields'] ?? null);
     }
 
     /**
@@ -489,6 +496,18 @@ final class SqlBuilder
             if (!empty($manifest['sql'])) {
                 return $this->template((string) $manifest['sql'], $node, $col);
             }
+            if (($manifest['kind'] ?? null) === 'callback') {
+                throw new NoSqlTranslationException('callback operators have no SQL equivalent; give the operator an "sql" template');
+            }
+        } elseif (!Operators::has($op)) {
+            throw new NoSqlTranslationException('unknown operator');
+        }
+
+        if (isset($this->storageFor[$field])) {
+            return $this->jsonList($node, $manifest, $col);
+        }
+
+        if ($manifest !== null) {
             if (($manifest['kind'] ?? null) === 'values') {
                 $list = self::choiceValues($manifest['values'] ?? null);
                 $arity = $manifest['arity'] ?? 0;
@@ -504,11 +523,6 @@ final class SqlBuilder
 
                 return $negated ? $orNull($expr) : $expr;
             }
-            if (($manifest['kind'] ?? null) === 'callback') {
-                throw new NoSqlTranslationException('callback operators have no SQL equivalent; give the operator an "sql" template');
-            }
-        } elseif (!Operators::has($op)) {
-            throw new NoSqlTranslationException('unknown operator');
         }
 
         /* --- builtins ---------------------------------------------------- */
@@ -546,7 +560,8 @@ final class SqlBuilder
 
             case 'includes_any':
             case 'includes_all':
-                // No portable storage shape for a multi-valued column — see the JS twin.
+                // No portable storage shape for a multi-valued column — see the JS
+                // twin. A field with `storage => 'json'` is handled by jsonList().
                 throw new NoSqlTranslationException(sprintf(
                     'operator "%s" has no SQL translation: a multi-valued column has no portable shape; use a custom operator with an "sql" template',
                     $op
@@ -612,6 +627,71 @@ final class SqlBuilder
             default:
                 throw new NoSqlTranslationException(sprintf('operator "%s" has no SQL translation', $op));
         }
+    }
+
+    /**
+     * A condition on a field with `storage => 'json'`. The list and existence
+     * operators are translated for MySQL / MariaDB and SQLite, the dialects with
+     * a tested translation; anything else — `eq` or `contains` against JSON
+     * text, another dialect — is unsupported, so the policy decides, not a
+     * guess. See the JS twin for why each piece is shaped as it is: the cast
+     * reads a native JSON column too, and the CASE keeps the JSON functions off
+     * text that is not JSON (they raise an error on it, failing the query).
+     * Nothing here can be NULL, so a NOT in front of it never drops a row.
+     *
+     * @param array<string, mixed> $node
+     * @param array<string, mixed>|null $manifest
+     */
+    private function jsonList(array $node, ?array $manifest, string $col): string
+    {
+        $op = (string) ($node['operator'] ?? '');
+        if ($manifest !== null) {
+            throw new UnsupportedInSqlException('a custom operator on a JSON-stored field needs an "sql" template');
+        }
+        if (!in_array($op, JsonStorage::OPERATORS, true)) {
+            throw new UnsupportedInSqlException(sprintf('"%s" has no SQL translation for a JSON-stored field', $op));
+        }
+        if ($this->dialectName !== 'mysql' && $this->dialectName !== 'sqlite') {
+            throw new UnsupportedInSqlException($this->dialectName . ' has no translation for a JSON-stored field');
+        }
+        $mysql = $this->dialectName === 'mysql';
+        $text = $mysql ? 'CAST(' . $col . ' AS CHAR)' : 'CAST(' . $col . ' AS TEXT)';
+        $forms = implode(', ', array_map(fn (string $f): string => "'" . $this->escapeString($f) . "'", JsonStorage::EMPTY_FORMS));
+
+        // `is set` is `is not empty` here, as in the evaluator: a list column
+        // clears to [] on one save path and to NULL on another.
+        if ($op === 'is_empty' || $op === 'is_not_set') {
+            return '(' . $col . ' IS NULL OR ' . $text . ' IN (' . $forms . '))';
+        }
+        if ($op === 'is_not_empty' || $op === 'is_set') {
+            return '(' . $col . ' IS NOT NULL AND ' . $text . ' NOT IN (' . $forms . '))';
+        }
+
+        $first = is_array($node['values'] ?? null) ? ($node['values'][0] ?? null) : null;
+        if (($first['source'] ?? null) === 'field') {
+            throw new UnsupportedInSqlException('a JSON-stored field is not compared with another column');
+        }
+        // The operands exactly as the evaluator reads them: nothing chosen never matches.
+        $want = JsonStorage::operands($first['value'] ?? null);
+        if ($want === []) {
+            return '1 = 0';
+        }
+        $tests = array_map(function (mixed $w) use ($mysql, $col): string {
+            $s = Values::asString($w);
+            if ($mysql) {
+                // The element as a JSON string, then as a SQL string: '"O''Brien"'.
+                $json = json_encode($s, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                    | JSON_UNESCAPED_LINE_TERMINATORS | JSON_INVALID_UTF8_SUBSTITUTE);
+
+                return 'JSON_CONTAINS(' . $col . ', ' . $this->literal((string) $json) . ')';
+            }
+
+            return 'EXISTS (SELECT 1 FROM json_each(' . $col . ") WHERE json_each.type = 'text'"
+                . " AND typeof(json_each.key) <> 'text' AND json_each.value = " . $this->literal($s) . ')';
+        }, $want);
+        $valid = $mysql ? 'JSON_VALID(' . $col . ')' : 'json_valid(' . $col . ')';
+
+        return 'CASE WHEN ' . $valid . ' THEN ' . implode($op === 'includes_any' ? ' OR ' : ' AND ', $tests) . ' ELSE 0 END';
     }
 
     /**

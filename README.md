@@ -81,7 +81,7 @@ stylesheet is required for every skin except `boxed`, and
 carries the built files for that version. To vendor a release, take `dist/` from the
 tag (it holds the `LICENSE`) and record the version, which is also in each file's
 banner — or load it from a CDN that serves tags, such as
-`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.5/dist/k-conditions.min.js`.
+`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.6/dist/k-conditions.min.js`.
 The npm package carries the same files. The sources stay the deliverable: edit `src/`,
 then rebuild; `npm test` fails if `dist/` is not what the build makes from `src/`.
 
@@ -155,7 +155,7 @@ if (K.evaluate(document, submission, { environment: 'server' })) {
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.1.5",
+  "generator": "kConditionsEditor/0.1.6",
   "operators": {},
   "root": {
     "type": "group",
@@ -504,7 +504,7 @@ differ in identifier quoting, string escaping, boolean literals and regular expr
 | Option | Default | Notes |
 |--------|---------|-------|
 | `dialect` | `"standard"` | Which SQL to emit |
-| `fields` | `null` | Supplies `column` and `type` per field |
+| `fields` | `null` | Supplies `column`, `type` and `storage` per field |
 | `columns` | `null` | Or map field name → column directly |
 | `parameters` | `false` | Emit placeholders and return the values in `params` |
 | `placeholderStyle` | per dialect | `question`, `numbered` or `named` |
@@ -513,6 +513,41 @@ differ in identifier quoting, string escaping, boolean literals and regular expr
 | `now` | `null` | Resolves the relative date operators |
 | `pretty` | `false` | Indent nested groups |
 | `unsupportedPolicy` | `"error"` | What to do when a dialect can't express an operator |
+
+### List fields stored as JSON
+
+A field with `storage: 'json'` (see [A list stored as a JSON array](#a-list-stored-as-a-json-array-storage-json))
+gets SQL for that shape. With the field above, MySQL / MariaDB:
+
+| Operator | SQL |
+|----------|-----|
+| `is_empty`, `is_not_set` | ``(`--ID_FOR_Assigned To` IS NULL OR CAST(`--ID_FOR_Assigned To` AS CHAR) IN (…))`` |
+| `is_not_empty`, `is_set` | ``(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(`--ID_FOR_Assigned To` AS CHAR) NOT IN (…))`` |
+| `includes_any` 3184, 3152 | ``CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, '"3184"') OR JSON_CONTAINS(`--ID_FOR_Assigned To`, '"3152"') ELSE 0 END`` |
+| `includes_all` 3184, 3152 | the same, joined with `AND` |
+
+where `…` is every spelling of empty: `'', '[]', '["[]"]', '[""]', '[null]', 'null',
+'"[]"', '""', '"[\\"\\"]"'` (the last is `"[\"\"]"`, escaped for MySQL). Why it is
+shaped this way:
+
+- **Nothing can raise an error.** `JSON_CONTAINS` fails the whole query on text that
+  is not JSON — and `''` is one of the empty spellings — so it runs only inside
+  `CASE WHEN JSON_VALID(…)`, the construct MySQL evaluates in order. (`JSON_VALID(col)
+  AND JSON_CONTAINS(…)` is not guaranteed to short-circuit.)
+- **Nothing can be `NULL`**, so `NOT (Assigned To includes any of Ben)` keeps the
+  unassigned rows instead of silently dropping them.
+- **Values are JSON-encoded, then SQL-quoted** — `JSON_CONTAINS(col, '"O''Brien"')` —
+  or bound with `parameters: true` (the bound value is `"O'Brien"`, quotes included).
+- **The cast reads a native `JSON` column too**: none of the empty spellings has a
+  comma, so the server's normalised text of one is the same characters.
+- **An empty operand list never matches** (`1 = 0`), as in the evaluators.
+
+SQLite gets the same shape with `json_valid()` and `json_each()`. PostgreSQL, SQL
+Server and `standard` have no tested translation, and `eq`, `contains` and the rest
+have no faithful one on JSON text; those fall to `unsupportedPolicy` (`"error"` by
+default — `"skip"` leaves the condition to be evaluated in code) rather than emitting
+SQL that might be wrong. All of it was run against MySQL 8.4 (a `TEXT` and a `JSON`
+column) and SQLite, row by row against the evaluator.
 
 ### Where to generate it
 
@@ -708,7 +743,8 @@ of. It hides itself when the rule is already empty. Turn it off with
   type: 'date',                  // text | number | date | boolean | enum | list
   group: 'Application',          // a heading in the field list (optional)
   column: 'c.date_of_birth',     // SQL name; defaults to `name`
-  choices: [...],                // enum fields — see Field choices
+  storage: 'json',               // list fields kept as a JSON array — see below
+  choices: [...],                // enum and list fields — see Field choices
   operators: ['group:date'],     // or omit for the type default
   excludeOperators: [...],
   values: ['literal', 'field'],  // which value sources are offered
@@ -728,6 +764,60 @@ they first appear and the fields with no group first, as before. With forty fiel
 three sources (an application form, a follow-up questionnaire, staff data) that is the
 difference between a list and a haystack. A new condition takes the first field the list
 shows. `comparableWith: 'group:Staff'` matches the same string.
+
+### A list stored as a JSON array: `storage: 'json'`
+
+A multi-select — people assigned to a task, tags — is often kept in a text column as
+a JSON array of IDs: `["3184","3152"]`, and `[]` for none. Say so on the field, and
+every part of the library reads it that way:
+
+```js
+{
+  name: 'Assigned To', label: 'Assigned To',
+  type: 'list', storage: 'json',
+  column: '--ID_FOR_Assigned To',
+  choices: { 3184: 'Ben Holness', 3152: 'claude claudesson (claude)' }
+}
+```
+
+- **The editor** offers *includes any of*, *includes all of*, *is empty* and *is not
+  empty*; the values are picked by name and stored as IDs. (`type` defaults to `list`
+  when `storage` is given.)
+- **`describe()`** names the people: `[Assigned To] includes any of ["Ben Holness"]`.
+- **The evaluators** decode the value — stored text or an array already decoded —
+  when you give them the same field list:
+
+  ```js
+  KConditions.evaluate(document, row, { fields });
+  ```
+  ```php
+  evaluate($document, $row, ['fields' => $fields]);
+  ```
+- **The SQL builders** emit SQL for that storage — see
+  [List fields stored as JSON](#list-fields-stored-as-json) under SQL output.
+
+Empty is spelled many ways by the time a column has been through a few save paths:
+`NULL`, `''`, `[]`, `null`, `[""]`, `["[]"]`, `[null]`, and `"[]"`, `""`, `"[\"\"]"`
+(the same saved twice). All of them are empty, everywhere. Text that is not JSON at
+all is not empty but includes no value — which is what the SQL says about it too, so
+a rule picks the same rows in SQL as in an evaluator. On such a field *is set* means
+*is not empty* and *is not set* means *is empty*, because a list column clears to
+`[]` on one save path and to `NULL` on another, so the editor offers only the *empty*
+pair. The exact reading is in [SPEC.md §7](SPEC.md#7-field-definitions); the shared
+fixtures hold both SDKs to it.
+
+A field without `storage` behaves exactly as before.
+
+### A saved rule the fields no longer fit
+
+Fields change: a field typed `text` becomes a `list`, a field is renamed or dropped.
+A rule saved before the change still loads as what it is. A row whose operator the
+field no longer offers shows that operator, chosen, under its own heading after the
+field's own — `contains` on a field that is now a list reads *contains*, not the
+first list operator — and keeps it until someone picks another. A row naming a
+field the host no longer lists shows the field's name. Loading never changes the
+rule. Evaluation runs the rule as written; the SQL builders apply their policies to
+an operator they cannot translate for the field (`unsupportedPolicy`).
 
 ### Comparing a field against another field
 
@@ -1381,11 +1471,12 @@ npm test              # JavaScript, node --test, no dependencies
 npm run test:php      # PHP, no dependencies
 npm run test:browser  # real Chromium; needs `npx playwright install chromium` once
 npm run test:all      # all three
+npm run test:db       # storage: 'json' SQL against SQLite, and MySQL with KCE_MYSQL set
 
 composer install && vendor/bin/phpunit    # the PHPUnit suites, if you have Composer
 ```
 
-`tests/fixtures/cases.json` holds 52 shared evaluation cases, 35 shared SQL cases, 37
+`tests/fixtures/cases.json` holds 135 shared evaluation cases, 56 shared SQL cases, 40
 shared `describe()` cases and 2 shared `validateDocument()` cases (one of them reports every
 problem code). The JavaScript and PHP suites both run that file — SQL, both describe
 renderings and every problem are compared character for character — so the two runtimes
@@ -1396,6 +1487,12 @@ judges results by what is painted rather than by what class was applied. That is
 hover, drag, undo, the previews, the skins and the built bundles are covered.
 `npm run test:browser` runs every script in the directory and fails if any is red; pass a
 substring to run a subset (`node tests/browser/run.js undo`).
+
+`tests/db/json-storage.js` (`npm run test:db`) runs the SQL for a `storage: 'json'` field
+against real databases and compares every row with the evaluator: SQLite always (Node
+22.5+), and MySQL / MariaDB when `KCE_MYSQL` holds `mysql` client options and a database
+(`KCE_MYSQL="-h127.0.0.1 -uroot test"`). It is not part of `test:all`, which needs no
+database.
 
 Why the project is built this way, decision by decision, is in [notes/](notes/)
 — `design-record.md` for the running summary, one file per interesting version for the
@@ -1413,6 +1510,7 @@ schema/                       JSON Schema for the document format
 tests/fixtures/cases.json     shared cross-language conformance fixtures
 tests/js/                     node --test suite
 tests/php/conformance.php     dependency-free PHP runner
+tests/db/json-storage.js      storage: 'json' SQL checked on real SQLite / MySQL (opt-in)
 sdk/php/tests/                PHPUnit suite
 docs/                         the GitHub Pages site: landing page, playground, API
                               reference, skins side by side, design lab
@@ -1427,9 +1525,11 @@ SPEC.md                       the document specification
 
 ## Status
 
-**0.1.5** — rows settle (0.1.4's layout could re-run itself every frame beside a kSelect),
-and long field names can be read: the open list wraps them, the closed field shows its
-whole name on hover. kSelect, built in (0.1.3): detected and used for the long lists with
+**0.1.6** — `storage: 'json'`: a list field kept as a JSON array is read the same way by
+the editor, `describe()`, both evaluators and the SQL builders, every spelling of empty
+included; and a saved rule whose field or operator the host no longer offers loads as
+what it is. 0.1.5 made rows settle (0.1.4's layout could re-run itself every frame beside
+a kSelect) and long field names readable. kSelect, built in (0.1.3): detected and used for the long lists with
 no configuration, loadable from the CDN, drawn as the sentence; on kSelect 1.11.1, whose
 open list is axe-clean. 0.1.2 made every string
 translatable, added a hook for a host's own select widget and field groups, made every skin

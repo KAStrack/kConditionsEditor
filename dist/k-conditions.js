@@ -1,4 +1,4 @@
-/*! kConditionsEditor 0.1.5 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
+/*! kConditionsEditor 0.1.6 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -17,7 +17,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions Evaluator 0.1.5
+ * kConditions Evaluator 0.1.6
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -32,7 +32,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.1.5';
+  var LIB_VERSION = '0.1.6';
 
   /* ------------------------------------------------------------------ *
    * Errors
@@ -268,6 +268,142 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     return false;
   }
 
+  /* ------------------------------------------------------------------ *
+   * Field storage: `storage: 'json'`
+   *
+   * A field definition may say how its value is stored. `'json'` is a list
+   * kept as JSON array text — `["3184","3152"]`, `[]` for none — the shape a
+   * multi-select usually takes in a text column. Every part of the library
+   * reads the option through fieldStorage() and the value through
+   * readJsonList(), so the evaluators, the SQL builder and the editor cannot
+   * disagree about what the field holds.
+   *
+   * Empty has many spellings, because save paths differ: NULL, '', `[]`,
+   * `null`, `[""]`, `[null]`, `["[]"]` (an empty list saved once more), and
+   * `"[]"`, `""`, `"[\"\"]"` (saved twice). All of them are empty: a string that decodes to a string is decoded a
+   * second time to see whether it is an empty list saved twice. Its contents
+   * are not read from that second decoding, because no SQL dialect can decode
+   * twice, and a rule must pick the same rows in SQL as in an evaluator. For
+   * the same reason, text that is not JSON at all is something (not empty)
+   * that names nothing (includes no value), which is what the SQL says about
+   * it.
+   * ------------------------------------------------------------------ */
+
+  var NOT_JSON = { kConditionsNotJson: true };
+
+  // The spellings of empty a SQL translation lists, since no dialect can
+  // decode twice: never set; cleared; written by older save paths; and the
+  // same saved twice. readJsonList() reads every one of them as empty, and a
+  // few that no save path is known to write (`[ ]`, `["", ""]`) besides.
+  var JSON_EMPTY_FORMS = ['', '[]', '["[]"]', '[""]', '[null]', 'null', '"[]"', '""', '"[\\"\\"]"'];
+
+  function parseJson(s) {
+    try { return JSON.parse(s); } catch (e) { return NOT_JSON; }
+  }
+
+  /** 'json' when a field definition declares JSON storage, otherwise null. */
+  function fieldStorage(field) {
+    var s = field && typeof field === 'object' ? field.storage : null;
+    return typeof s === 'string' && s.toLowerCase() === 'json' ? 'json' : null;
+  }
+
+  /** A map of field name to storage, for the fields that declare one. */
+  function storageMap(fields) {
+    var out = {};
+    (Array.isArray(fields) ? fields : []).forEach(function (f) {
+      var s = fieldStorage(f);
+      if (s && f.name !== undefined && f.name !== null) out[String(f.name)] = s;
+    });
+    return out;
+  }
+
+  // An element is empty when it is null or '', or a string or an array that
+  // is itself an empty list: the "[]" of `["[]"]`.
+  function emptyElement(e) {
+    if (e === null || e === undefined || e === '') return true;
+    if (typeof e === 'string') {
+      var d = parseJson(e);
+      return Array.isArray(d) && emptyArray(d);
+    }
+    return Array.isArray(e) && emptyArray(e);
+  }
+
+  function emptyArray(a) {
+    for (var i = 0; i < a.length; i++) if (!emptyElement(a[i])) return false;
+    return true;
+  }
+
+  /**
+   * Read a JSON-stored list: `{ empty, items, value }`.
+   *
+   * `empty` is whether it holds nothing; `items` the string elements a list
+   * operator matches against; `value` the decoded value, which is what any
+   * other operator (or a registered callback) is handed. Accepts the stored
+   * text or a value already decoded (an array).
+   */
+  function readJsonList(raw) {
+    if (isNullish(raw) || raw === '') return { empty: true, items: [], value: null };
+    var v = raw;
+    if (typeof raw === 'string') {
+      v = parseJson(raw);
+      if (v === NOT_JSON) return { empty: false, items: [], value: raw };
+    }
+    if (v === null || v === undefined || v === '') return { empty: true, items: [], value: null };
+    // A bare string is a list of one — JSON_CONTAINS('"3184"', '"3184"') is
+    // true — unless it is an empty list saved twice: "[]", "[\"\"]".
+    if (typeof v === 'string') return emptyElement(v) ? { empty: true, items: [], value: v } : { empty: false, items: [v], value: v };
+    if (!Array.isArray(v)) return { empty: false, items: [], value: v };
+    var items = [];
+    var held = false;
+    for (var i = 0; i < v.length; i++) {
+      if (emptyElement(v[i])) continue;
+      held = true;
+      if (typeof v[i] === 'string') items.push(v[i]);
+    }
+    return { empty: !held, items: items, value: v };
+  }
+
+  // The operands of a list operator on a JSON-stored field, read once for the
+  // evaluators and the SQL alike. One that is itself a spelling of empty (''
+  // or "[]") is dropped: an empty element is never one of the list's items,
+  // so it could only ever match in SQL.
+  function wantedValues(arg) {
+    return toList(arg).filter(function (w) { return !isNullish(w) && !emptyElement(asString(w)); });
+  }
+
+  function holdsValue(items, want, ctx) {
+    var w = fold(asString(want), ctx);
+    for (var i = 0; i < items.length; i++) if (fold(items[i], ctx) === w) return true;
+    return false;
+  }
+
+  /*
+   * What the list and existence operators mean on a JSON-stored field. An
+   * element is a string, compared as a string: `3184` stored as a number is
+   * not the choice "3184", as JSON_CONTAINS says too. `is set` and `is not
+   * set` are `is not empty` and `is empty`: a list column clears to `[]` on
+   * one save path and NULL on another, so "set but empty" means nothing a
+   * person could ask about — and asking "is not set" must not miss the `[]`
+   * rows, which is the bug this storage exists to fix.
+   */
+  var JSON_LIST_OPERATORS = {
+    is_set: function (s) { return !s.empty; },
+    is_not_set: function (s) { return s.empty; },
+    is_empty: function (s) { return s.empty; },
+    is_not_empty: function (s) { return !s.empty; },
+    includes_any: function (s, a, c) {
+      var want = wantedValues(a[0]);
+      for (var i = 0; i < want.length; i++) if (holdsValue(s.items, want[i], c)) return true;
+      return false;
+    },
+    includes_all: function (s, a, c) {
+      var want = wantedValues(a[0]);
+      if (!want.length) return false;
+      for (var i = 0; i < want.length; i++) if (!holdsValue(s.items, want[i], c)) return false;
+      return true;
+    }
+  };
+
   function buildRegex(pattern, ctx) {
     return new RegExp(pattern, ctx && ctx.caseInsensitive ? 'i' : '');
   }
@@ -496,6 +632,9 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     allowManifestCallbacks: false,
     callbackAllowList: null,
     callbackScope: null,
+    // The host's field definitions. Only `storage` is read here: a field
+    // stored as JSON is decoded before any operator sees it.
+    fields: null,
     trace: false
   };
 
@@ -518,6 +657,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
         self.extraOperators[name] = self.options.operators[name];
       });
     }
+    this.storageFor = storageMap(this.options.fields);
   }
 
   Evaluator.prototype.registerOperator = function (name, fn, meta) {
@@ -571,6 +711,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       skipped: [],
       errors: [],
       trace: this.options.trace ? [] : null,
+      storage: this.storageFor,
       evaluator: this
     };
     var outcome = this.evalNode(doc.root, state, 'root');
@@ -693,7 +834,22 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
         caseInsensitive: this.options.caseInsensitive,
         path: path
       };
-      out = impl(isMissing(fieldValue) ? null : fieldValue, args, ctx);
+      if (isMissing(fieldValue)) fieldValue = null;
+      if (Object.prototype.hasOwnProperty.call(state.storage, node.field)) {
+        // A JSON-stored field is read once, here. The builtin list and
+        // existence operators answer from what was read; anything else —
+        // another builtin, a registered or custom operator — gets the decoded
+        // value, as it would get an array passed in directly.
+        var stored = readJsonList(fieldValue);
+        var builtin = BUILTIN_OPERATORS[name];
+        if (builtin && impl === builtin.fn && JSON_LIST_OPERATORS[name]) {
+          out = JSON_LIST_OPERATORS[name](stored, args, ctx);
+        } else {
+          out = impl(stored.value, args, ctx);
+        }
+      } else {
+        out = impl(fieldValue, args, ctx);
+      }
       if (out === SKIP) {
         state.skipped.push({ path: path, field: node.field, operator: name, reason: 'callback-skip' });
         return SKIP;
@@ -758,7 +914,8 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     if (typeof node !== 'object') return node;
     if (node.source === 'field') {
       var v = getPath(state.data, node.field);
-      return isMissing(v) ? null : v;
+      if (isMissing(v)) return null;
+      return Object.prototype.hasOwnProperty.call(state.storage || {}, node.field) ? readJsonList(v).value : v;
     }
     return node.value;
   }
@@ -1202,6 +1359,9 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       getPath: getPath, toNumber: toNumber, toDate: toDate, toBool: toBool,
       normaliseChoices: normaliseChoices, choiceValues: choiceValues, asString: asString,
       toList: toList, isEmptyValue: isEmptyValue, looseEquals: looseEquals,
+      fieldStorage: fieldStorage, storageMap: storageMap, readJsonList: readJsonList,
+      jsonListOperands: wantedValues, JSON_LIST_OPERATORS: Object.keys(JSON_LIST_OPERATORS),
+      JSON_EMPTY_FORMS: JSON_EMPTY_FORMS,
       startOfUtcDay: startOfUtcDay, resolvePolicy: resolvePolicy,
       fillTemplate: fillTemplate, splitOperatorLabel: splitOperatorLabel,
       operatorLabelText: operatorLabelText
@@ -1218,7 +1378,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions SQL 0.1.5
+ * kConditions SQL 0.1.6
  * Translates a kConditions document into a self-contained SQL boolean
  * expression — the part that goes after WHERE in a SELECT.
  *
@@ -1245,7 +1405,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (K) {
   'use strict';
 
-  var VERSION = '0.1.5';
+  var VERSION = '0.1.6';
   var DAY_MS = 86400000;
 
   /* ------------------------------------------------------------------ *
@@ -1286,6 +1446,54 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
   DIALECTS.postgresql = DIALECTS.postgres;
   DIALECTS.mssql = DIALECTS.sqlserver;
   DIALECTS.ansi = DIALECTS.standard;
+
+  /* ------------------------------------------------------------------ *
+   * JSON-stored list fields (`storage: 'json'`)
+   *
+   * The column is text holding a JSON array of strings. Two things make
+   * that awkward in SQL, and both are handled here rather than left to the
+   * host:
+   *
+   * - Empty is spelled many ways (NULL, '', [], null, [""], ["[]"], [null],
+   *   "[]", "", "[\"\"]"), and no dialect can decode twice, so the
+   *   spellings are listed.
+   *   The text is compared through a cast, which also reads a native JSON
+   *   column: none of the spellings has a comma, so the server's own
+   *   normalised text of one is the same characters.
+   * - The JSON functions raise an error on text that is not JSON — and ''
+   *   is one of the empty spellings — which fails the whole query. Each test
+   *   sits in a CASE that checks validity first, the one construct the
+   *   servers evaluate in order, and is 0 when the text is not JSON.
+   *
+   * Nothing here can be NULL, so a NOT in front of it never drops a row.
+   * Dialects without a tested translation are not in this table; there the
+   * unsupported-operator policy applies rather than SQL that might be wrong.
+   * ------------------------------------------------------------------ */
+
+  // Read from the evaluator, which holds the one list both SDKs pin.
+  var JSON_EMPTY_FORMS = K.helpers.JSON_EMPTY_FORMS;
+
+  var JSON_DIALECTS = {
+    mysql: {
+      text: function (col) { return 'CAST(' + col + ' AS CHAR)'; },
+      valid: function (col) { return 'JSON_VALID(' + col + ')'; },
+      // The element as a JSON string, then as a SQL string: '"O''Brien"'.
+      holds: function (col, value, b) {
+        return 'JSON_CONTAINS(' + col + ', ' + b.literal(JSON.stringify(K.helpers.asString(value))) + ')';
+      }
+    },
+    sqlite: {
+      text: function (col) { return 'CAST(' + col + ' AS TEXT)'; },
+      valid: function (col) { return 'json_valid(' + col + ')'; },
+      // json_each walks an array's elements, a bare string as itself, and an
+      // object's members — which JSON_CONTAINS does not, so an object's keys
+      // (text, where an element's are numbers) are left out.
+      holds: function (col, value, b) {
+        return 'EXISTS (SELECT 1 FROM json_each(' + col + ") WHERE json_each.type = 'text'" +
+          " AND typeof(json_each.key) <> 'text' AND json_each.value = " + b.literal(K.helpers.asString(value)) + ')';
+      }
+    }
+  };
 
   /* ------------------------------------------------------------------ *
    * Builder
@@ -1337,6 +1545,9 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       self.columnFor[f.name] = f.column || f.sql || f.name;
       if (f.type) self.typeFor[f.name] = f.type;
     });
+    // Read through the evaluator's own helper, so a field the evaluator
+    // decodes as JSON is the same field the SQL treats as JSON.
+    this.storageFor = K.helpers.storageMap(this.o.fields);
     if (this.o.columns) {
       Object.keys(this.o.columns).forEach(function (k) { self.columnFor[k] = self.o.columns[k]; });
     }
@@ -1594,6 +1805,18 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 
     if (manifest) {
       if (manifest.sql) return this.template(manifest.sql, node, col);
+      if (manifest.kind === 'callback') {
+        throw unresolved('callback operators have no SQL equivalent; give the operator an "sql" template');
+      }
+    } else if (!K.BUILTIN_OPERATORS[op]) {
+      throw unresolved('unknown operator');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this.storageFor, node.field)) {
+      return this.jsonList(node, manifest, col);
+    }
+
+    if (manifest) {
       if (manifest.kind === 'values') {
         var list = K.choiceValues(manifest.values);
         var arity = manifest.arity === undefined ? 0 : manifest.arity;
@@ -1603,11 +1826,6 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
           list.map(function (x) { return self.literal(x); }).join(', ') + ')';
         return manifest.match === 'not_in' ? orNull(expr) : expr;
       }
-      if (manifest.kind === 'callback') {
-        throw unresolved('callback operators have no SQL equivalent; give the operator an "sql" template');
-      }
-    } else if (!K.BUILTIN_OPERATORS[op]) {
-      throw unresolved('unknown operator');
     }
 
     /* --- builtins ---------------------------------------------------- */
@@ -1646,8 +1864,10 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       case 'includes_all':
         // A multi-valued column has no portable storage shape (a CSV string, a
         // JSON array, a junction table), so there is nothing dialect-neutral to
-        // emit. A custom operator with an `sql` template says how YOUR schema
-        // stores it; otherwise the unresolved-operator policy applies.
+        // emit. A field with `storage: 'json'` says which shape it is, and is
+        // handled by jsonList() above; otherwise a custom operator with an
+        // `sql` template says how YOUR schema stores it, or the
+        // unresolved-operator policy applies.
         throw unresolved('operator "' + op + '" has no SQL translation: a multi-valued column has no portable shape; use a custom operator with an "sql" template');
 
       case 'date_eq': {
@@ -1699,6 +1919,46 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
   };
 
   /**
+   * A condition on a field with `storage: 'json'`. The list and existence
+   * operators are translated for the dialects in JSON_DIALECTS; anything else
+   * — `eq` or `contains` against JSON text, a dialect with no tested
+   * translation — is unsupported, so the policy decides, not a guess.
+   */
+  Builder.prototype.jsonList = function (node, manifest, col) {
+    var self = this;
+    var op = node.operator;
+    var j = JSON_DIALECTS[this.dialectName];
+    if (manifest) {
+      throw unsupported('a custom operator on a JSON-stored field needs an "sql" template');
+    }
+    if (K.helpers.JSON_LIST_OPERATORS.indexOf(op) === -1) {
+      throw unsupported('"' + op + '" has no SQL translation for a JSON-stored field');
+    }
+    if (!j) throw unsupported(this.dialectName + ' has no translation for a JSON-stored field');
+
+    var forms = JSON_EMPTY_FORMS.map(function (f) { return "'" + self.d.escape(f) + "'"; }).join(', ');
+    // `is set` is `is not empty` here, as in the evaluators: a list column
+    // clears to [] on one save path and to NULL on another.
+    if (op === 'is_empty' || op === 'is_not_set') {
+      return '(' + col + ' IS NULL OR ' + j.text(col) + ' IN (' + forms + '))';
+    }
+    if (op === 'is_not_empty' || op === 'is_set') {
+      return '(' + col + ' IS NOT NULL AND ' + j.text(col) + ' NOT IN (' + forms + '))';
+    }
+
+    var first = (node.values || [])[0];
+    if (first && first.source === 'field') {
+      throw unsupported('a JSON-stored field is not compared with another column');
+    }
+    // The operands exactly as the evaluators read them: nothing chosen never
+    // matches.
+    var want = K.helpers.jsonListOperands((first || {}).value);
+    if (!want.length) return '1 = 0';
+    var tests = want.map(function (w) { return j.holds(col, w, self); });
+    return 'CASE WHEN ' + j.valid(col) + ' THEN ' + tests.join(op === 'includes_any' ? ' OR ' : ' AND ') + ' ELSE 0 END';
+  };
+
+  /**
    * Render a raw SQL template from an operator manifest.
    *
    *   "sql": "email_is_unique({field})"
@@ -1746,7 +2006,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditionsEditor 0.1.5
+ * kConditionsEditor 0.1.6
  * A zero-dependency conditions builder that takes over a <textarea>.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  *
@@ -1765,7 +2025,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (KConditions) {
   'use strict';
 
-  var VERSION = '0.1.5';
+  var VERSION = '0.1.6';
   var BUILTIN = KConditions.BUILTIN_OPERATORS;
   var GROUPS = KConditions.OPERATOR_GROUPS;
   var TYPE_GROUPS = KConditions.FIELD_TYPE_GROUPS;
@@ -2152,7 +2412,10 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     // Choices may be scalars, {value,label} objects, or an associative map
     // ({ FL: 'Florida' }); they are normalised to [{value,label}] once, here.
     if (field.choices) field.choices = KConditions.normaliseChoices(field.choices);
-    field.type = field.type || (field.choices && field.choices.length ? 'enum' : 'text');
+    // A field stored as a JSON array is a list whatever else it says, unless
+    // the host types it itself.
+    field.type = field.type || (KConditions.helpers.fieldStorage(field) ? 'list'
+      : (field.choices && field.choices.length ? 'enum' : 'text'));
     field.values = field.values || ['literal', 'field'];
     // The SQL builder needs a column name; default it to the field name.
     if (!field.column) field.column = field.name;
@@ -2514,6 +2777,13 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     }
     if (Array.isArray(field.excludeOperators)) {
       names = names.filter(function (n) { return field.excludeOperators.indexOf(n) === -1; });
+    }
+    // On a JSON-stored field "is set" means "is not empty" (a list column
+    // clears to [] on one save path and NULL on another), so offering both
+    // would be two names for one question. A host that lists them in
+    // `operators` still gets them; a rule that already uses one keeps it.
+    if (KConditions.helpers.fieldStorage(field) && !(Array.isArray(field.operators) && field.operators.length)) {
+      names = names.filter(function (n) { return n !== 'is_set' && n !== 'is_not_set'; });
     }
     return names.filter(function (n) { return !!self.operatorMeta(n); });
   };
@@ -5921,7 +6191,13 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     /* field select */
     var fieldSel = el('select', 'kce-select kce-field', { 'aria-label': this.labels.fieldSelect, 'data-fk': node.id + ':field' });
     if (!node.field) fieldSel.appendChild(el('option', null, { value: '', text: this.labels.chooseField }));
-    appendFieldOptions(fieldSel, this.fields, node.field, this.groupOrder);
+    // A saved rule may name a field the host no longer lists. Show it, as the
+    // compare-with list does: a selector showing the first field beside a
+    // rule about another would misreport the rule, and the first change
+    // anywhere would quietly rewrite it.
+    var listedFields = this.fields;
+    if (node.field && !field) listedFields = [{ name: node.field, label: node.field }].concat(this.fields);
+    appendFieldOptions(fieldSel, listedFields, node.field, this.groupOrder);
     this.onSelect(fieldSel, function () { self.setField(node, fieldSel.value); });
     row.appendChild(this.selectFor(fieldSel, 'kce-sel-field', 'field', node, field));
 
@@ -5929,12 +6205,20 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     var meta = this.operatorMeta(node.operator);
     var arity = meta ? (meta.arity === undefined ? 1 : meta.arity) : 0;
     var opSel = el('select', 'kce-select kce-operator', { 'aria-label': this.labels.operatorSelect, 'data-fk': node.id + ':op' });
-    if (field) {
-      var names = this.operatorsForField(field);
+    var names = field ? this.operatorsForField(field) : [];
+    // The same for an operator the field no longer offers — a rule saved
+    // when the field was `text`, now `list`. It is listed, chosen, under its
+    // own heading, so the row says what the rule does and the rule keeps
+    // doing it until someone picks another operator; then it is gone from
+    // the list, like any choice the field does not offer.
+    if (node.operator && names.indexOf(node.operator) === -1) names = names.concat([node.operator]);
+    if (names.length) {
       var byGroup = {};
       var order = [];
+      var unknown = [];
       names.forEach(function (n) {
         var m = self.operatorMeta(n);
+        if (!m) { unknown.push(n); return; }
         var g = m.group || 'other';
         if (!byGroup[g]) { byGroup[g] = []; order.push(g); }
         byGroup[g].push({ name: n, meta: m });
@@ -5954,6 +6238,13 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
           og.appendChild(o);
         });
         opSel.appendChild(og);
+      });
+      // An operator this page has no definition for at all: its name, as the
+      // rule holds it, with no heading to file it under.
+      unknown.forEach(function (n) {
+        var o = el('option', null, { value: n, text: n });
+        if (n === node.operator) o.selected = true;
+        opSel.appendChild(o);
       });
     }
     // On the row, the chosen operator's operand goes in its slot: the shell

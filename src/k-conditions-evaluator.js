@@ -1,5 +1,5 @@
 /*!
- * kConditions Evaluator 0.1.5
+ * kConditions Evaluator 0.1.6
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -14,7 +14,7 @@
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.1.5';
+  var LIB_VERSION = '0.1.6';
 
   /* ------------------------------------------------------------------ *
    * Errors
@@ -250,6 +250,142 @@
     return false;
   }
 
+  /* ------------------------------------------------------------------ *
+   * Field storage: `storage: 'json'`
+   *
+   * A field definition may say how its value is stored. `'json'` is a list
+   * kept as JSON array text — `["3184","3152"]`, `[]` for none — the shape a
+   * multi-select usually takes in a text column. Every part of the library
+   * reads the option through fieldStorage() and the value through
+   * readJsonList(), so the evaluators, the SQL builder and the editor cannot
+   * disagree about what the field holds.
+   *
+   * Empty has many spellings, because save paths differ: NULL, '', `[]`,
+   * `null`, `[""]`, `[null]`, `["[]"]` (an empty list saved once more), and
+   * `"[]"`, `""`, `"[\"\"]"` (saved twice). All of them are empty: a string that decodes to a string is decoded a
+   * second time to see whether it is an empty list saved twice. Its contents
+   * are not read from that second decoding, because no SQL dialect can decode
+   * twice, and a rule must pick the same rows in SQL as in an evaluator. For
+   * the same reason, text that is not JSON at all is something (not empty)
+   * that names nothing (includes no value), which is what the SQL says about
+   * it.
+   * ------------------------------------------------------------------ */
+
+  var NOT_JSON = { kConditionsNotJson: true };
+
+  // The spellings of empty a SQL translation lists, since no dialect can
+  // decode twice: never set; cleared; written by older save paths; and the
+  // same saved twice. readJsonList() reads every one of them as empty, and a
+  // few that no save path is known to write (`[ ]`, `["", ""]`) besides.
+  var JSON_EMPTY_FORMS = ['', '[]', '["[]"]', '[""]', '[null]', 'null', '"[]"', '""', '"[\\"\\"]"'];
+
+  function parseJson(s) {
+    try { return JSON.parse(s); } catch (e) { return NOT_JSON; }
+  }
+
+  /** 'json' when a field definition declares JSON storage, otherwise null. */
+  function fieldStorage(field) {
+    var s = field && typeof field === 'object' ? field.storage : null;
+    return typeof s === 'string' && s.toLowerCase() === 'json' ? 'json' : null;
+  }
+
+  /** A map of field name to storage, for the fields that declare one. */
+  function storageMap(fields) {
+    var out = {};
+    (Array.isArray(fields) ? fields : []).forEach(function (f) {
+      var s = fieldStorage(f);
+      if (s && f.name !== undefined && f.name !== null) out[String(f.name)] = s;
+    });
+    return out;
+  }
+
+  // An element is empty when it is null or '', or a string or an array that
+  // is itself an empty list: the "[]" of `["[]"]`.
+  function emptyElement(e) {
+    if (e === null || e === undefined || e === '') return true;
+    if (typeof e === 'string') {
+      var d = parseJson(e);
+      return Array.isArray(d) && emptyArray(d);
+    }
+    return Array.isArray(e) && emptyArray(e);
+  }
+
+  function emptyArray(a) {
+    for (var i = 0; i < a.length; i++) if (!emptyElement(a[i])) return false;
+    return true;
+  }
+
+  /**
+   * Read a JSON-stored list: `{ empty, items, value }`.
+   *
+   * `empty` is whether it holds nothing; `items` the string elements a list
+   * operator matches against; `value` the decoded value, which is what any
+   * other operator (or a registered callback) is handed. Accepts the stored
+   * text or a value already decoded (an array).
+   */
+  function readJsonList(raw) {
+    if (isNullish(raw) || raw === '') return { empty: true, items: [], value: null };
+    var v = raw;
+    if (typeof raw === 'string') {
+      v = parseJson(raw);
+      if (v === NOT_JSON) return { empty: false, items: [], value: raw };
+    }
+    if (v === null || v === undefined || v === '') return { empty: true, items: [], value: null };
+    // A bare string is a list of one — JSON_CONTAINS('"3184"', '"3184"') is
+    // true — unless it is an empty list saved twice: "[]", "[\"\"]".
+    if (typeof v === 'string') return emptyElement(v) ? { empty: true, items: [], value: v } : { empty: false, items: [v], value: v };
+    if (!Array.isArray(v)) return { empty: false, items: [], value: v };
+    var items = [];
+    var held = false;
+    for (var i = 0; i < v.length; i++) {
+      if (emptyElement(v[i])) continue;
+      held = true;
+      if (typeof v[i] === 'string') items.push(v[i]);
+    }
+    return { empty: !held, items: items, value: v };
+  }
+
+  // The operands of a list operator on a JSON-stored field, read once for the
+  // evaluators and the SQL alike. One that is itself a spelling of empty (''
+  // or "[]") is dropped: an empty element is never one of the list's items,
+  // so it could only ever match in SQL.
+  function wantedValues(arg) {
+    return toList(arg).filter(function (w) { return !isNullish(w) && !emptyElement(asString(w)); });
+  }
+
+  function holdsValue(items, want, ctx) {
+    var w = fold(asString(want), ctx);
+    for (var i = 0; i < items.length; i++) if (fold(items[i], ctx) === w) return true;
+    return false;
+  }
+
+  /*
+   * What the list and existence operators mean on a JSON-stored field. An
+   * element is a string, compared as a string: `3184` stored as a number is
+   * not the choice "3184", as JSON_CONTAINS says too. `is set` and `is not
+   * set` are `is not empty` and `is empty`: a list column clears to `[]` on
+   * one save path and NULL on another, so "set but empty" means nothing a
+   * person could ask about — and asking "is not set" must not miss the `[]`
+   * rows, which is the bug this storage exists to fix.
+   */
+  var JSON_LIST_OPERATORS = {
+    is_set: function (s) { return !s.empty; },
+    is_not_set: function (s) { return s.empty; },
+    is_empty: function (s) { return s.empty; },
+    is_not_empty: function (s) { return !s.empty; },
+    includes_any: function (s, a, c) {
+      var want = wantedValues(a[0]);
+      for (var i = 0; i < want.length; i++) if (holdsValue(s.items, want[i], c)) return true;
+      return false;
+    },
+    includes_all: function (s, a, c) {
+      var want = wantedValues(a[0]);
+      if (!want.length) return false;
+      for (var i = 0; i < want.length; i++) if (!holdsValue(s.items, want[i], c)) return false;
+      return true;
+    }
+  };
+
   function buildRegex(pattern, ctx) {
     return new RegExp(pattern, ctx && ctx.caseInsensitive ? 'i' : '');
   }
@@ -478,6 +614,9 @@
     allowManifestCallbacks: false,
     callbackAllowList: null,
     callbackScope: null,
+    // The host's field definitions. Only `storage` is read here: a field
+    // stored as JSON is decoded before any operator sees it.
+    fields: null,
     trace: false
   };
 
@@ -500,6 +639,7 @@
         self.extraOperators[name] = self.options.operators[name];
       });
     }
+    this.storageFor = storageMap(this.options.fields);
   }
 
   Evaluator.prototype.registerOperator = function (name, fn, meta) {
@@ -553,6 +693,7 @@
       skipped: [],
       errors: [],
       trace: this.options.trace ? [] : null,
+      storage: this.storageFor,
       evaluator: this
     };
     var outcome = this.evalNode(doc.root, state, 'root');
@@ -675,7 +816,22 @@
         caseInsensitive: this.options.caseInsensitive,
         path: path
       };
-      out = impl(isMissing(fieldValue) ? null : fieldValue, args, ctx);
+      if (isMissing(fieldValue)) fieldValue = null;
+      if (Object.prototype.hasOwnProperty.call(state.storage, node.field)) {
+        // A JSON-stored field is read once, here. The builtin list and
+        // existence operators answer from what was read; anything else —
+        // another builtin, a registered or custom operator — gets the decoded
+        // value, as it would get an array passed in directly.
+        var stored = readJsonList(fieldValue);
+        var builtin = BUILTIN_OPERATORS[name];
+        if (builtin && impl === builtin.fn && JSON_LIST_OPERATORS[name]) {
+          out = JSON_LIST_OPERATORS[name](stored, args, ctx);
+        } else {
+          out = impl(stored.value, args, ctx);
+        }
+      } else {
+        out = impl(fieldValue, args, ctx);
+      }
       if (out === SKIP) {
         state.skipped.push({ path: path, field: node.field, operator: name, reason: 'callback-skip' });
         return SKIP;
@@ -740,7 +896,8 @@
     if (typeof node !== 'object') return node;
     if (node.source === 'field') {
       var v = getPath(state.data, node.field);
-      return isMissing(v) ? null : v;
+      if (isMissing(v)) return null;
+      return Object.prototype.hasOwnProperty.call(state.storage || {}, node.field) ? readJsonList(v).value : v;
     }
     return node.value;
   }
@@ -1184,6 +1341,9 @@
       getPath: getPath, toNumber: toNumber, toDate: toDate, toBool: toBool,
       normaliseChoices: normaliseChoices, choiceValues: choiceValues, asString: asString,
       toList: toList, isEmptyValue: isEmptyValue, looseEquals: looseEquals,
+      fieldStorage: fieldStorage, storageMap: storageMap, readJsonList: readJsonList,
+      jsonListOperands: wantedValues, JSON_LIST_OPERATORS: Object.keys(JSON_LIST_OPERATORS),
+      JSON_EMPTY_FORMS: JSON_EMPTY_FORMS,
       startOfUtcDay: startOfUtcDay, resolvePolicy: resolvePolicy,
       fillTemplate: fillTemplate, splitOperatorLabel: splitOperatorLabel,
       operatorLabelText: operatorLabelText

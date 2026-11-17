@@ -1,6 +1,6 @@
 {
   "name": "@kastrack/conditions-editor",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A zero-dependency conditions builder that takes over a <textarea>, plus evaluator SDKs that turn the JSON it writes into a boolean.",
   "keywords": [
     "conditions",
@@ -54,7 +54,8 @@
     "serve": "node -e \"const h=require('http'),f=require('fs'),p=require('path');h.createServer((q,s)=>{let u=decodeURIComponent(q.url.split('?')[0]);if(u.endsWith('/'))u+='index.html';const t=p.join(process.cwd(),'docs',u);f.readFile(t,(e,d)=>{if(e){s.writeHead(404);return s.end('not found');}const x={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json'}[p.extname(t)]||'text/plain';s.writeHead(200,{'content-type':x});s.end(d);});}).listen(8080,()=>console.log('http://localhost:8080/'))\"",
     "prepublishOnly": "npm run build && npm test",
     "pretest:browser": "npm run build",
-    "test:browser": "node tests/browser/run.js"
+    "test:browser": "node tests/browser/run.js",
+    "test:db": "node tests/db/json-storage.js"
   },
   "engines": {
     "node": ">=18"
