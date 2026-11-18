@@ -7,6 +7,7 @@ namespace Kastrack\ConditionsEditor;
 use Kastrack\ConditionsEditor\Exception\ConditionException;
 use Kastrack\ConditionsEditor\Exception\NoSqlTranslationException;
 use Kastrack\ConditionsEditor\Exception\UnsupportedInSqlException;
+use Kastrack\ConditionsEditor\Support\CountAsBlank;
 use Kastrack\ConditionsEditor\Support\JsonStorage;
 use Kastrack\ConditionsEditor\Support\Policy;
 use Kastrack\ConditionsEditor\Support\Values;
@@ -26,7 +27,7 @@ use Kastrack\ConditionsEditor\Support\Values;
  */
 final class SqlBuilder
 {
-    public const VERSION = '0.1.6';
+    public const VERSION = '0.1.7';
 
     private const DAY_MS = 86400000;
 
@@ -83,6 +84,9 @@ final class SqlBuilder
     /** @var array<string, string> field name => storage, for the fields that declare one */
     private array $storageFor = [];
 
+    /** @var array<string, array{forms: array<int, string>, json: bool}> field name => blank set, for the fields that declare countAsBlank */
+    private array $blanksFor = [];
+
     /** @var array<int, mixed> */
     private array $params = [];
 
@@ -129,6 +133,7 @@ final class SqlBuilder
         // Read through the evaluator's own helper, so a field the evaluator
         // decodes as JSON is the same field the SQL treats as JSON.
         $this->storageFor = JsonStorage::map($this->o['fields'] ?? null);
+        $this->blanksFor = CountAsBlank::map($this->o['fields'] ?? null);
     }
 
     /**
@@ -503,8 +508,12 @@ final class SqlBuilder
             throw new NoSqlTranslationException('unknown operator');
         }
 
+        $blanks = $this->blanksFor[$field] ?? null;
         if (isset($this->storageFor[$field])) {
-            return $this->jsonList($node, $manifest, $col);
+            return $this->jsonList($node, $manifest, $col, $blanks);
+        }
+        if ($blanks !== null && $manifest === null && isset(CountAsBlank::OPERATORS[$op])) {
+            return $this->blankTest($op, $col, $blanks['forms'], 'a field with countAsBlank');
         }
 
         if ($manifest !== null) {
@@ -641,8 +650,9 @@ final class SqlBuilder
      *
      * @param array<string, mixed> $node
      * @param array<string, mixed>|null $manifest
+     * @param array{forms: array<int, string>, json: bool}|null $blanks
      */
-    private function jsonList(array $node, ?array $manifest, string $col): string
+    private function jsonList(array $node, ?array $manifest, string $col, ?array $blanks): string
     {
         $op = (string) ($node['operator'] ?? '');
         if ($manifest !== null) {
@@ -655,16 +665,17 @@ final class SqlBuilder
             throw new UnsupportedInSqlException($this->dialectName . ' has no translation for a JSON-stored field');
         }
         $mysql = $this->dialectName === 'mysql';
-        $text = $mysql ? 'CAST(' . $col . ' AS CHAR)' : 'CAST(' . $col . ' AS TEXT)';
-        $forms = implode(', ', array_map(fn (string $f): string => "'" . $this->escapeString($f) . "'", JsonStorage::EMPTY_FORMS));
+        // A host's countAsBlank values add to the spellings of empty: blank,
+        // they hold nothing, so no list operator finds anything in them either.
+        $extra = array_values(array_filter(
+            $blanks['forms'] ?? [],
+            static fn (string $f): bool => !in_array($f, JsonStorage::EMPTY_FORMS, true)
+        ));
 
         // `is set` is `is not empty` here, as in the evaluator: a list column
         // clears to [] on one save path and to NULL on another.
-        if ($op === 'is_empty' || $op === 'is_not_set') {
-            return '(' . $col . ' IS NULL OR ' . $text . ' IN (' . $forms . '))';
-        }
-        if ($op === 'is_not_empty' || $op === 'is_set') {
-            return '(' . $col . ' IS NOT NULL AND ' . $text . ' NOT IN (' . $forms . '))';
+        if (isset(CountAsBlank::OPERATORS[$op])) {
+            return $this->blankTest($op, $col, array_merge(JsonStorage::EMPTY_FORMS, $extra), 'a JSON-stored field');
         }
 
         $first = is_array($node['values'] ?? null) ? ($node['values'][0] ?? null) : null;
@@ -690,8 +701,63 @@ final class SqlBuilder
                 . " AND typeof(json_each.key) <> 'text' AND json_each.value = " . $this->literal($s) . ')';
         }, $want);
         $valid = $mysql ? 'JSON_VALID(' . $col . ')' : 'json_valid(' . $col . ')';
+        if ($extra !== []) {
+            $valid .= ' AND ' . (string) $this->exactText($col) . ' NOT IN (' . $this->blankList($extra) . ')';
+        }
 
         return 'CASE WHEN ' . $valid . ' THEN ' . implode($op === 'includes_any' ? ' OR ' : ' AND ', $tests) . ' ELSE 0 END';
+    }
+
+    /**
+     * A column's stored text, compared exactly: by bytes, not through a
+     * collation. See the JS twin's EXACT_TEXT for why — MySQL's default
+     * collation called 'NULL' a spelling of 'null', and a PAD SPACE one makes
+     * ' ' equal to ''. Null for a dialect with no tested exact comparison.
+     */
+    private function exactText(string $col): ?string
+    {
+        return match ($this->dialectName) {
+            'mysql' => 'CAST(CAST(' . $col . ' AS CHAR) AS BINARY)',
+            'sqlite' => 'CAST(' . $col . ' AS TEXT) COLLATE BINARY',
+            default => null,
+        };
+    }
+
+    /**
+     * is_empty / is_not_empty (and is_set / is_not_set, which mean the same
+     * here) as a list of the stored texts that count as blank. NULL is tested
+     * on its own, so the whole is never NULL and a NOT in front of it keeps
+     * every row it should.
+     *
+     * @param array<int, string> $forms
+     */
+    private function blankTest(string $op, string $col, array $forms, string $what): string
+    {
+        $text = $this->exactText($col);
+        if ($text === null) {
+            throw new UnsupportedInSqlException($this->dialectName . ' has no exact text comparison for ' . $what);
+        }
+        $list = $this->blankList($forms);
+        if ($op === 'is_empty' || $op === 'is_not_set') {
+            return '(' . $col . ' IS NULL OR ' . $text . ' IN (' . $list . '))';
+        }
+
+        return '(' . $col . ' IS NOT NULL AND ' . $text . ' NOT IN (' . $list . '))';
+    }
+
+    /**
+     * The spellings as SQL: the library's own constants written in, as they
+     * always were; a host's own values through literal(), so they are escaped —
+     * or bound, with `parameters` — like any other value.
+     *
+     * @param array<int, string> $forms
+     */
+    private function blankList(array $forms): string
+    {
+        return implode(', ', array_map(
+            fn (string $f): string => in_array($f, JsonStorage::EMPTY_FORMS, true) ? "'" . $this->escapeString($f) . "'" : $this->literal($f),
+            $forms
+        ));
     }
 
     /**

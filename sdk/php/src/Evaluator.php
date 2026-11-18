@@ -6,6 +6,7 @@ namespace Kastrack\ConditionsEditor;
 
 use Kastrack\ConditionsEditor\Exception\ConditionException;
 use Kastrack\ConditionsEditor\Exception\UnresolvedOperatorException;
+use Kastrack\ConditionsEditor\Support\CountAsBlank;
 use Kastrack\ConditionsEditor\Support\JsonStorage;
 use Kastrack\ConditionsEditor\Support\Labels;
 use Kastrack\ConditionsEditor\Support\Policy;
@@ -35,7 +36,7 @@ use Throwable;
 final class Evaluator
 {
     public const SPEC_VERSION = '1.0';
-    public const VERSION = '0.1.6';
+    public const VERSION = '0.1.7';
 
     /** @var array<string, mixed> */
     private array $options;
@@ -45,6 +46,9 @@ final class Evaluator
 
     /** @var array<string, string> field name => storage, for the fields that declare one */
     private array $storageFor = [];
+
+    /** @var array<string, array{forms: array<int, string>, json: bool}> field name => blank set, for the fields that declare countAsBlank */
+    private array $blanksFor = [];
 
     /**
      * The English for each problem validateDocument() can report, keyed by its
@@ -81,8 +85,9 @@ final class Evaluator
         'allowManifestCallbacks' => false,
         'callbackAllowList' => null,
         'container' => null,
-        // The host's field definitions. Only `storage` is read here: a field
-        // stored as JSON is decoded before any operator sees it.
+        // The host's field definitions. Only `storage` and `countAsBlank` are
+        // read here: a field stored as JSON is decoded before any operator sees
+        // it, and a field's own blank values decide is_empty and is_set.
         'fields' => null,
         'trace' => false,
     ];
@@ -97,6 +102,7 @@ final class Evaluator
             }
         }
         $this->storageFor = JsonStorage::map($this->options['fields'] ?? null);
+        $this->blanksFor = CountAsBlank::map($this->options['fields'] ?? null);
     }
 
     /** @return array<string, mixed> */
@@ -196,6 +202,7 @@ final class Evaluator
             'errors' => [],
             'trace' => $this->options['trace'] ? [] : null,
             'storage' => $this->storageFor,
+            'blanks' => $this->blanksFor,
         ];
 
         $outcome = $this->evalNode($doc['root'], $state, 'root');
@@ -379,16 +386,25 @@ final class Evaluator
             if (Values::isMissing($fieldValue)) {
                 $fieldValue = null;
             }
-            if (isset($state['storage'][(string) ($node['field'] ?? '')])) {
+            $fieldName = (string) ($node['field'] ?? '');
+            $isBuiltin = Operators::has($name) && $impl === Operators::get($name);
+            $blanks = $state['blanks'][$fieldName] ?? null;
+            if (isset($state['storage'][$fieldName])) {
                 // A JSON-stored field is read once, here. The builtin list and
                 // existence operators answer from what was read; anything else —
                 // another builtin, a registered or custom operator — gets the
-                // decoded value, as it would get a list passed in directly.
+                // decoded value, as it would get a list passed in directly. A
+                // value the field counts as blank holds nothing, whatever it
+                // decodes to.
                 $stored = JsonStorage::read($fieldValue);
-                $isBuiltin = Operators::has($name) && $impl === Operators::get($name);
+                if ($blanks !== null && !$stored['empty'] && CountAsBlank::isBlank($fieldValue, $blanks)) {
+                    $stored = ['empty' => true, 'items' => [], 'value' => $stored['value']];
+                }
                 $raw = $isBuiltin && in_array($name, JsonStorage::OPERATORS, true)
                     ? JsonStorage::evaluate($name, $stored, $args, (bool) $this->options['caseInsensitive'])
                     : $impl($stored['value'], $args, $ctx);
+            } elseif ($blanks !== null && $isBuiltin && isset(CountAsBlank::OPERATORS[$name])) {
+                $raw = CountAsBlank::isBlank($fieldValue, $blanks) === CountAsBlank::OPERATORS[$name];
             } else {
                 $raw = $impl($fieldValue, $args, $ctx);
             }

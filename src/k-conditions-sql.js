@@ -1,5 +1,5 @@
 /*!
- * kConditions SQL 0.1.6
+ * kConditions SQL 0.1.7
  * Translates a kConditions document into a self-contained SQL boolean
  * expression — the part that goes after WHERE in a SELECT.
  *
@@ -26,7 +26,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (K) {
   'use strict';
 
-  var VERSION = '0.1.6';
+  var VERSION = '0.1.7';
   var DAY_MS = 86400000;
 
   /* ------------------------------------------------------------------ *
@@ -63,10 +63,12 @@
     }
   };
 
-  DIALECTS.mariadb = DIALECTS.mysql;
-  DIALECTS.postgresql = DIALECTS.postgres;
-  DIALECTS.mssql = DIALECTS.sqlserver;
-  DIALECTS.ansi = DIALECTS.standard;
+  // Other names for a dialect. The builder works under the dialect's own
+  // name — as the PHP builder does — so every table keyed by dialect, the
+  // `dialect` it reports and the labels a document's conditions are matched
+  // against read the same for 'mariadb' as for 'mysql'.
+  var ALIASES = { mariadb: 'mysql', postgresql: 'postgres', mssql: 'sqlserver', ansi: 'standard' };
+  Object.keys(ALIASES).forEach(function (a) { DIALECTS[a] = DIALECTS[ALIASES[a]]; });
 
   /* ------------------------------------------------------------------ *
    * JSON-stored list fields (`storage: 'json'`)
@@ -80,7 +82,8 @@
    *   spellings are listed.
    *   The text is compared through a cast, which also reads a native JSON
    *   column: none of the spellings has a comma, so the server's own
-   *   normalised text of one is the same characters.
+   *   normalised text of one is the same characters. The comparison is
+   *   exact (EXACT_TEXT below), as the evaluators' is.
    * - The JSON functions raise an error on text that is not JSON — and ''
    *   is one of the empty spellings — which fails the whole query. Each test
    *   sits in a CASE that checks validity first, the one construct the
@@ -94,9 +97,28 @@
   // Read from the evaluator, which holds the one list both SDKs pin.
   var JSON_EMPTY_FORMS = K.helpers.JSON_EMPTY_FORMS;
 
+  /*
+   * A column's stored text, compared exactly: by bytes, not through a
+   * collation. MySQL's default collation is case-insensitive, so a plain
+   * cast called the text 'NULL' a spelling of 'null' and 'n/a' a match for a
+   * host's 'N/A' — empty to the SQL, not to the evaluators — and a PAD SPACE
+   * collation (utf8mb4_bin, MariaDB's defaults) makes ' ' equal to ''. The
+   * cast to CHAR reads a native JSON column, and converts a latin1 column to
+   * the connection's character set, which the literals are in too. SQLite
+   * compares a CAST of a column with that column's collation (NOCASE, say)
+   * unless told otherwise.
+   *
+   * Dialects not listed here have no tested exact comparison; a spelling
+   * list on them is left to the unsupported-operator policy.
+   */
+  var EXACT_TEXT = {
+    mysql: function (col) { return 'CAST(CAST(' + col + ' AS CHAR) AS BINARY)'; },
+    sqlite: function (col) { return 'CAST(' + col + ' AS TEXT) COLLATE BINARY'; }
+  };
+
   var JSON_DIALECTS = {
     mysql: {
-      text: function (col) { return 'CAST(' + col + ' AS CHAR)'; },
+      text: EXACT_TEXT.mysql,
       valid: function (col) { return 'JSON_VALID(' + col + ')'; },
       // The element as a JSON string, then as a SQL string: '"O''Brien"'.
       holds: function (col, value, b) {
@@ -104,7 +126,7 @@
       }
     },
     sqlite: {
-      text: function (col) { return 'CAST(' + col + ' AS TEXT)'; },
+      text: EXACT_TEXT.sqlite,
       valid: function (col) { return 'json_valid(' + col + ')'; },
       // json_each walks an array's elements, a bare string as itself, and an
       // object's members — which JSON_CONTAINS does not, so an object's keys
@@ -153,9 +175,10 @@
     });
 
     var name = String(this.o.dialect || 'standard').toLowerCase();
-    this.dialectName = DIALECTS[name] ? name : 'standard';
+    if (Object.prototype.hasOwnProperty.call(ALIASES, name)) name = ALIASES[name];
+    this.dialectName = Object.prototype.hasOwnProperty.call(DIALECTS, name) ? name : 'standard';
     this.d = DIALECTS[this.dialectName];
-    if (!DIALECTS[name]) {
+    if (this.dialectName !== name) {
       this.unknownDialect = String(this.o.dialect);
     }
 
@@ -169,6 +192,7 @@
     // Read through the evaluator's own helper, so a field the evaluator
     // decodes as JSON is the same field the SQL treats as JSON.
     this.storageFor = K.helpers.storageMap(this.o.fields);
+    this.blanksFor = K.helpers.blankMap(this.o.fields);
     if (this.o.columns) {
       Object.keys(this.o.columns).forEach(function (k) { self.columnFor[k] = self.o.columns[k]; });
     }
@@ -433,8 +457,12 @@
       throw unresolved('unknown operator');
     }
 
+    var blanks = Object.prototype.hasOwnProperty.call(this.blanksFor, node.field) ? this.blanksFor[node.field] : null;
     if (Object.prototype.hasOwnProperty.call(this.storageFor, node.field)) {
-      return this.jsonList(node, manifest, col);
+      return this.jsonList(node, manifest, col, blanks);
+    }
+    if (blanks && !manifest && K.helpers.BLANK_OPERATORS.indexOf(op) !== -1) {
+      return this.blankTest(op, col, blanks.forms, 'a field with countAsBlank');
     }
 
     if (manifest) {
@@ -545,7 +573,7 @@
    * — `eq` or `contains` against JSON text, a dialect with no tested
    * translation — is unsupported, so the policy decides, not a guess.
    */
-  Builder.prototype.jsonList = function (node, manifest, col) {
+  Builder.prototype.jsonList = function (node, manifest, col, blanks) {
     var self = this;
     var op = node.operator;
     var j = JSON_DIALECTS[this.dialectName];
@@ -557,14 +585,13 @@
     }
     if (!j) throw unsupported(this.dialectName + ' has no translation for a JSON-stored field');
 
-    var forms = JSON_EMPTY_FORMS.map(function (f) { return "'" + self.d.escape(f) + "'"; }).join(', ');
+    // A host's countAsBlank values add to the spellings of empty: blank,
+    // they hold nothing, so no list operator finds anything in them either.
+    var extra = (blanks ? blanks.forms : []).filter(function (f) { return JSON_EMPTY_FORMS.indexOf(f) === -1; });
     // `is set` is `is not empty` here, as in the evaluators: a list column
     // clears to [] on one save path and to NULL on another.
-    if (op === 'is_empty' || op === 'is_not_set') {
-      return '(' + col + ' IS NULL OR ' + j.text(col) + ' IN (' + forms + '))';
-    }
-    if (op === 'is_not_empty' || op === 'is_set') {
-      return '(' + col + ' IS NOT NULL AND ' + j.text(col) + ' NOT IN (' + forms + '))';
+    if (K.helpers.BLANK_OPERATORS.indexOf(op) !== -1) {
+      return this.blankTest(op, col, JSON_EMPTY_FORMS.concat(extra), 'a JSON-stored field');
     }
 
     var first = (node.values || [])[0];
@@ -576,7 +603,32 @@
     var want = K.helpers.jsonListOperands((first || {}).value);
     if (!want.length) return '1 = 0';
     var tests = want.map(function (w) { return j.holds(col, w, self); });
-    return 'CASE WHEN ' + j.valid(col) + ' THEN ' + tests.join(op === 'includes_any' ? ' OR ' : ' AND ') + ' ELSE 0 END';
+    var guard = j.valid(col) + (extra.length ? ' AND ' + j.text(col) + ' NOT IN (' + this.blankList(extra) + ')' : '');
+    return 'CASE WHEN ' + guard + ' THEN ' + tests.join(op === 'includes_any' ? ' OR ' : ' AND ') + ' ELSE 0 END';
+  };
+
+  /**
+   * is_empty / is_not_empty (and is_set / is_not_set, which mean the same
+   * here) as a list of the stored texts that count as blank. NULL is tested
+   * on its own, so the whole is never NULL and a NOT in front of it keeps
+   * every row it should.
+   */
+  Builder.prototype.blankTest = function (op, col, forms, what) {
+    var text = EXACT_TEXT[this.dialectName];
+    if (!text) throw unsupported(this.dialectName + ' has no exact text comparison for ' + what);
+    var list = this.blankList(forms);
+    if (op === 'is_empty' || op === 'is_not_set') return '(' + col + ' IS NULL OR ' + text(col) + ' IN (' + list + '))';
+    return '(' + col + ' IS NOT NULL AND ' + text(col) + ' NOT IN (' + list + '))';
+  };
+
+  // The spellings as SQL: the library's own constants written in, as they
+  // always were; a host's own values through literal(), so they are escaped
+  // — or bound, with `parameters` — like any other value.
+  Builder.prototype.blankList = function (forms) {
+    var self = this;
+    return forms.map(function (f) {
+      return JSON_EMPTY_FORMS.indexOf(f) !== -1 ? "'" + self.d.escape(f) + "'" : self.literal(f);
+    }).join(', ');
   };
 
   /**

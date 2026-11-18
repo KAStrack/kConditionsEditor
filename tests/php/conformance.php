@@ -294,6 +294,16 @@ foreach ($fixtures['describeCases'] as $case) {
     });
 }
 
+check('a dialect alias works under the dialect\'s own name, as in the JS builder', static function () use ($doc, $cond): void {
+    foreach (['mariadb' => 'mysql', 'postgresql' => 'postgres', 'mssql' => 'sqlserver', 'ansi' => 'standard'] as $alias => $name) {
+        assertSame($name, (new SqlBuilder(['dialect' => $alias]))->build($doc([$cond('n', 'is_set')]))['dialect']);
+    }
+    $d = $doc([$cond('Assigned To', 'is_empty')]);
+    $fields = [['name' => 'Assigned To', 'storage' => 'json']];
+    assertSame((new SqlBuilder(['dialect' => 'mysql', 'fields' => $fields]))->build($d)['sql'],
+        (new SqlBuilder(['dialect' => 'MariaDB', 'fields' => $fields]))->build($d)['sql']);
+});
+
 /* ------------------------------------------------------------------ *
  * Label templates — the same helpers as the JavaScript SDK's
  * ------------------------------------------------------------------ */

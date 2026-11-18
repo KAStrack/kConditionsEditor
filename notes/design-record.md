@@ -5,7 +5,7 @@ per-version notes beside this file carry the detail; `CHANGELOG.md` is the
 user-facing version of the same story. Kept in the repository from 0.0.22 so it
 travels with the code.*
 
-Last updated: 2026-11-17 (version 0.1.6)
+Last updated: 2026-11-17 (version 0.1.7)
 
 ## What this is
 
@@ -943,6 +943,21 @@ whether it is empty, text that is not JSON includes nothing, `is set` means
 longer offers, rather than painting the first option over it. Detail in
 `0.1.6-json-storage.md`.
 
+## v0.1.7 — values that count as blank
+
+KAStrack chose to offer its multi-user fields as text for now — the names
+column, the text operators — which 0.1.6's fix did not reach: `storage: 'json'`
+makes a field a list and refuses text operators. `countAsBlank` names the stored
+values that count as empty, as a preset (`'json'`, 0.1.6's own list) or exact
+strings, and changes only the existence operators; everything else reads the raw
+text. Read through one helper per SDK (`blankSet()` / `isBlank()`, PHP
+`Support\CountAsBlank`). Making the evaluators and the SQL agree on exact values
+showed the SQL had been comparing through the column's collation, so MySQL's
+case-insensitive default called `NULL` a spelling of `null`, in 0.1.6's JSON SQL
+as well; the comparison is now by bytes. The JS builder also learnt to resolve
+dialect aliases, which `mariadb` had been missing. Detail in
+`0.1.7-count-as-blank.md`.
+
 ## Open items / not yet done
 
 - Python, Ruby, Go SDKs (deferred; the fixtures are the contract for a port).
@@ -954,11 +969,15 @@ longer offers, rather than painting the first option over it. Detail in
   a nested rule's structure reaches them only through the order of the rows.
 - No async operator support — synchronous by design.
 - SQL is a best-effort translation, not row-identical to the evaluator.
-- `storage: 'json'` has SQL for MySQL / MariaDB and SQLite only. PostgreSQL
-  (`::jsonb ?|` behind `IS JSON`, PG 16+) was not translated because it could
-  not be tested here. The SQL lists the spellings of empty, so `[ ]` and
-  `["", ""]` are empty to the evaluators but not to it; MySQL's `JSON_CONTAINS`
-  looks into nested arrays, the evaluators do not.
+- `storage: 'json'` and `countAsBlank` have SQL for MySQL / MariaDB and SQLite
+  only. PostgreSQL (`::jsonb ?|` behind `IS JSON`, PG 16+; and a plain
+  `CAST(col AS TEXT)` for `countAsBlank`, whose default collations are already
+  exact) was not translated because it could not be tested here — PGlite would
+  do it, but installing it was not possible in the sandbox. The SQL lists the
+  spellings of empty, so an empty list spelled another way (`[ ]`, `["", ""]`,
+  `[[]]`) is empty to the evaluators but not to it — a host can list such
+  spellings in `countAsBlank`; MySQL's `JSON_CONTAINS` looks into nested arrays,
+  the evaluators do not.
 - **Sibling order is presentational**: `evalGroup` has no short-circuiting, so
   neither the result nor which callbacks run depends on it. If short-circuiting
   is ever added, reordering becomes semantic and needs documenting as such.

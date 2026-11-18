@@ -1,4 +1,4 @@
-/*! kConditionsEditor 0.1.6 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
+/*! kConditionsEditor 0.1.7 — editor, evaluator and SQL builder | MIT | https://github.com/KAStrack/kConditionsEditor */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -17,7 +17,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions Evaluator 0.1.6
+ * kConditions Evaluator 0.1.7
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -32,7 +32,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.1.6';
+  var LIB_VERSION = '0.1.7';
 
   /* ------------------------------------------------------------------ *
    * Errors
@@ -404,6 +404,71 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     }
   };
 
+  /* ------------------------------------------------------------------ *
+   * Blank values: `countAsBlank`
+   *
+   * A field definition may name stored values that count as blank besides
+   * NULL and '', which always do: a preset (`'json'`, the spellings of empty
+   * listed above) or an array of exact strings (`['N/A', '-']`). It changes
+   * what is_empty / is_not_empty mean, and is_set / is_not_set with them, for
+   * the reason JSON storage gives: "set" on a column that clears to `[]` on
+   * one save path and NULL on another asks nothing a person means, and "is
+   * not set" must not keep the `[]` rows. Every other operator reads the
+   * stored value as before.
+   *
+   * A string is always a preset name and an array always holds values, so
+   * the value "json" is written ['json']. An unknown preset is ignored, as an
+   * unknown storage is, so a typo behaves as no option rather than throwing
+   * in a page. Values are compared exactly — case, spaces and all — because
+   * the SQL compares bytes; a value that arrives already decoded is compared
+   * by its text (asString()), and under 'json' an array that is an empty
+   * list by the JSON rule is blank too, as it is with storage: 'json'.
+   * ------------------------------------------------------------------ */
+
+  var BLANK_PRESETS = { json: JSON_EMPTY_FORMS };
+
+  // The builtins countAsBlank decides, and whether each one asks "is blank".
+  var BLANK_OPERATORS = { is_empty: true, is_not_set: true, is_not_empty: false, is_set: false };
+
+  /**
+   * `{ forms, json }` for a field that declares countAsBlank, otherwise null.
+   * `forms` is every stored text that counts as blank, '' first; `json` says
+   * the 'json' preset was named.
+   */
+  function blankSet(field) {
+    var c = field && typeof field === 'object' ? field.countAsBlank : null;
+    if (typeof c === 'string') {
+      var p = c.toLowerCase();
+      if (!Object.prototype.hasOwnProperty.call(BLANK_PRESETS, p)) return null;
+      return { forms: BLANK_PRESETS[p].slice(), json: p === 'json' };
+    }
+    if (!Array.isArray(c)) return null;
+    var forms = [''];
+    c.forEach(function (s) { if (typeof s === 'string' && forms.indexOf(s) === -1) forms.push(s); });
+    // Nothing beyond '' is the default, so it is no option at all.
+    return forms.length > 1 ? { forms: forms, json: false } : null;
+  }
+
+  /** A map of field name to blank set, for the fields that declare one. */
+  function blankMap(fields) {
+    var out = {};
+    (Array.isArray(fields) ? fields : []).forEach(function (f) {
+      var s = blankSet(f);
+      if (s && f.name !== undefined && f.name !== null) out[String(f.name)] = s;
+    });
+    return out;
+  }
+
+  /** Whether a stored value counts as blank under a blank set. */
+  function isBlank(v, set) {
+    if (isEmptyValue(v)) return true;
+    if (typeof v !== 'string') {
+      if (set.json && Array.isArray(v) && emptyArray(v)) return true;
+      v = asString(v);
+    }
+    return set.forms.indexOf(v) !== -1;
+  }
+
   function buildRegex(pattern, ctx) {
     return new RegExp(pattern, ctx && ctx.caseInsensitive ? 'i' : '');
   }
@@ -632,8 +697,9 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     allowManifestCallbacks: false,
     callbackAllowList: null,
     callbackScope: null,
-    // The host's field definitions. Only `storage` is read here: a field
-    // stored as JSON is decoded before any operator sees it.
+    // The host's field definitions. Only `storage` and `countAsBlank` are
+    // read here: a field stored as JSON is decoded before any operator sees
+    // it, and a field's own blank values decide is_empty and is_set.
     fields: null,
     trace: false
   };
@@ -658,6 +724,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       });
     }
     this.storageFor = storageMap(this.options.fields);
+    this.blanksFor = blankMap(this.options.fields);
   }
 
   Evaluator.prototype.registerOperator = function (name, fn, meta) {
@@ -712,6 +779,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       errors: [],
       trace: this.options.trace ? [] : null,
       storage: this.storageFor,
+      blanks: this.blanksFor,
       evaluator: this
     };
     var outcome = this.evalNode(doc.root, state, 'root');
@@ -835,18 +903,24 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
         path: path
       };
       if (isMissing(fieldValue)) fieldValue = null;
+      var builtin = BUILTIN_OPERATORS[name];
+      var isBuiltin = !!builtin && impl === builtin.fn;
+      var blanks = state.blanks && Object.prototype.hasOwnProperty.call(state.blanks, node.field) ? state.blanks[node.field] : null;
       if (Object.prototype.hasOwnProperty.call(state.storage, node.field)) {
         // A JSON-stored field is read once, here. The builtin list and
         // existence operators answer from what was read; anything else —
         // another builtin, a registered or custom operator — gets the decoded
-        // value, as it would get an array passed in directly.
+        // value, as it would get an array passed in directly. A value the
+        // field counts as blank holds nothing, whatever it decodes to.
         var stored = readJsonList(fieldValue);
-        var builtin = BUILTIN_OPERATORS[name];
-        if (builtin && impl === builtin.fn && JSON_LIST_OPERATORS[name]) {
+        if (blanks && !stored.empty && isBlank(fieldValue, blanks)) stored = { empty: true, items: [], value: stored.value };
+        if (isBuiltin && JSON_LIST_OPERATORS[name]) {
           out = JSON_LIST_OPERATORS[name](stored, args, ctx);
         } else {
           out = impl(stored.value, args, ctx);
         }
+      } else if (blanks && isBuiltin && Object.prototype.hasOwnProperty.call(BLANK_OPERATORS, name)) {
+        out = isBlank(fieldValue, blanks) === BLANK_OPERATORS[name];
       } else {
         out = impl(fieldValue, args, ctx);
       }
@@ -1362,6 +1436,8 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       fieldStorage: fieldStorage, storageMap: storageMap, readJsonList: readJsonList,
       jsonListOperands: wantedValues, JSON_LIST_OPERATORS: Object.keys(JSON_LIST_OPERATORS),
       JSON_EMPTY_FORMS: JSON_EMPTY_FORMS,
+      blankSet: blankSet, blankMap: blankMap, isBlank: isBlank,
+      BLANK_OPERATORS: Object.keys(BLANK_OPERATORS),
       startOfUtcDay: startOfUtcDay, resolvePolicy: resolvePolicy,
       fillTemplate: fillTemplate, splitOperatorLabel: splitOperatorLabel,
       operatorLabelText: operatorLabelText
@@ -1378,7 +1454,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditions SQL 0.1.6
+ * kConditions SQL 0.1.7
  * Translates a kConditions document into a self-contained SQL boolean
  * expression — the part that goes after WHERE in a SELECT.
  *
@@ -1405,7 +1481,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (K) {
   'use strict';
 
-  var VERSION = '0.1.6';
+  var VERSION = '0.1.7';
   var DAY_MS = 86400000;
 
   /* ------------------------------------------------------------------ *
@@ -1442,10 +1518,12 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     }
   };
 
-  DIALECTS.mariadb = DIALECTS.mysql;
-  DIALECTS.postgresql = DIALECTS.postgres;
-  DIALECTS.mssql = DIALECTS.sqlserver;
-  DIALECTS.ansi = DIALECTS.standard;
+  // Other names for a dialect. The builder works under the dialect's own
+  // name — as the PHP builder does — so every table keyed by dialect, the
+  // `dialect` it reports and the labels a document's conditions are matched
+  // against read the same for 'mariadb' as for 'mysql'.
+  var ALIASES = { mariadb: 'mysql', postgresql: 'postgres', mssql: 'sqlserver', ansi: 'standard' };
+  Object.keys(ALIASES).forEach(function (a) { DIALECTS[a] = DIALECTS[ALIASES[a]]; });
 
   /* ------------------------------------------------------------------ *
    * JSON-stored list fields (`storage: 'json'`)
@@ -1459,7 +1537,8 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
    *   spellings are listed.
    *   The text is compared through a cast, which also reads a native JSON
    *   column: none of the spellings has a comma, so the server's own
-   *   normalised text of one is the same characters.
+   *   normalised text of one is the same characters. The comparison is
+   *   exact (EXACT_TEXT below), as the evaluators' is.
    * - The JSON functions raise an error on text that is not JSON — and ''
    *   is one of the empty spellings — which fails the whole query. Each test
    *   sits in a CASE that checks validity first, the one construct the
@@ -1473,9 +1552,28 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
   // Read from the evaluator, which holds the one list both SDKs pin.
   var JSON_EMPTY_FORMS = K.helpers.JSON_EMPTY_FORMS;
 
+  /*
+   * A column's stored text, compared exactly: by bytes, not through a
+   * collation. MySQL's default collation is case-insensitive, so a plain
+   * cast called the text 'NULL' a spelling of 'null' and 'n/a' a match for a
+   * host's 'N/A' — empty to the SQL, not to the evaluators — and a PAD SPACE
+   * collation (utf8mb4_bin, MariaDB's defaults) makes ' ' equal to ''. The
+   * cast to CHAR reads a native JSON column, and converts a latin1 column to
+   * the connection's character set, which the literals are in too. SQLite
+   * compares a CAST of a column with that column's collation (NOCASE, say)
+   * unless told otherwise.
+   *
+   * Dialects not listed here have no tested exact comparison; a spelling
+   * list on them is left to the unsupported-operator policy.
+   */
+  var EXACT_TEXT = {
+    mysql: function (col) { return 'CAST(CAST(' + col + ' AS CHAR) AS BINARY)'; },
+    sqlite: function (col) { return 'CAST(' + col + ' AS TEXT) COLLATE BINARY'; }
+  };
+
   var JSON_DIALECTS = {
     mysql: {
-      text: function (col) { return 'CAST(' + col + ' AS CHAR)'; },
+      text: EXACT_TEXT.mysql,
       valid: function (col) { return 'JSON_VALID(' + col + ')'; },
       // The element as a JSON string, then as a SQL string: '"O''Brien"'.
       holds: function (col, value, b) {
@@ -1483,7 +1581,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       }
     },
     sqlite: {
-      text: function (col) { return 'CAST(' + col + ' AS TEXT)'; },
+      text: EXACT_TEXT.sqlite,
       valid: function (col) { return 'json_valid(' + col + ')'; },
       // json_each walks an array's elements, a bare string as itself, and an
       // object's members — which JSON_CONTAINS does not, so an object's keys
@@ -1532,9 +1630,10 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     });
 
     var name = String(this.o.dialect || 'standard').toLowerCase();
-    this.dialectName = DIALECTS[name] ? name : 'standard';
+    if (Object.prototype.hasOwnProperty.call(ALIASES, name)) name = ALIASES[name];
+    this.dialectName = Object.prototype.hasOwnProperty.call(DIALECTS, name) ? name : 'standard';
     this.d = DIALECTS[this.dialectName];
-    if (!DIALECTS[name]) {
+    if (this.dialectName !== name) {
       this.unknownDialect = String(this.o.dialect);
     }
 
@@ -1548,6 +1647,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     // Read through the evaluator's own helper, so a field the evaluator
     // decodes as JSON is the same field the SQL treats as JSON.
     this.storageFor = K.helpers.storageMap(this.o.fields);
+    this.blanksFor = K.helpers.blankMap(this.o.fields);
     if (this.o.columns) {
       Object.keys(this.o.columns).forEach(function (k) { self.columnFor[k] = self.o.columns[k]; });
     }
@@ -1812,8 +1912,12 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
       throw unresolved('unknown operator');
     }
 
+    var blanks = Object.prototype.hasOwnProperty.call(this.blanksFor, node.field) ? this.blanksFor[node.field] : null;
     if (Object.prototype.hasOwnProperty.call(this.storageFor, node.field)) {
-      return this.jsonList(node, manifest, col);
+      return this.jsonList(node, manifest, col, blanks);
+    }
+    if (blanks && !manifest && K.helpers.BLANK_OPERATORS.indexOf(op) !== -1) {
+      return this.blankTest(op, col, blanks.forms, 'a field with countAsBlank');
     }
 
     if (manifest) {
@@ -1924,7 +2028,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
    * — `eq` or `contains` against JSON text, a dialect with no tested
    * translation — is unsupported, so the policy decides, not a guess.
    */
-  Builder.prototype.jsonList = function (node, manifest, col) {
+  Builder.prototype.jsonList = function (node, manifest, col, blanks) {
     var self = this;
     var op = node.operator;
     var j = JSON_DIALECTS[this.dialectName];
@@ -1936,14 +2040,13 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     }
     if (!j) throw unsupported(this.dialectName + ' has no translation for a JSON-stored field');
 
-    var forms = JSON_EMPTY_FORMS.map(function (f) { return "'" + self.d.escape(f) + "'"; }).join(', ');
+    // A host's countAsBlank values add to the spellings of empty: blank,
+    // they hold nothing, so no list operator finds anything in them either.
+    var extra = (blanks ? blanks.forms : []).filter(function (f) { return JSON_EMPTY_FORMS.indexOf(f) === -1; });
     // `is set` is `is not empty` here, as in the evaluators: a list column
     // clears to [] on one save path and to NULL on another.
-    if (op === 'is_empty' || op === 'is_not_set') {
-      return '(' + col + ' IS NULL OR ' + j.text(col) + ' IN (' + forms + '))';
-    }
-    if (op === 'is_not_empty' || op === 'is_set') {
-      return '(' + col + ' IS NOT NULL AND ' + j.text(col) + ' NOT IN (' + forms + '))';
+    if (K.helpers.BLANK_OPERATORS.indexOf(op) !== -1) {
+      return this.blankTest(op, col, JSON_EMPTY_FORMS.concat(extra), 'a JSON-stored field');
     }
 
     var first = (node.values || [])[0];
@@ -1955,7 +2058,32 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     var want = K.helpers.jsonListOperands((first || {}).value);
     if (!want.length) return '1 = 0';
     var tests = want.map(function (w) { return j.holds(col, w, self); });
-    return 'CASE WHEN ' + j.valid(col) + ' THEN ' + tests.join(op === 'includes_any' ? ' OR ' : ' AND ') + ' ELSE 0 END';
+    var guard = j.valid(col) + (extra.length ? ' AND ' + j.text(col) + ' NOT IN (' + this.blankList(extra) + ')' : '');
+    return 'CASE WHEN ' + guard + ' THEN ' + tests.join(op === 'includes_any' ? ' OR ' : ' AND ') + ' ELSE 0 END';
+  };
+
+  /**
+   * is_empty / is_not_empty (and is_set / is_not_set, which mean the same
+   * here) as a list of the stored texts that count as blank. NULL is tested
+   * on its own, so the whole is never NULL and a NOT in front of it keeps
+   * every row it should.
+   */
+  Builder.prototype.blankTest = function (op, col, forms, what) {
+    var text = EXACT_TEXT[this.dialectName];
+    if (!text) throw unsupported(this.dialectName + ' has no exact text comparison for ' + what);
+    var list = this.blankList(forms);
+    if (op === 'is_empty' || op === 'is_not_set') return '(' + col + ' IS NULL OR ' + text(col) + ' IN (' + list + '))';
+    return '(' + col + ' IS NOT NULL AND ' + text(col) + ' NOT IN (' + list + '))';
+  };
+
+  // The spellings as SQL: the library's own constants written in, as they
+  // always were; a host's own values through literal(), so they are escaped
+  // — or bound, with `parameters` — like any other value.
+  Builder.prototype.blankList = function (forms) {
+    var self = this;
+    return forms.map(function (f) {
+      return JSON_EMPTY_FORMS.indexOf(f) !== -1 ? "'" + self.d.escape(f) + "'" : self.literal(f);
+    }).join(', ');
   };
 
   /**
@@ -2006,7 +2134,7 @@ var module = { exports: {} };
 var exports = module.exports;
 var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 /*!
- * kConditionsEditor 0.1.6
+ * kConditionsEditor 0.1.7
  * A zero-dependency conditions builder that takes over a <textarea>.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  *
@@ -2025,7 +2153,7 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (KConditions) {
   'use strict';
 
-  var VERSION = '0.1.6';
+  var VERSION = '0.1.7';
   var BUILTIN = KConditions.BUILTIN_OPERATORS;
   var GROUPS = KConditions.OPERATOR_GROUPS;
   var TYPE_GROUPS = KConditions.FIELD_TYPE_GROUPS;
@@ -2778,11 +2906,13 @@ var require = function (p) { return REGISTRY[String(p).replace(/^.*\//, '')]; };
     if (Array.isArray(field.excludeOperators)) {
       names = names.filter(function (n) { return field.excludeOperators.indexOf(n) === -1; });
     }
-    // On a JSON-stored field "is set" means "is not empty" (a list column
-    // clears to [] on one save path and NULL on another), so offering both
-    // would be two names for one question. A host that lists them in
-    // `operators` still gets them; a rule that already uses one keeps it.
-    if (KConditions.helpers.fieldStorage(field) && !(Array.isArray(field.operators) && field.operators.length)) {
+    // On a JSON-stored field, or one with its own blank values, "is set"
+    // means "is not empty" (a column that clears to [] on one save path and
+    // NULL on another), so offering both would be two names for one
+    // question. A host that lists them in `operators` still gets them; a
+    // rule that already uses one keeps it.
+    if ((KConditions.helpers.fieldStorage(field) || KConditions.helpers.blankSet(field)) &&
+        !(Array.isArray(field.operators) && field.operators.length)) {
       names = names.filter(function (n) { return n !== 'is_set' && n !== 'is_not_set'; });
     }
     return names.filter(function (n) { return !!self.operatorMeta(n); });

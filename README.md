@@ -81,7 +81,7 @@ stylesheet is required for every skin except `boxed`, and
 carries the built files for that version. To vendor a release, take `dist/` from the
 tag (it holds the `LICENSE`) and record the version, which is also in each file's
 banner — or load it from a CDN that serves tags, such as
-`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.6/dist/k-conditions.min.js`.
+`https://cdn.jsdelivr.net/gh/KAStrack/kConditionsEditor@v0.1.7/dist/k-conditions.min.js`.
 The npm package carries the same files. The sources stay the deliverable: edit `src/`,
 then rebuild; `npm test` fails if `dist/` is not what the build makes from `src/`.
 
@@ -155,7 +155,7 @@ if (K.evaluate(document, submission, { environment: 'server' })) {
 ```json
 {
   "version": "1.0",
-  "generator": "kConditionsEditor/0.1.6",
+  "generator": "kConditionsEditor/0.1.7",
   "operators": {},
   "root": {
     "type": "group",
@@ -504,7 +504,7 @@ differ in identifier quoting, string escaping, boolean literals and regular expr
 | Option | Default | Notes |
 |--------|---------|-------|
 | `dialect` | `"standard"` | Which SQL to emit |
-| `fields` | `null` | Supplies `column`, `type` and `storage` per field |
+| `fields` | `null` | Supplies `column`, `type`, `storage` and `countAsBlank` per field |
 | `columns` | `null` | Or map field name → column directly |
 | `parameters` | `false` | Emit placeholders and return the values in `params` |
 | `placeholderStyle` | per dialect | `question`, `numbered` or `named` |
@@ -521,8 +521,8 @@ gets SQL for that shape. With the field above, MySQL / MariaDB:
 
 | Operator | SQL |
 |----------|-----|
-| `is_empty`, `is_not_set` | ``(`--ID_FOR_Assigned To` IS NULL OR CAST(`--ID_FOR_Assigned To` AS CHAR) IN (…))`` |
-| `is_not_empty`, `is_set` | ``(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(`--ID_FOR_Assigned To` AS CHAR) NOT IN (…))`` |
+| `is_empty`, `is_not_set` | ``(`--ID_FOR_Assigned To` IS NULL OR CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) IN (…))`` |
+| `is_not_empty`, `is_set` | ``(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) NOT IN (…))`` |
 | `includes_any` 3184, 3152 | ``CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, '"3184"') OR JSON_CONTAINS(`--ID_FOR_Assigned To`, '"3152"') ELSE 0 END`` |
 | `includes_all` 3184, 3152 | the same, joined with `AND` |
 
@@ -538,16 +538,43 @@ shaped this way:
   unassigned rows instead of silently dropping them.
 - **Values are JSON-encoded, then SQL-quoted** — `JSON_CONTAINS(col, '"O''Brien"')` —
   or bound with `parameters: true` (the bound value is `"O'Brien"`, quotes included).
-- **The cast reads a native `JSON` column too**: none of the empty spellings has a
-  comma, so the server's normalised text of one is the same characters.
+- **The text is compared exactly**, byte for byte, as the evaluators compare it.
+  MySQL's default collation is case- and accent-insensitive, so through a plain cast
+  the text `NULL` counted as the spelling `null`; a `PAD SPACE` collation (MariaDB's
+  defaults) makes `' '` equal to `''`. The inner cast reads a native `JSON` column
+  too — none of the empty spellings has a comma, so the server's normalised text of
+  one is the same characters. (Until 0.1.7 this was the plain `CAST(col AS CHAR)`.)
 - **An empty operand list never matches** (`1 = 0`), as in the evaluators.
 
-SQLite gets the same shape with `json_valid()` and `json_each()`. PostgreSQL, SQL
+SQLite gets the same shape with `CAST(col AS TEXT) COLLATE BINARY`, `json_valid()` and
+`json_each()`. PostgreSQL, SQL
 Server and `standard` have no tested translation, and `eq`, `contains` and the rest
 have no faithful one on JSON text; those fall to `unsupportedPolicy` (`"error"` by
 default — `"skip"` leaves the condition to be evaluated in code) rather than emitting
 SQL that might be wrong. All of it was run against MySQL 8.4 (a `TEXT` and a `JSON`
 column) and SQLite, row by row against the evaluator.
+
+### Fields with their own blank values
+
+A field with `countAsBlank` (see [Values that count as blank](#values-that-count-as-blank-countasblank))
+changes the SQL for the four existence operators, and nothing else. MySQL / MariaDB:
+
+| Operator | SQL |
+|----------|-----|
+| `is_empty`, `is_not_set` | ``(`Assigned To` IS NULL OR CAST(CAST(`Assigned To` AS CHAR) AS BINARY) IN ('', …))`` |
+| `is_not_empty`, `is_set` | ``(`Assigned To` IS NOT NULL AND CAST(CAST(`Assigned To` AS CHAR) AS BINARY) NOT IN ('', …))`` |
+| `contains`, `eq` and the rest | as without the option: `` `Assigned To` LIKE '%Ben%' ESCAPE '\\' `` |
+
+where `…` is the preset's spellings (for `'json'`, the list above) or the field's own
+values — `('', 'N/A', '-')` for `countAsBlank: ['N/A', '-']`. A host's values are
+escaped like any other literal, or bound with `parameters: true`; the preset's are
+written in. The comparison is exact for the reason above: with a plain cast, MySQL's
+default collation would make `n/a` blank for `['N/A']`. The cast reads a native
+`JSON` column too (`col = '[]'` matches nothing there; `CAST(col AS CHAR) = '[]'`
+does). Neither expression can be `NULL`, so `NOT (… is empty)` keeps every row it
+should. SQLite gets `CAST(col AS TEXT) COLLATE BINARY`; PostgreSQL, SQL Server and
+`standard` have no tested exact comparison, so the four existence operators fall to
+`unsupportedPolicy` there — every other operator is translated as usual.
 
 ### Where to generate it
 
@@ -575,7 +602,7 @@ Use `parameters: true` wherever your driver supports placeholders, in either mod
 **It is a translation, not the evaluator.** SQL has three-valued logic and the evaluator
 does not, so a row-for-row match is not guaranteed. The choices made here: negative
 operators are null-safe by default (`col <> 'x'` becomes `(col IS NULL OR col <> 'x')`),
-`is_empty` covers `NULL` and `''`, `date_eq` becomes a half-open day range, and the
+`is_empty` covers `NULL` and `''` (and a field's `countAsBlank` values), `date_eq` becomes a half-open day range, and the
 relative date operators resolve against `now` at generation time rather than emitting
 `CURRENT_DATE`, so a saved query keeps the dates it was built with.
 
@@ -744,6 +771,7 @@ of. It hides itself when the rule is already empty. Turn it off with
   group: 'Application',          // a heading in the field list (optional)
   column: 'c.date_of_birth',     // SQL name; defaults to `name`
   storage: 'json',               // list fields kept as a JSON array — see below
+  countAsBlank: 'json',          // stored values that count as empty — see below
   choices: [...],                // enum and list fields — see Field choices
   operators: ['group:date'],     // or omit for the type default
   excludeOperators: [...],
@@ -807,6 +835,50 @@ pair. The exact reading is in [SPEC.md §7](SPEC.md#7-field-definitions); the sh
 fixtures hold both SDKs to it.
 
 A field without `storage` behaves exactly as before.
+
+### Values that count as blank: `countAsBlank`
+
+Some columns hold a placeholder for "nothing": a names column that holds `[]` when
+nobody is assigned, a phone column that holds `N/A`. As plain text fields, *is not
+empty* lets those rows through — `[]` is not `''` — so a rule "colour unassigned
+cards, except where Assigned To is not empty" excepts every card. Name the
+placeholders on the field, and keep it a text field:
+
+```js
+{ name: 'Assigned To', label: 'Assigned To', type: 'text', countAsBlank: 'json' }
+{ name: 'Phone', label: 'Phone', type: 'text', countAsBlank: ['N/A', '-'] }
+```
+
+- **A string is a preset.** `'json'` is the spellings of empty a JSON-stored list
+  can have: `[]`, `null`, `[""]`, `["[]"]`, `[null]`, `"[]"`, `""`, `"[\"\"]"` — the same
+  list `storage: 'json'` uses, read from the same place. A preset the library does
+  not know is ignored.
+- **An array is exact values.** Case counts and nothing is trimmed: `n/a` and `N/A `
+  are not `N/A`. A string in the array is always a value — `['json']` makes the text
+  `json` blank, and does not bring in the preset.
+- **`NULL` and `''` are always blank**; the option adds to them.
+
+*is empty* and *is not empty* use those values — in the editor's SQL, in both
+evaluators (given the same field list, as for `storage`) and nowhere else. *is set*
+and *is not set* mean *is not empty* and *is empty* on such a field, for the reason
+`storage: 'json'` gives (a column that clears to `[]` on one save path and to `NULL`
+on another), so the editor offers only the *empty* pair; a rule that already uses one
+keeps it. **Every other operator is unchanged**: `contains`, `is equal to`, `starts
+with` work on the stored text exactly as before, nothing is refused, `describe()`
+reads as before, and the editor's value controls do not change. That is the
+difference from `storage: 'json'`, which makes the field a list.
+
+The evaluators compare the value's text, exactly, as the SQL does; a value that
+arrives already decoded is compared by its text too, and under `'json'` an array of
+empty elements is blank, as it is with `storage: 'json'`.
+
+On a field that also has `storage: 'json'`, a preset adds nothing (the JSON rule
+already covers it), and an array adds stored values that count as empty — and hold
+nothing, so *includes any of* finds nothing in them. That is the way to tell the SQL
+about an empty list spelled some other way, such as `[ ]`. The exact rules are in
+[SPEC.md §7.2](SPEC.md#72-countasblank--stored-values-that-count-as-empty).
+
+A field without `countAsBlank` behaves exactly as before.
 
 ### A saved rule the fields no longer fit
 
@@ -1471,12 +1543,12 @@ npm test              # JavaScript, node --test, no dependencies
 npm run test:php      # PHP, no dependencies
 npm run test:browser  # real Chromium; needs `npx playwright install chromium` once
 npm run test:all      # all three
-npm run test:db       # storage: 'json' SQL against SQLite, and MySQL with KCE_MYSQL set
+npm run test:db       # stored-value SQL against SQLite, and MySQL with KCE_MYSQL set
 
 composer install && vendor/bin/phpunit    # the PHPUnit suites, if you have Composer
 ```
 
-`tests/fixtures/cases.json` holds 135 shared evaluation cases, 56 shared SQL cases, 40
+`tests/fixtures/cases.json` holds 204 shared evaluation cases, 80 shared SQL cases, 42
 shared `describe()` cases and 2 shared `validateDocument()` cases (one of them reports every
 problem code). The JavaScript and PHP suites both run that file — SQL, both describe
 renderings and every problem are compared character for character — so the two runtimes
@@ -1488,10 +1560,12 @@ hover, drag, undo, the previews, the skins and the built bundles are covered.
 `npm run test:browser` runs every script in the directory and fails if any is red; pass a
 substring to run a subset (`node tests/browser/run.js undo`).
 
-`tests/db/json-storage.js` (`npm run test:db`) runs the SQL for a `storage: 'json'` field
-against real databases and compares every row with the evaluator: SQLite always (Node
-22.5+), and MySQL / MariaDB when `KCE_MYSQL` holds `mysql` client options and a database
-(`KCE_MYSQL="-h127.0.0.1 -uroot test"`). It is not part of `test:all`, which needs no
+`tests/db/sql-vs-evaluator.js` (`npm run test:db`) runs the SQL for `storage: 'json'` and
+`countAsBlank` fields against real databases and compares every row with the evaluator:
+SQLite always (Node 22.5+; a plain and a `COLLATE NOCASE` column), and MySQL / MariaDB
+when `KCE_MYSQL` holds `mysql` client options and a database
+(`KCE_MYSQL="-h127.0.0.1 -uroot test"`; a `TEXT` and a native `JSON` column). It fails on
+any disagreement SPEC §7 does not document. It is not part of `test:all`, which needs no
 database.
 
 Why the project is built this way, decision by decision, is in [notes/](notes/)
@@ -1510,7 +1584,7 @@ schema/                       JSON Schema for the document format
 tests/fixtures/cases.json     shared cross-language conformance fixtures
 tests/js/                     node --test suite
 tests/php/conformance.php     dependency-free PHP runner
-tests/db/json-storage.js      storage: 'json' SQL checked on real SQLite / MySQL (opt-in)
+tests/db/sql-vs-evaluator.js  stored-value SQL checked on real SQLite / MySQL (opt-in)
 sdk/php/tests/                PHPUnit suite
 docs/                         the GitHub Pages site: landing page, playground, API
                               reference, skins side by side, design lab
@@ -1524,6 +1598,11 @@ SPEC.md                       the document specification
 ---
 
 ## Status
+
+**0.1.7** — `countAsBlank`: a field can name the stored values that count as empty
+(`'json'` for the spellings of an empty JSON list, or exact values like `N/A`) while
+staying a text field, and *is not empty* leaves them out in SQL and in both evaluators.
+The SQL for empty values now compares text exactly, as the evaluators do.
 
 **0.1.6** — `storage: 'json'`: a list field kept as a JSON array is read the same way by
 the editor, `describe()`, both evaluators and the SQL builders, every spelling of empty

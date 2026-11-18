@@ -101,7 +101,7 @@ const row = (p, i) => p.evaluate(`(() => {
   ok('loading the rule leaves the rule in the field as it was', r.fieldValueUnchanged, r);
   let out = await p.evaluate(() => ({ sql: window.ed.getSql({ dialect: 'mysql' }).sql, text: window.ed.describe() }));
   ok('its SQL now reads [] and every other empty spelling as empty',
-    out.sql === "(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(`--ID_FOR_Assigned To` AS CHAR) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))", out);
+    out.sql === "(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))", out);
 
   /* 2. Storage alone makes a field a list. */
   await p.evaluate((d) => window.load(d), doc(cond('Watchers', 'is_empty')));

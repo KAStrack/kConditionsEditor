@@ -4,6 +4,90 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] — 2026-11-17
+
+For KAStrack's multi-value fields offered as **text** — the names column, the
+text operators — whose column holds `[]` when nobody is assigned. The document
+format is unchanged (spec `1.0`), and a field without the new option behaves
+exactly as in 0.1.6.
+
+### Added
+
+- **`countAsBlank` on a field definition: stored values that count as empty.**
+  0.1.6's fix for `[]` came only with `storage: 'json'`, which makes the field a
+  list and refuses the text operators on it. A field offered as text still had
+  *is not empty* as `col <> ''`, which `[]` passes — so "colour unassigned
+  cards, except where Assigned To is not empty" still excepted every card. Now:
+  - **`countAsBlank: 'json'`** — a preset: the spellings of empty
+    `storage: 'json'` lists (`[]`, `null`, `[""]`, `["[]"]`, `[null]`, `"[]"`,
+    `""`, `"[\"\"]"`), read from the same constant, so the two cannot drift.
+  - **`countAsBlank: ['N/A', '-']`** — exact stored values. Case counts and
+    nothing is trimmed. A string in the array is always a value (`['json']` is
+    the text `json`); a preset is only ever the whole option, so more presets can
+    follow. An unknown preset is ignored, as an unknown `storage` is.
+  - `NULL` and `''` are always empty; the option adds to them.
+  - **Only the existence operators change.** *Is empty* / *is not empty* use the
+    set, in both evaluators and the SQL builders; *is set* / *is not set* mean
+    *is not empty* / *is empty*, for `storage: 'json'`'s reason (a column that
+    clears to `[]` on one save path and NULL on another), so the editor offers
+    only the *empty* pair unless a field's `operators` names the others.
+    `contains`, `eq`, `starts_with` and the rest read the stored text exactly as
+    before, and nothing is refused. `describe()` and the value controls are
+    unchanged.
+  - **SQL**, MySQL / MariaDB:
+    `(col IS NULL OR CAST(CAST(col AS CHAR) AS BINARY) IN ('', …))` and the
+    `IS NOT NULL AND … NOT IN` twin; SQLite the same with
+    `CAST(col AS TEXT) COLLATE BINARY`. A host's values are escaped like any
+    literal, or bound with `parameters`. Neither expression can be NULL. The cast
+    reads a native JSON column (where `col = '[]'` matches nothing). PostgreSQL,
+    SQL Server and `standard` have no tested exact comparison, so the four
+    existence operators fall to `unsupportedPolicy` there.
+  - **With `storage: 'json'`**, a preset adds nothing (the JSON rule already
+    covers it) and an array adds values that count as empty and hold nothing —
+    *includes any of* finds nothing in them. That is how to tell the SQL about an
+    empty list spelled another way, such as `[ ]`.
+
+  SPEC §7.2 sets out the rules; 69 evaluation, 24 SQL and 2 describe fixtures
+  hold both SDKs to them. `npm run test:db` (now `tests/db/sql-vs-evaluator.js`)
+  checks every option against MySQL 8.4 (a `TEXT` column under the default
+  collation, and a native `JSON` column) and SQLite (a plain and a `COLLATE
+  NOCASE` column), row by row against the evaluator.
+
+### Fixed
+
+- **The SQL for empty values compared text through the column's collation.**
+  0.1.6's `storage: 'json'` SQL listed the spellings of empty with a plain
+  `CAST(col AS CHAR)`, and MySQL's default collation is case- and
+  accent-insensitive: the text `NULL`, `Null` or `[NULL]` counted as the spelling
+  `null` — empty to the SQL, not to the evaluators. A `PAD SPACE` collation
+  (MariaDB's defaults) makes `' '` equal to `''`, and SQLite compares a cast of a
+  `COLLATE NOCASE` column without case. The comparison is now exact:
+  `CAST(CAST(col AS CHAR) AS BINARY)` in MySQL / MariaDB, `CAST(col AS TEXT)
+  COLLATE BINARY` in SQLite. The SQL for a `storage: 'json'` field's *is empty*
+  and *is not empty* changes accordingly; it picks the same rows as before except
+  for spellings like those.
+- **`dialect: 'mariadb'` had no SQL for a `storage: 'json'` field in the
+  JavaScript builder.** The JS builder kept a dialect's alias as its name, so
+  `'mariadb'` missed every table keyed by `'mysql'` and the condition fell to
+  `unsupportedPolicy`. It also reported `dialect: 'mariadb'` (PHP: `'mysql'`) and
+  matched a document's labels by the alias. The JS builder now works under the
+  dialect's own name, as the PHP builder always has: `mariadb` → `mysql`,
+  `postgresql` → `postgres`, `mssql` → `sqlserver`, `ansi` → `standard`.
+
+### Coming from 0.1.6
+
+- **Multi-value fields offered as text**: send
+  `type: 'text', countAsBlank: 'json'` (with the names column), and pass the same
+  field list to the PHP `evaluate()` / `Evaluator` as `fields` wherever these
+  fields are evaluated. *Is not empty* then leaves out `[]`; the SQL builder
+  regenerates the SQL, so re-save rules to pick it up. A rule saved with *is set*
+  on such a field now means *is not empty*.
+- **`storage: 'json'` fields**: the SQL for *is empty* / *is not empty* now reads
+  `CAST(CAST(col AS CHAR) AS BINARY)` where it read `CAST(col AS CHAR)`. Anything
+  matching on the old SQL text needs the new one.
+- **The JS SQL builder's `dialect`** in its result is the dialect's own name
+  (`mysql` for `mariadb`), as PHP's is.
+
 ## [0.1.6] — 2026-11-17
 
 For KAStrack's multi-value fields — a users field such as "Assigned To" — whose

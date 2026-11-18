@@ -212,3 +212,18 @@ test('validateDocument problems carry a code, params and the English message', (
     message: 'Unknown field "ghost"' }]);
   assert.strictEqual(K.PROBLEM_MESSAGES.unknownField, 'Unknown field "{field}"');
 });
+
+test('a dialect alias works under the dialect\'s own name, as in the PHP builder', () => {
+  require('../../src/k-conditions-sql.js');
+  const d = doc([cond('Assigned To', 'is_empty')]);
+  const fields = [{ name: 'Assigned To', storage: 'json' }];
+  for (const [alias, name] of [['mariadb', 'mysql'], ['postgresql', 'postgres'], ['mssql', 'sqlserver'], ['ansi', 'standard']]) {
+    assert.strictEqual(K.toSql(doc([cond('n', 'eq', [lit(1)])]), { dialect: alias }).dialect, name, alias);
+  }
+  // Until 0.1.7 'mariadb' missed every table keyed by dialect, so a
+  // JSON-stored field had no SQL on it.
+  assert.strictEqual(K.toSql(d, { dialect: 'MariaDB', fields }).sql, K.toSql(d, { dialect: 'mysql', fields }).sql);
+  const unknown = K.toSql(d, { dialect: 'constructor', fields: [] });
+  assert.strictEqual(unknown.dialect, 'standard');
+  assert.strictEqual(unknown.warnings[0].reason, 'dialect');
+});

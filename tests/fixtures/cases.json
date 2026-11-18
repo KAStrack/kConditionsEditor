@@ -4656,6 +4656,2366 @@
       "expected": true
     },
     {
+      "name": "countAsBlank \u2014 json: NULL is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": null
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: '' is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": ""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: [] is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: [\"[]\"] is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"[]\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: [\"\"] is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: [null] is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[null]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: null is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "null"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: \"[]\" is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: \"\" is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: \"[\\\"\\\"]\" is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "\"[\\\"\\\"]\""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: [] is not \"is not empty\" (the bug that started 0.1.6)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: a name is not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "Ben Holness"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: a JSON array of names is not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"Ben Holness\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: \"NULL\" is not empty \u2014 case counts",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "NULL"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: \" \" is not empty \u2014 a space is not ''",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": " "
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: \"[ ]\" is not empty \u2014 the spelling, not the decoding",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[ ]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: \"[\\\"\\\",\\\"\\\"]\" is not empty \u2014 the spelling, not the decoding",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"\",\"\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: \"[] \" is not empty \u2014 trailing space",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[] "
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: a decoded empty array is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": []
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: a decoded [\"\"] is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": [
+          ""
+        ]
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: a decoded array of empty elements is empty, as with storage json",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": [
+          "",
+          null,
+          "[]"
+        ]
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: a decoded array with a name is not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": [
+          "Ben Holness"
+        ]
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: NOT is_empty on [] is false",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: NOT is_not_empty on [] is true",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: NOT is_not_empty on NULL is true",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": null
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: NOT is_empty on a name is true",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "Ben Holness"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: is_set on [] is false (is_set means is_not_empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: is_not_set on [] is true",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: is_not_set on '' is true",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": ""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: is_set on a name is true",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "Ben Holness"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: NOT is_set on [] is true",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 no option: is_set on [] is true, as before",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 no option: is_not_empty on [] is true, as before",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: contains reads the raw text",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "["
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: eq reads the raw text",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "[]"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: eq '' does not match []",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": ""
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 json: contains finds a name",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"Ben Holness\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: starts_with reads the raw text",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "starts_with",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "[\"Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"Ben Holness\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: in_list reads the raw text",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "in_list",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "[]",
+                    "x"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 json: NOT contains on [] is false",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "contains",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "[]"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 values: N/A is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "N/A"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: - is empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "-"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: NULL is still empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": null
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: '' is still empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": ""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: n/a is not empty \u2014 case counts",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "n/a"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 values: 'N/A ' is not empty \u2014 no trimming",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "N/A "
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 values: [] is not empty \u2014 not in this field's set",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 values: a number is not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "01234 567890"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: NOT is_empty on N/A is false",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "N/A"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 values: NOT is_not_empty on - is true",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "-"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: is_set on N/A is false",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "N/A"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 values: caseInsensitive does not fold the set (the SQL compares bytes)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "n/a"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ],
+        "caseInsensitive": true
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 values: contains still reads N/A",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "/"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "N/A"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "label": "Phone",
+            "type": "text",
+            "countAsBlank": [
+              "N/A",
+              "-"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: a number value is compared by its text",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": 0
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "countAsBlank": [
+              "0"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: a decoded value is compared by its JSON text",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": [
+          "x"
+        ]
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "countAsBlank": [
+              "[\"x\"]"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: \"json\" in an array is the value json, not the preset",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "json"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "countAsBlank": [
+              "json"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 values: \"json\" in an array does not bring the preset",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "countAsBlank": [
+              "json"
+            ]
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 values: elements that are not strings are ignored",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": "0"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "countAsBlank": [
+              0,
+              null,
+              "N/A"
+            ]
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 values: an empty array is no option (is_set as before)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Phone": ""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Phone",
+            "countAsBlank": []
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 preset names ignore case",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "JSON"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 an unknown preset is ignored",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "csv"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 an unknown preset is ignored (is_set as before)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": ""
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "csv"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json: an array adds blanks",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"0\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "countAsBlank": [
+              "[\"0\"]",
+              "N/A"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json: a value counted blank includes nothing",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"0\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "countAsBlank": [
+              "[\"0\"]",
+              "N/A"
+            ]
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json: NOT includes_any on a blank value is true",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "negate": true,
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"0\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "countAsBlank": [
+              "[\"0\"]",
+              "N/A"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json: other lists are read as before",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"0\",\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "countAsBlank": [
+              "[\"0\"]",
+              "N/A"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json: the JSON rule still applies",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "countAsBlank": [
+              "[\"0\"]",
+              "N/A"
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json: is_set on an added blank is false",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "N/A"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "countAsBlank": [
+              "[\"0\"]",
+              "N/A"
+            ]
+          }
+        ]
+      },
+      "expected": false
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json: the json preset changes nothing",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "data": {
+        "Assigned To": "[\"3184\"]"
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
       "name": "a comma-separated field value is a list",
       "document": {
         "version": "1.0",
@@ -7695,7 +10055,7 @@
           }
         ]
       },
-      "expectedSql": "(`--ID_FOR_Assigned To` IS NULL OR CAST(`--ID_FOR_Assigned To` AS CHAR) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NULL OR CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
     },
     {
       "name": "storage json, mysql \u2014 is_not_empty",
@@ -7730,7 +10090,7 @@
           }
         ]
       },
-      "expectedSql": "(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(`--ID_FOR_Assigned To` AS CHAR) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
     },
     {
       "name": "storage json, mysql \u2014 is_not_set is is_empty",
@@ -7765,7 +10125,7 @@
           }
         ]
       },
-      "expectedSql": "(`--ID_FOR_Assigned To` IS NULL OR CAST(`--ID_FOR_Assigned To` AS CHAR) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NULL OR CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
     },
     {
       "name": "storage json, mysql \u2014 is_set is is_not_empty",
@@ -7800,7 +10160,7 @@
           }
         ]
       },
-      "expectedSql": "(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(`--ID_FOR_Assigned To` AS CHAR) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NOT NULL AND CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
     },
     {
       "name": "storage json, mysql \u2014 NOT is_not_empty",
@@ -7836,7 +10196,7 @@
           }
         ]
       },
-      "expectedSql": "NOT ((`--ID_FOR_Assigned To` IS NOT NULL AND CAST(`--ID_FOR_Assigned To` AS CHAR) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"')))"
+      "expectedSql": "NOT ((`--ID_FOR_Assigned To` IS NOT NULL AND CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"')))"
     },
     {
       "name": "storage json, mysql \u2014 includes_any: JSON_CONTAINS behind JSON_VALID",
@@ -8420,7 +10780,7 @@
           }
         ]
       },
-      "expectedSql": "(\"--ID_FOR_Assigned To\" IS NULL OR CAST(\"--ID_FOR_Assigned To\" AS TEXT) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\"\\\"]\"'))"
+      "expectedSql": "(\"--ID_FOR_Assigned To\" IS NULL OR CAST(\"--ID_FOR_Assigned To\" AS TEXT) COLLATE BINARY IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\"\\\"]\"'))"
     },
     {
       "name": "storage json, sqlite \u2014 includes_any walks the array's string elements",
@@ -8493,6 +10853,822 @@
         ]
       },
       "expectedSql": "(`--ID_FOR_Assigned To` IS NOT NULL AND `--ID_FOR_Assigned To` <> '')"
+    },
+    {
+      "name": "countAsBlank \u2014 json, mysql: is_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "(`Assigned To` IS NULL OR CAST(CAST(`Assigned To` AS CHAR) AS BINARY) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+    },
+    {
+      "name": "countAsBlank \u2014 json, mysql: is_not_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "(`Assigned To` IS NOT NULL AND CAST(CAST(`Assigned To` AS CHAR) AS BINARY) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+    },
+    {
+      "name": "countAsBlank \u2014 json, mysql: is_set is is_not_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "(`Assigned To` IS NOT NULL AND CAST(CAST(`Assigned To` AS CHAR) AS BINARY) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+    },
+    {
+      "name": "countAsBlank \u2014 json, mysql: is_not_set is is_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "(`Assigned To` IS NULL OR CAST(CAST(`Assigned To` AS CHAR) AS BINARY) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+    },
+    {
+      "name": "countAsBlank \u2014 json, mysql: NOT is_not_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "NOT ((`Assigned To` IS NOT NULL AND CAST(CAST(`Assigned To` AS CHAR) AS BINARY) NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"')))"
+    },
+    {
+      "name": "countAsBlank \u2014 json, mariadb: the same as mysql",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mariadb",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "(`Assigned To` IS NULL OR CAST(CAST(`Assigned To` AS CHAR) AS BINARY) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"'))"
+    },
+    {
+      "name": "countAsBlank \u2014 json, sqlite: is_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "sqlite",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "(\"Assigned To\" IS NULL OR CAST(\"Assigned To\" AS TEXT) COLLATE BINARY IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\"\\\"]\"'))"
+    },
+    {
+      "name": "countAsBlank \u2014 json, sqlite: is_not_empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "sqlite",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "(\"Assigned To\" IS NOT NULL AND CAST(\"Assigned To\" AS TEXT) COLLATE BINARY NOT IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\"\\\"]\"'))"
+    },
+    {
+      "name": "countAsBlank \u2014 json, mysql: contains is unchanged",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "`Assigned To` LIKE '%Ben%' ESCAPE '\\\\'"
+    },
+    {
+      "name": "countAsBlank \u2014 json, mysql: eq is unchanged",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben Holness"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "`Assigned To` = 'Ben Holness'"
+    },
+    {
+      "name": "countAsBlank \u2014 json, postgres: no tested exact comparison: errors by default",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectThrows": true
+    },
+    {
+      "name": "countAsBlank \u2014 json, sqlserver: no tested exact comparison: errors by default",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "sqlserver",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectThrows": true
+    },
+    {
+      "name": "countAsBlank \u2014 json, postgres: contains is still translated",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "contains",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "Ben"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "postgres",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "\"Assigned To\" LIKE '%Ben%' ESCAPE '\\'"
+    },
+    {
+      "name": "countAsBlank \u2014 values, mysql: escaped like any literal",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Phone",
+            "type": "text",
+            "column": "c.phone",
+            "countAsBlank": [
+              "N/A",
+              "O'Brien",
+              "a\\b"
+            ]
+          }
+        ]
+      },
+      "expectedSql": "(`c`.`phone` IS NOT NULL AND CAST(CAST(`c`.`phone` AS CHAR) AS BINARY) NOT IN ('', 'N/A', 'O''Brien', 'a\\\\b'))"
+    },
+    {
+      "name": "countAsBlank \u2014 values, sqlite: escaped like any literal",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "sqlite",
+        "fields": [
+          {
+            "name": "Phone",
+            "type": "text",
+            "column": "c.phone",
+            "countAsBlank": [
+              "N/A",
+              "O'Brien",
+              "a\\b"
+            ]
+          }
+        ]
+      },
+      "expectedSql": "(\"c\".\"phone\" IS NULL OR CAST(\"c\".\"phone\" AS TEXT) COLLATE BINARY IN ('', 'N/A', 'O''Brien', 'a\\b'))"
+    },
+    {
+      "name": "countAsBlank \u2014 values, mysql: parameters bind the host's values",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Phone",
+            "type": "text",
+            "column": "c.phone",
+            "countAsBlank": [
+              "N/A",
+              "O'Brien",
+              "a\\b"
+            ]
+          }
+        ],
+        "parameters": true
+      },
+      "expectedSql": "(`c`.`phone` IS NULL OR CAST(CAST(`c`.`phone` AS CHAR) AS BINARY) IN ('', ?, ?, ?))",
+      "expectedParams": [
+        "N/A",
+        "O'Brien",
+        "a\\b"
+      ]
+    },
+    {
+      "name": "countAsBlank \u2014 values, mysql: \"json\" in an array is a value",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Phone",
+            "countAsBlank": [
+              "json"
+            ]
+          }
+        ]
+      },
+      "expectedSql": "(`Phone` IS NULL OR CAST(CAST(`Phone` AS CHAR) AS BINARY) IN ('', 'json'))"
+    },
+    {
+      "name": "countAsBlank \u2014 an unknown preset is ignored",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "csv"
+          }
+        ]
+      },
+      "expectedSql": "(`Assigned To` IS NOT NULL AND `Assigned To` <> '')"
+    },
+    {
+      "name": "countAsBlank \u2014 an unknown preset is ignored (is_set as before)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_set",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "column": "Assigned To",
+            "countAsBlank": "csv"
+          }
+        ]
+      },
+      "expectedSql": "`Assigned To` IS NOT NULL"
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json, mysql: an array adds to the spellings of empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "countAsBlank": [
+              "[\"0\"]",
+              "[ ]"
+            ]
+          }
+        ]
+      },
+      "expectedSql": "(`--ID_FOR_Assigned To` IS NULL OR CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) IN ('', '[]', '[\"[]\"]', '[\"\"]', '[null]', 'null', '\"[]\"', '\"\"', '\"[\\\\\"\\\\\"]\"', '[\"0\"]', '[ ]'))"
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json, mysql: a list operator skips the added blanks",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "countAsBlank": [
+              "[\"0\"]",
+              "[ ]"
+            ]
+          }
+        ]
+      },
+      "expectedSql": "CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) AND CAST(CAST(`--ID_FOR_Assigned To` AS CHAR) AS BINARY) NOT IN ('[\"0\"]', '[ ]') THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"0\"') ELSE 0 END"
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json, mysql: the json preset changes nothing",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "includes_any",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": [
+                    "3184"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedSql": "CASE WHEN JSON_VALID(`--ID_FOR_Assigned To`) THEN JSON_CONTAINS(`--ID_FOR_Assigned To`, '\"3184\"') ELSE 0 END"
+    },
+    {
+      "name": "countAsBlank \u2014 with storage json, mysql: eq is still refused",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "eq",
+              "values": [
+                {
+                  "source": "literal",
+                  "value": "3184"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Assigned To",
+            "type": "list",
+            "storage": "json",
+            "column": "--ID_FOR_Assigned To",
+            "countAsBlank": [
+              "[\"0\"]",
+              "[ ]"
+            ]
+          }
+        ]
+      },
+      "expectThrows": true
+    },
+    {
+      "name": "countAsBlank \u2014 a custom values operator on the field is unchanged",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Phone",
+              "operator": "is_blankish",
+              "values": []
+            }
+          ]
+        },
+        "operators": {
+          "is_blankish": {
+            "kind": "values",
+            "values": [
+              "N/A",
+              "-"
+            ],
+            "match": "in",
+            "arity": 0
+          }
+        }
+      },
+      "options": {
+        "dialect": "mysql",
+        "fields": [
+          {
+            "name": "Phone",
+            "type": "text",
+            "column": "c.phone",
+            "countAsBlank": [
+              "N/A",
+              "O'Brien",
+              "a\\b"
+            ]
+          }
+        ]
+      },
+      "expectedSql": "`c`.`phone` IN ('N/A', '-')"
     }
   ],
   "$describeComment": "Shared describe() / describeHtml() cases. Both SDKs must produce these strings byte for byte \u2014 the HTML ones also pin the escaping, which is the whole safety story for describeHtml.",
@@ -9973,6 +13149,67 @@
       },
       "expectedText": "NOT ([Assigned To] is not empty)",
       "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-not\">NOT</span> <span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Assigned To</strong> <span class=\"kcd-op\">is not empty</span><span class=\"kcd-paren\">)</span></span>"
+    },
+    {
+      "name": "countAsBlank \u2014 describe reads as before: [Assigned To] is not empty",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_not_empty",
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedText": "[Assigned To] is not empty",
+      "expectedHtml": "<span class=\"kcd\"><strong class=\"kcd-field\">Assigned To</strong> <span class=\"kcd-op\">is not empty</span></span>"
+    },
+    {
+      "name": "countAsBlank \u2014 describe reads as before: NOT ([Assigned To] is empty)",
+      "document": {
+        "version": "1.0",
+        "root": {
+          "type": "group",
+          "operator": "and",
+          "children": [
+            {
+              "type": "condition",
+              "field": "Assigned To",
+              "operator": "is_empty",
+              "negate": true,
+              "values": []
+            }
+          ]
+        }
+      },
+      "options": {
+        "fields": [
+          {
+            "name": "Assigned To",
+            "label": "Assigned To",
+            "type": "text",
+            "countAsBlank": "json"
+          }
+        ]
+      },
+      "expectedText": "NOT ([Assigned To] is empty)",
+      "expectedHtml": "<span class=\"kcd\"><span class=\"kcd-not\">NOT</span> <span class=\"kcd-paren\">(</span><strong class=\"kcd-field\">Assigned To</strong> <span class=\"kcd-op\">is empty</span><span class=\"kcd-paren\">)</span></span>"
     },
     {
       "name": "a {value} slot puts the operand inside the operator label",

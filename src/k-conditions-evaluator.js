@@ -1,5 +1,5 @@
 /*!
- * kConditions Evaluator 0.1.6
+ * kConditions Evaluator 0.1.7
  * Evaluates kConditions documents (spec version 1.0) in browsers and Node.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  */
@@ -14,7 +14,7 @@
   'use strict';
 
   var SPEC_VERSION = '1.0';
-  var LIB_VERSION = '0.1.6';
+  var LIB_VERSION = '0.1.7';
 
   /* ------------------------------------------------------------------ *
    * Errors
@@ -386,6 +386,71 @@
     }
   };
 
+  /* ------------------------------------------------------------------ *
+   * Blank values: `countAsBlank`
+   *
+   * A field definition may name stored values that count as blank besides
+   * NULL and '', which always do: a preset (`'json'`, the spellings of empty
+   * listed above) or an array of exact strings (`['N/A', '-']`). It changes
+   * what is_empty / is_not_empty mean, and is_set / is_not_set with them, for
+   * the reason JSON storage gives: "set" on a column that clears to `[]` on
+   * one save path and NULL on another asks nothing a person means, and "is
+   * not set" must not keep the `[]` rows. Every other operator reads the
+   * stored value as before.
+   *
+   * A string is always a preset name and an array always holds values, so
+   * the value "json" is written ['json']. An unknown preset is ignored, as an
+   * unknown storage is, so a typo behaves as no option rather than throwing
+   * in a page. Values are compared exactly — case, spaces and all — because
+   * the SQL compares bytes; a value that arrives already decoded is compared
+   * by its text (asString()), and under 'json' an array that is an empty
+   * list by the JSON rule is blank too, as it is with storage: 'json'.
+   * ------------------------------------------------------------------ */
+
+  var BLANK_PRESETS = { json: JSON_EMPTY_FORMS };
+
+  // The builtins countAsBlank decides, and whether each one asks "is blank".
+  var BLANK_OPERATORS = { is_empty: true, is_not_set: true, is_not_empty: false, is_set: false };
+
+  /**
+   * `{ forms, json }` for a field that declares countAsBlank, otherwise null.
+   * `forms` is every stored text that counts as blank, '' first; `json` says
+   * the 'json' preset was named.
+   */
+  function blankSet(field) {
+    var c = field && typeof field === 'object' ? field.countAsBlank : null;
+    if (typeof c === 'string') {
+      var p = c.toLowerCase();
+      if (!Object.prototype.hasOwnProperty.call(BLANK_PRESETS, p)) return null;
+      return { forms: BLANK_PRESETS[p].slice(), json: p === 'json' };
+    }
+    if (!Array.isArray(c)) return null;
+    var forms = [''];
+    c.forEach(function (s) { if (typeof s === 'string' && forms.indexOf(s) === -1) forms.push(s); });
+    // Nothing beyond '' is the default, so it is no option at all.
+    return forms.length > 1 ? { forms: forms, json: false } : null;
+  }
+
+  /** A map of field name to blank set, for the fields that declare one. */
+  function blankMap(fields) {
+    var out = {};
+    (Array.isArray(fields) ? fields : []).forEach(function (f) {
+      var s = blankSet(f);
+      if (s && f.name !== undefined && f.name !== null) out[String(f.name)] = s;
+    });
+    return out;
+  }
+
+  /** Whether a stored value counts as blank under a blank set. */
+  function isBlank(v, set) {
+    if (isEmptyValue(v)) return true;
+    if (typeof v !== 'string') {
+      if (set.json && Array.isArray(v) && emptyArray(v)) return true;
+      v = asString(v);
+    }
+    return set.forms.indexOf(v) !== -1;
+  }
+
   function buildRegex(pattern, ctx) {
     return new RegExp(pattern, ctx && ctx.caseInsensitive ? 'i' : '');
   }
@@ -614,8 +679,9 @@
     allowManifestCallbacks: false,
     callbackAllowList: null,
     callbackScope: null,
-    // The host's field definitions. Only `storage` is read here: a field
-    // stored as JSON is decoded before any operator sees it.
+    // The host's field definitions. Only `storage` and `countAsBlank` are
+    // read here: a field stored as JSON is decoded before any operator sees
+    // it, and a field's own blank values decide is_empty and is_set.
     fields: null,
     trace: false
   };
@@ -640,6 +706,7 @@
       });
     }
     this.storageFor = storageMap(this.options.fields);
+    this.blanksFor = blankMap(this.options.fields);
   }
 
   Evaluator.prototype.registerOperator = function (name, fn, meta) {
@@ -694,6 +761,7 @@
       errors: [],
       trace: this.options.trace ? [] : null,
       storage: this.storageFor,
+      blanks: this.blanksFor,
       evaluator: this
     };
     var outcome = this.evalNode(doc.root, state, 'root');
@@ -817,18 +885,24 @@
         path: path
       };
       if (isMissing(fieldValue)) fieldValue = null;
+      var builtin = BUILTIN_OPERATORS[name];
+      var isBuiltin = !!builtin && impl === builtin.fn;
+      var blanks = state.blanks && Object.prototype.hasOwnProperty.call(state.blanks, node.field) ? state.blanks[node.field] : null;
       if (Object.prototype.hasOwnProperty.call(state.storage, node.field)) {
         // A JSON-stored field is read once, here. The builtin list and
         // existence operators answer from what was read; anything else —
         // another builtin, a registered or custom operator — gets the decoded
-        // value, as it would get an array passed in directly.
+        // value, as it would get an array passed in directly. A value the
+        // field counts as blank holds nothing, whatever it decodes to.
         var stored = readJsonList(fieldValue);
-        var builtin = BUILTIN_OPERATORS[name];
-        if (builtin && impl === builtin.fn && JSON_LIST_OPERATORS[name]) {
+        if (blanks && !stored.empty && isBlank(fieldValue, blanks)) stored = { empty: true, items: [], value: stored.value };
+        if (isBuiltin && JSON_LIST_OPERATORS[name]) {
           out = JSON_LIST_OPERATORS[name](stored, args, ctx);
         } else {
           out = impl(stored.value, args, ctx);
         }
+      } else if (blanks && isBuiltin && Object.prototype.hasOwnProperty.call(BLANK_OPERATORS, name)) {
+        out = isBlank(fieldValue, blanks) === BLANK_OPERATORS[name];
       } else {
         out = impl(fieldValue, args, ctx);
       }
@@ -1344,6 +1418,8 @@
       fieldStorage: fieldStorage, storageMap: storageMap, readJsonList: readJsonList,
       jsonListOperands: wantedValues, JSON_LIST_OPERATORS: Object.keys(JSON_LIST_OPERATORS),
       JSON_EMPTY_FORMS: JSON_EMPTY_FORMS,
+      blankSet: blankSet, blankMap: blankMap, isBlank: isBlank,
+      BLANK_OPERATORS: Object.keys(BLANK_OPERATORS),
       startOfUtcDay: startOfUtcDay, resolvePolicy: resolvePolicy,
       fillTemplate: fillTemplate, splitOperatorLabel: splitOperatorLabel,
       operatorLabelText: operatorLabelText

@@ -1,6 +1,6 @@
 {
   "name": "@kastrack/conditions-editor",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "A zero-dependency conditions builder that takes over a <textarea>, plus evaluator SDKs that turn the JSON it writes into a boolean.",
   "keywords": [
     "conditions",
@@ -55,7 +55,7 @@
     "prepublishOnly": "npm run build && npm test",
     "pretest:browser": "npm run build",
     "test:browser": "node tests/browser/run.js",
-    "test:db": "node tests/db/json-storage.js"
+    "test:db": "node tests/db/sql-vs-evaluator.js"
   },
   "engines": {
     "node": ">=18"

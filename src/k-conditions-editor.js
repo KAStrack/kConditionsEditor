@@ -1,5 +1,5 @@
 /*!
- * kConditionsEditor 0.1.6
+ * kConditionsEditor 0.1.7
  * A zero-dependency conditions builder that takes over a <textarea>.
  * MIT Licence. https://github.com/KAStrack/kConditionsEditor
  *
@@ -18,7 +18,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (KConditions) {
   'use strict';
 
-  var VERSION = '0.1.6';
+  var VERSION = '0.1.7';
   var BUILTIN = KConditions.BUILTIN_OPERATORS;
   var GROUPS = KConditions.OPERATOR_GROUPS;
   var TYPE_GROUPS = KConditions.FIELD_TYPE_GROUPS;
@@ -771,11 +771,13 @@
     if (Array.isArray(field.excludeOperators)) {
       names = names.filter(function (n) { return field.excludeOperators.indexOf(n) === -1; });
     }
-    // On a JSON-stored field "is set" means "is not empty" (a list column
-    // clears to [] on one save path and NULL on another), so offering both
-    // would be two names for one question. A host that lists them in
-    // `operators` still gets them; a rule that already uses one keeps it.
-    if (KConditions.helpers.fieldStorage(field) && !(Array.isArray(field.operators) && field.operators.length)) {
+    // On a JSON-stored field, or one with its own blank values, "is set"
+    // means "is not empty" (a column that clears to [] on one save path and
+    // NULL on another), so offering both would be two names for one
+    // question. A host that lists them in `operators` still gets them; a
+    // rule that already uses one keeps it.
+    if ((KConditions.helpers.fieldStorage(field) || KConditions.helpers.blankSet(field)) &&
+        !(Array.isArray(field.operators) && field.operators.length)) {
       names = names.filter(function (n) { return n !== 'is_set' && n !== 'is_not_set'; });
     }
     return names.filter(function (n) { return !!self.operatorMeta(n); });
